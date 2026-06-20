@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --font:'Plus Jakarta Sans',system-ui,sans-serif;
+      --navy:#25419A;--brand-red:#C62025;
+      --amber:#D97706;--amber-bg:#FEF3C7;
+      --green:#059669;--green-bg:#ECFDF5;
+      --red:#DC2626;--red-bg:#FEF2F2;
+      --bg:#F4F6F9;--surface:#fff;
+      --border:#E5E7EB;--border-def:#D1D5DB;
+      --text:#111827;--text-body:#374151;--text-muted:#6B7280;
+      --navy-50:#EEF2FF;--r:8px;--r-sm:6px;
+      --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+      --ease:cubic-bezier(.4,0,.2,1)
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
+    ::-webkit-scrollbar{width:9px;height:9px}
+    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:6px}
+
+    .titulo{background:var(--navy);color:#fff;padding:12px 16px;border-radius:var(--r-sm);
+            font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .titulo .back{cursor:pointer;background:rgba(255,255,255,.18);border:none;
+                  color:#fff;border-radius:4px;padding:3px 9px;font-size:12px;font-weight:700;
+                  transition:background .15s}
+    .titulo .back:hover{background:rgba(255,255,255,.3)}
+    .badge{font-size:10px;background:rgba(255,255,255,.22);border-radius:4px;
+           padding:2px 8px;font-weight:normal;letter-spacing:.3px}
+
+    .sel-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+    .sel-card{display:flex;align-items:center;gap:14px;background:var(--surface);
+              border:1.5px solid var(--border-def);border-radius:var(--r);padding:13px 16px;
+              cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease),background .15s var(--ease)}
+    .sel-card:hover{border-color:var(--navy);background:var(--navy-50);box-shadow:var(--sh)}
+    .sel-card .icone{font-size:24px;line-height:1}
+    .sel-card .txt strong{display:block;font-size:13px;color:var(--navy);margin-bottom:2px}
+    .sel-card .txt span{font-size:11px;color:var(--text-muted)}
+
+    .screen{display:none}
+    .screen.ativo{display:block}
+
+    .campo{margin-bottom:10px}
+    label{display:block;font-weight:700;color:var(--text-body);margin-bottom:4px;font-size:12px}
+    input[type=text],input[type=email],input[type=number],select,textarea{
+      width:100%;padding:8px 10px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+      font-size:13px;background:var(--surface);font-family:var(--font)}
+    input:focus,select:focus,textarea:focus{
+      outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.12)}
+
+    .info{background:var(--navy-50);border-left:4px solid var(--navy);padding:9px 12px;
+          border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:12px;color:var(--text-body);
+          margin-bottom:12px;line-height:1.6}
+
+    .tags-box{min-height:40px;background:var(--surface);border:1px solid var(--border-def);
+              border-radius:var(--r-sm);padding:5px 8px;margin-bottom:8px;
+              display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+    .email-tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;
+               padding:3px 10px;font-size:11px;font-weight:500}
+    .email-tag.geral {background:#DBEAFE;color:#1E40AF}
+    .email-tag.alerta{background:var(--amber-bg);color:#92400E}
+    .email-tag.transf{background:#CFFAFE;color:#0891B2}
+    .email-tag.admin {background:#EDE9FE;color:#5B21B6}
+    .email-tag .rm{cursor:pointer;background:none;border:none;font-weight:700;
+                   font-size:13px;line-height:1;padding:0 2px;opacity:.7}
+    .email-tag .rm:hover{opacity:1;color:var(--red)}
+
+    .dono-tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;
+              padding:3px 10px;font-size:11px;font-weight:500;background:#FEF9C3;color:#854D0E}
+
+    .secao-email{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);
+                 padding:10px 12px;margin-bottom:10px}
+    .secao-email .sec-titulo{font-size:11px;font-weight:700;color:var(--text-body);
+                              text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;
+                              display:flex;align-items:center;gap:6px}
+    .linha2{display:flex;gap:8px}
+    .linha2 .campo{flex:1}
+
+    .opcao-alerta{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .opcao-radio{display:flex;align-items:flex-start;gap:8px;background:var(--surface);
+                 border:1.5px solid var(--border-def);border-radius:var(--r-sm);
+                 padding:9px 12px;cursor:pointer;
+                 transition:border-color .15s var(--ease),background .15s var(--ease)}
+    .opcao-radio:hover{border-color:var(--navy);background:var(--navy-50)}
+    .opcao-radio input[type=radio]{margin-top:2px;accent-color:var(--navy);cursor:pointer}
+    .opcao-radio .txt strong{display:block;font-size:12px;color:var(--navy)}
+    .opcao-radio .txt span{font-size:11px;color:var(--text-muted)}
+    #cc-wrapper{display:none;margin-top:6px}
+
+    .cor-grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .cor-item{background:var(--surface);border:1px solid var(--border-def);
+              border-radius:var(--r);padding:10px 12px;box-shadow:var(--sh)}
+    .cor-item label{font-size:11px;margin-bottom:6px;color:var(--text-body)}
+    .cor-preview{display:flex;align-items:center;gap:8px}
+    .cor-preview input[type=color]{width:40px;height:32px;padding:2px;
+                                    border:1px solid var(--border-def);border-radius:var(--r-sm);cursor:pointer}
+    .cor-preview span{font-size:11px;color:var(--text-muted)}
+
+    .diag-card{background:var(--surface);border:1px solid var(--border-def);
+               border-radius:var(--r);padding:10px 14px;margin-bottom:8px;box-shadow:var(--sh)}
+    .diag-titulo{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;
+                 text-transform:uppercase;letter-spacing:.4px}
+    .diag-linha{display:flex;justify-content:space-between;font-size:12px;
+                padding:4px 0;border-bottom:1px solid #F3F4F6}
+    .diag-linha:last-child{border-bottom:none}
+    .diag-val{font-weight:700;color:var(--navy)}
+    .diag-ok  {color:var(--green)}
+    .diag-warn{color:var(--amber)}
+    .diag-erro{color:var(--red)}
+
+    .botoes{display:flex;gap:8px;margin-top:12px}
+    button.btn-principal{flex:1;padding:9px;border:none;border-radius:var(--r-sm);font-size:13px;
+                         font-weight:700;cursor:pointer;font-family:var(--font);
+                         background:var(--navy);color:#fff;transition:opacity .15s var(--ease)}
+    button.btn-principal:hover{opacity:.88}
+    button.btn-principal:disabled{opacity:.45;cursor:not-allowed}
+    button.btn-cancel{padding:9px 14px;border:none;border-radius:var(--r-sm);font-size:13px;
+                      font-weight:700;cursor:pointer;font-family:var(--font);
+                      background:var(--border);color:var(--text-body);transition:background .15s}
+    button.btn-cancel:hover{background:var(--border-def)}
+    button.btn-sec{padding:8px 12px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+                   font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
+                   background:var(--surface);color:var(--text-body);transition:background .15s}
+    button.btn-sec:hover{background:#F3F4F6}
+
+    .msg{margin-top:9px;padding:8px 10px;border-radius:var(--r-sm);font-size:12px;
+         display:none;white-space:pre-wrap;line-height:1.5}
+    .msg-ok   {background:var(--green-bg);color:#065F46;border:1px solid #6EE7B7}
+    .msg-erro {background:var(--red-bg);color:var(--red);border:1px solid #FECACA}
+    .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
+    .spinner{display:none;text-align:center;color:var(--text-muted);margin-top:8px;font-size:12px;padding:6px}
+  </style>
+</head>
+<body>
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
+  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
+  // o diálogo idêntico ao original.
+  try {
+    google.script.run
+      .withSuccessHandler(function(_execUrl) {
+        if (!_execUrl) return;
+        var _nav = document.getElementById('cdv-nav-webapp');
+        if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
+        try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+      })
+      ._getWebAppExecUrl();
+  } catch (_e) {}
+</script>
+
+
+<!-- ════════ TELA 0 — SELEÇÃO ════════ -->
+<div id="screen-sel" class="screen ativo">
+  <div class="titulo">⚙️ Configurações do Sistema</div>
+  <div class="sel-grid">
+    <div class="sel-card" onclick="irPara('emails')">
+      <span class="icone">📧</span>
+      <div class="txt">
+        <strong>E-mails e Destinatários</strong>
+        <span>Configurar lista geral e destinatários de alerta (CC)</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('cores')">
+      <span class="icone">🎨</span>
+      <div class="txt">
+        <strong>Cores da Planilha</strong>
+        <span>Personalizar as cores de status (Pendente, Devolvido, Venda, Alerta)</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('fornecedor')">
+      <span class="icone">🏭</span>
+      <div class="txt">
+        <strong>Adicionar Novo Fornecedor</strong>
+        <span>Criar nova aba de fornecedor sem editar o código</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('diagnostico')">
+      <span class="icone">🔧</span>
+      <div class="txt">
+        <strong>Diagnóstico e Status</strong>
+        <span>Ver status do sistema, triggers, contadores e espaço nas abas</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('limpeza')">
+      <span class="icone">🗂️</span>
+      <div class="txt">
+        <strong>Limpeza do Log Antigo</strong>
+        <span>Arquivar ou apagar registros do _Log com mais de N meses</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('drive')">
+      <span class="icone">🗑️</span>
+      <div class="txt">
+        <strong>Limpeza de Arquivos no Drive</strong>
+        <span>Apagar PDFs gerados salvos nas pastas do Drive</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('acesso')">
+      <span class="icone">🔐</span>
+      <div class="txt">
+        <strong>Controle de Acesso</strong>
+        <span>Definir quem pode entrar nesta tela de Configurações</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('manutencao')">
+      <span class="icone">🔨</span>
+      <div class="txt">
+        <strong>Manutenção Rápida</strong>
+        <span>Reaplica cores, atualiza dashboard e reinstala triggers — sem recriar abas</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('reinstalar')">
+      <span class="icone">🔧</span>
+      <div class="txt">
+        <strong>Configurar / Reinstalar Sistema</strong>
+        <span>Recriar abas, formatação, dashboard e triggers (não apaga dados)</span>
+      </div>
+    </div>
+  </div>
+  <div class="botoes">
+    <button class="btn-cancel" style="flex:1" onclick="google.script.host.close()">✖ Fechar</button>
+  </div>
+</div>
+
+<!-- ════════ TELA — MANUTENÇÃO RÁPIDA ════════ -->
+<div id="screen-manutencao" class="screen">
+  <div class="titulo">🔨 Manutenção Rápida do Sistema</div>
+  <p style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:12px">
+    Realiza pequenos ajustes no sistema sem recriar ou apagar nenhuma aba ou dado:
+  </p>
+  <div class="info" style="margin-bottom:14px">
+    ✅ Reaplica as cores de status em todas as abas<br>
+    ✅ Atualiza as métricas do Dashboard<br>
+    ✅ Verifica e reinstala os triggers automáticos<br>
+    ✅ Inclui as abas extras de fornecedores criadas pelo usuário<br>
+    <br>
+    <strong>Nenhuma aba é recriada ou limpa.</strong> Use esta opção para corrigir
+    cores incorretas, contadores desatualizados ou triggers parados — sem risco de
+    perder lançamentos.
+  </div>
+  <button class="btn-principal" id="mn-btn" onclick="executarManutencao()">🔨 Executar Manutenção Rápida</button>
+  <button class="btn-cancel" onclick="voltar()">← Voltar</button>
+  <div class="spinner" id="mn-spin">⏳ Executando manutenção (pode levar alguns segundos)...</div>
+  <div class="msg" id="mn-msg"></div>
+</div>
+
+<!-- ════════ TELA — REINSTALAR ════════ -->
+<div id="screen-reinstalar" class="screen">
+  <div class="titulo">🔧 Configurar / Reinstalar Sistema</div>
+  <p style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:12px">
+    Recria as abas operacionais, o layout/formatação padrão, o Dashboard e os
+    <em>triggers</em> automáticos (onEdit, resumo semanal, verificação de atrasos,
+    reaplicação de cores). <strong>Não apaga lançamentos existentes.</strong>
+    Se for reinstalar por algum problema na planilha, recomenda-se fazer
+    <strong>💾 Backup</strong> antes e <strong>Restaurar</strong> depois.
+  </p>
+  <button class="btn-principal" id="re-btn" onclick="executarReinstalar()">🔧 Configurar / Reinstalar Agora</button>
+  <button class="btn-cancel" onclick="voltar()">← Voltar</button>
+  <div class="spinner" id="re-spin">⏳ Configurando o sistema (pode levar alguns segundos)...</div>
+  <div class="msg" id="re-msg"></div>
+</div>
+
+<!-- ════════ TELA 1 — E-MAILS ════════ -->
+<div id="screen-emails" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    📧 E-mails e Destinatários <span class="badge">CONFIG</span>
+  </div>
+
+  <!-- Lista geral -->
+  <div class="secao-email">
+    <div class="sec-titulo">📋 Lista geral — relatórios e resumos</div>
+    <div class="info" style="margin-bottom:8px">
+      Estes e-mails recebem <strong>todos</strong> os relatórios gerados (mensal, semanal, diário) e o resumo automático de segunda-feira.
+    </div>
+    <div class="tags-box" id="tags-geral"></div>
+    <div class="linha2">
+      <div class="campo" style="margin-bottom:0">
+        <input type="email" id="inp-geral" placeholder="novo@email.com.br"
+               onkeydown="if(event.key==='Enter') addEmail('geral')">
+      </div>
+      <div><button class="btn-sec" onclick="addEmail('geral')">+ Adicionar</button></div>
+    </div>
+  </div>
+
+  <!-- Alertas de atraso -->
+  <div class="secao-email">
+    <div class="sec-titulo">🔔 Alertas de atraso — enviar para:</div>
+    <div class="opcao-alerta">
+      <label class="opcao-radio">
+        <input type="radio" name="alerta-dest" value="todos" id="r-todos" checked onchange="onAlertaChange()">
+        <div class="txt">
+          <strong>Todos da lista geral</strong>
+          <span>O alerta de atraso vai para todos os e-mails cadastrados acima</span>
+        </div>
+      </label>
+      <label class="opcao-radio">
+        <input type="radio" name="alerta-dest" value="cc" id="r-cc" onchange="onAlertaChange()">
+        <div class="txt">
+          <strong>Somente destinatários CC</strong>
+          <span>O alerta vai apenas para os e-mails abaixo (em CC — um único e-mail enviado)</span>
+        </div>
+      </label>
+    </div>
+
+    <div id="cc-wrapper">
+      <div class="tags-box" id="tags-alerta"></div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0">
+          <input type="email" id="inp-alerta" placeholder="alerta@email.com.br"
+                 onkeydown="if(event.key==='Enter') addEmail('alerta')">
+        </div>
+        <div><button class="btn-sec" onclick="addEmail('alerta')">+ Adicionar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas de transferências vencidas -->
+  <div class="secao-email" style="border-color:#0891B2;background:#F0FDFF">
+    <div class="sec-titulo" style="color:#0891B2">🚛 Alertas de transferências vencidas — enviar para:</div>
+    <div class="info" style="background:#CFFAFE;border-color:#0891B2;margin-bottom:8px">
+      E-mails que recebem o alerta quando uma transferência agendada passa da data sem baixa.
+      Se deixar vazio, o alerta vai para a <strong>lista geral</strong>.
+    </div>
+    <div class="tags-box" id="tags-transf"></div>
+    <div class="linha2">
+      <div class="campo" style="margin-bottom:0">
+        <input type="email" id="inp-transf" placeholder="transporte@empresa.com.br"
+               onkeydown="if(event.key==='Enter') addEmail('transf')">
+      </div>
+      <div><button class="btn-sec" onclick="addEmail('transf')">+ Adicionar</button></div>
+    </div>
+  </div>
+
+  <div class="botoes">
+    <button class="btn-principal" id="em-btn" onclick="salvarEmailConfig()">💾 Salvar Configurações</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <div class="spinner" id="em-spin">⏳ Salvando...</div>
+  <div class="msg" id="em-msg"></div>
+</div>
+
+<!-- ════════ TELA 2 — CORES ════════ -->
+<div id="screen-cores" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🎨 Cores da Planilha <span class="badge">CONFIG</span>
+  </div>
+  <div class="info">
+    Personalize as cores de fundo das linhas por status. Após salvar, a planilha será atualizada automaticamente.
+  </div>
+
+  <div class="cor-grade">
+    <div class="cor-item">
+      <label>🔵 Pendente</label>
+      <div class="cor-preview">
+        <input type="color" id="cor-pendente" value="#DDEEFF"
+               oninput="document.getElementById('hex-pendente').textContent=this.value.toUpperCase()">
+        <span id="hex-pendente">#DDEEFF</span>
+      </div>
+    </div>
+    <div class="cor-item">
+      <label>🟢 Devolvido</label>
+      <div class="cor-preview">
+        <input type="color" id="cor-devolvido" value="#DDFFDD"
+               oninput="document.getElementById('hex-devolvido').textContent=this.value.toUpperCase()">
+        <span id="hex-devolvido">#DDFFDD</span>
+      </div>
+    </div>
+    <div class="cor-item">
+      <label>🟠 Venda</label>
+      <div class="cor-preview">
+        <input type="color" id="cor-venda" value="#FFE5CC"
+               oninput="document.getElementById('hex-venda').textContent=this.value.toUpperCase()">
+        <span id="hex-venda">#FFE5CC</span>
+      </div>
+    </div>
+    <div class="cor-item">
+      <label>🔴 Alerta (+30 dias)</label>
+      <div class="cor-preview">
+        <input type="color" id="cor-alerta" value="#FFD5D5"
+               oninput="document.getElementById('hex-alerta').textContent=this.value.toUpperCase()">
+        <span id="hex-alerta">#FFD5D5</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="campo" style="margin-top:10px">
+    <label>Cor do Cabeçalho</label>
+    <div class="cor-preview">
+      <input type="color" id="cor-header" value="#25419A"
+             oninput="document.getElementById('hex-header').textContent=this.value.toUpperCase()">
+      <span id="hex-header">#25419A</span>
+    </div>
+  </div>
+
+  <div class="botoes">
+    <button class="btn-principal" id="c-btn" onclick="salvarCores()">🎨 Salvar e Reaplicar Cores</button>
+    <button class="btn-sec" onclick="restaurarCoresPadrao()">↺ Padrão</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖</button>
+  </div>
+  <div class="spinner" id="c-spin">⏳ Reaplicando cores em todas as abas...</div>
+  <div class="msg" id="c-msg"></div>
+</div>
+
+<!-- ════════ TELA 3 — NOVO FORNECEDOR ════════ -->
+<div id="screen-fornecedor" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🏭 Adicionar Novo Fornecedor <span class="badge">CONFIG</span>
+  </div>
+  <div class="info">
+    Cria uma nova aba operacional com o mesmo layout das abas existentes e a registra no sistema.
+  </div>
+  <div class="campo">
+    <label>Nome do Fornecedor <span style="color:#c00">*</span></label>
+    <input type="text" id="f-nome" placeholder="Ex: Magazine Luiza, Casas Bahia...">
+  </div>
+  <div class="campo">
+    <label>Fixar nome na coluna Fornecedor?</label>
+    <select id="f-fixar">
+      <option value="sim">Sim — preencher automaticamente</option>
+      <option value="nao">Não — campo livre por linha</option>
+    </select>
+  </div>
+  <div class="botoes">
+    <button class="btn-principal" id="f-btn" onclick="criarFornecedor()">🏭 Criar Aba de Fornecedor</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <div class="spinner" id="f-spin">⏳ Criando aba...</div>
+  <div class="msg" id="f-msg"></div>
+</div>
+
+<!-- ════════ TELA 4 — DIAGNÓSTICO ════════ -->
+<div id="screen-diagnostico" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🔧 Diagnóstico e Status <span class="badge">SISTEMA</span>
+  </div>
+  <div class="spinner" id="diag-spin">⏳ Carregando diagnóstico...</div>
+  <div class="msg" id="diag-msg"></div>
+  <div id="diag-conteudo" style="display:none">
+    <div class="diag-card">
+      <div class="diag-titulo">Versão e Sistema</div>
+      <div class="diag-linha"><span>Versão</span><span class="diag-val" id="diag-versao">—</span></div>
+      <div class="diag-linha"><span>Último backup</span><span class="diag-val" id="diag-backup">—</span></div>
+    </div>
+    <div class="diag-card">
+      <div class="diag-titulo">Contadores</div>
+      <div class="diag-linha"><span>Itens concluídos</span><span class="diag-val" id="diag-concluidos">—</span></div>
+      <div class="diag-linha"><span>Proteções ativas</span><span class="diag-val" id="diag-protecoes">—</span></div>
+    </div>
+    <div class="diag-card">
+      <div class="diag-titulo">Uso das Abas Operacionais</div>
+      <div class="diag-linha"><span>Britania</span><span class="diag-val" id="diag-brit">—</span></div>
+      <div class="diag-linha"><span>Unilever</span><span class="diag-val" id="diag-unilever">—</span></div>
+      <div class="diag-linha"><span>Fornecedores Variados</span><span class="diag-val" id="diag-variados">—</span></div>
+    </div>
+    <div class="diag-card">
+      <div class="diag-titulo">Triggers Instalados</div>
+      <div id="diag-triggers"></div>
+    </div>
+    <div class="diag-card">
+      <div class="diag-titulo">E-mail</div>
+      <div class="diag-linha"><span>Lista geral</span><span class="diag-val" id="diag-emails-geral">—</span></div>
+      <div class="diag-linha"><span>Alertas</span><span class="diag-val" id="diag-emails-alerta">—</span></div>
+    </div>
+  </div>
+  <div class="botoes" style="margin-top:10px">
+    <button class="btn-sec" onclick="carregarDiagnostico()">↺ Atualizar</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Fechar</button>
+  </div>
+</div>
+
+<!-- ════════ TELA 5 — LIMPEZA LOG ════════ -->
+<div id="screen-limpeza" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🗂️ Limpeza do Log Antigo <span class="badge">MANUTENÇÃO</span>
+  </div>
+  <div class="info">
+    O <strong>_Log</strong> cresce indefinidamente. Esta função arquiva registros antigos para manter a performance.
+  </div>
+  <div class="campo">
+    <label>Arquivar registros com mais de (meses)</label>
+    <select id="lg-meses">
+      <option value="3">3 meses</option>
+      <option value="6" selected>6 meses</option>
+      <option value="12">12 meses</option>
+      <option value="24">24 meses</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label>O que fazer com os registros antigos?</label>
+    <select id="lg-acao">
+      <option value="arquivar">Mover para aba _Log_Arquivo (recomendado)</option>
+      <option value="apagar">Apagar permanentemente</option>
+    </select>
+  </div>
+  <div class="botoes">
+    <button class="btn-principal" id="lg-btn" onclick="executarLimpezaLog()" style="background:#D97706">
+      🗂️ Executar Limpeza
+    </button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <div class="spinner" id="lg-spin">⏳ Processando log...</div>
+  <div class="msg" id="lg-msg"></div>
+</div>
+
+<!-- ════════ TELA 6 — LIMPEZA DO DRIVE ════════ -->
+<div id="screen-drive" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🗑️ Limpeza de Arquivos no Drive <span class="badge">MANUTENÇÃO</span>
+  </div>
+  <div style="background:#FEF2F2;border-left:4px solid #DC2626;padding:9px 12px;
+              border-radius:0 5px 5px 0;font-size:12px;color:#374151;margin-bottom:12px;line-height:1.6">
+    ⚠️ <strong>Atenção:</strong> Os arquivos vão para a lixeira do Drive. Podem ser restaurados em até 30 dias.<br>
+    Os <strong>anexos de NF</strong> (fotos/PDFs das notas originais) <strong>nunca são apagados</strong>.
+  </div>
+  <div class="campo">
+    <label>O que deseja apagar?</label>
+    <select id="dr-tipo">
+      <option value="relatorios">📊 Relatórios PDF gerados (mensais, semanais, diários)</option>
+      <option value="vendas">🛒 PDFs de Baixa para Venda</option>
+      <option value="devolucoes">📄 PDFs de Devolução (dar baixa)</option>
+      <option value="tudo">🗑️ Tudo (relatórios + vendas + devoluções)</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label>Filtrar por data de criação</label>
+    <select id="dr-periodo">
+      <option value="0">Sem filtro (apagar todos)</option>
+      <option value="30">Mais de 30 dias</option>
+      <option value="60">Mais de 60 dias</option>
+      <option value="90">Mais de 90 dias</option>
+      <option value="180">Mais de 6 meses</option>
+      <option value="365">Mais de 1 ano</option>
+    </select>
+  </div>
+  <div id="dr-preview" style="display:none;margin-bottom:10px">
+    <div style="background:#F3F4F6;border-radius:5px;padding:10px 12px;font-size:12px">
+      <strong id="dr-preview-titulo"></strong>
+      <div id="dr-preview-lista" style="margin-top:6px;max-height:120px;overflow-y:auto;
+           font-size:11px;color:#374151;line-height:1.8"></div>
+    </div>
+  </div>
+  <div class="botoes">
+    <button class="btn-principal" id="dr-btn-pre" onclick="previewDrive()" style="background:#D97706">
+      🔍 Verificar o que será apagado
+    </button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <button id="dr-btn-apagar" onclick="executarLimpezaDrive()"
+          style="display:none;width:100%;margin-top:8px;padding:9px;border:none;
+                 border-radius:4px;font-size:13px;font-weight:bold;cursor:pointer;
+                 background:#DC2626;color:#fff">
+    🗑️ Confirmar e Mover para Lixeira
+  </button>
+  <div class="spinner" id="dr-spin">⏳ Processando...</div>
+  <div class="msg" id="dr-msg"></div>
+</div>
+
+<!-- ════════ TELA 7 — CONTROLE DE ACESSO ════════ -->
+<div id="screen-acesso" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🔐 Controle de Acesso <span class="badge">SEGURANÇA</span>
+  </div>
+  <div class="info">
+    Apenas os e-mails listados aqui — e o <strong>dono da planilha</strong> (acesso fixo, não pode ser removido) —
+    conseguem abrir esta tela de Configurações e o menu <strong>🔧 Configurar/Reinstalar Sistema</strong>.
+    Para os demais usuários, esses itens nem aparecem no menu.
+  </div>
+
+  <div class="secao-email">
+    <div class="sec-titulo">👑 Dono da planilha (acesso permanente)</div>
+    <div id="acesso-dono" class="tags-box">⏳ Carregando...</div>
+  </div>
+
+  <div class="secao-email">
+    <div class="sec-titulo">🔐 Administradores adicionais</div>
+    <div class="tags-box" id="tags-admin"></div>
+    <div class="linha2">
+      <div class="campo" style="margin-bottom:0">
+        <input type="email" id="inp-admin" placeholder="responsavel@empresa.com.br"
+               onkeydown="if(event.key==='Enter') addAdmin()">
+      </div>
+      <div><button class="btn-sec" onclick="addAdmin()">+ Adicionar</button></div>
+    </div>
+  </div>
+
+  <div class="botoes">
+    <button class="btn-principal" id="ac-btn" onclick="salvarAdmins()">💾 Salvar Administradores</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <div class="spinner" id="ac-spin">⏳ Salvando...</div>
+  <div class="msg" id="ac-msg"></div>
+</div>
+
+<script>
+// ── Estado ────────────────────────────────────────────────────
+var telaAtual = 'sel';
+var _emailsGeral  = [];
+var _emailsAlerta = [];
+var _emailsTransf = [];
+var _alertaDest   = 'todos'; // 'todos' | 'cc'
+var _admins       = [];
+var _donoEmail    = '';
+var _coresPadrao  = {
+  pendente:'#DDEEFF', devolvido:'#DDFFDD',
+  venda:'#FFE5CC', alerta:'#FFD5D5', header:'#25419A'
+};
+
+// ── Navegação ─────────────────────────────────────────────────
+function irPara(tela) {
+  document.getElementById('screen-sel').classList.remove('ativo');
+  document.getElementById('screen-' + tela).classList.add('ativo');
+  telaAtual = tela;
+  if (tela === 'emails')      carregarEmailConfig();
+  if (tela === 'cores')       carregarCoresSalvas();
+  if (tela === 'diagnostico') carregarDiagnostico();
+  if (tela === 'drive')       resetDrive();
+  if (tela === 'acesso')      carregarAdminsConfig();
+}
+
+function voltar() {
+  document.getElementById('screen-' + telaAtual).classList.remove('ativo');
+  document.getElementById('screen-sel').classList.add('ativo');
+  telaAtual = 'sel';
+  // Limpa mensagens
+  ['em','c','f','lg','dr','diag','ac','re','mn'].forEach(function(p) {
+    var el = document.getElementById(p+'-msg');
+    if (el) el.style.display = 'none';
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA — MANUTENÇÃO RÁPIDA
+// ════════════════════════════════════════════════════════════
+
+function executarManutencao() {
+  if (!confirm('Confirma a manutenção rápida?\n\nIsto reaplica cores, atualiza o Dashboard e reinstala triggers. Nenhuma aba será recriada ou apagada.')) return;
+  setLoading('mn', true, 'mn-spin');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('mn', false, 'mn-spin');
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('mn', 'erro', r.erro); return; }
+      showMsg('mn', 'ok', r.sucesso);
+    })
+    .withFailureHandler(function(e) {
+      setLoading('mn', false, 'mn-spin');
+      showMsg('mn', 'erro', e.message);
+    })
+    .manutencaoSistema();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA — CONFIGURAR / REINSTALAR SISTEMA
+// ════════════════════════════════════════════════════════════
+
+function executarReinstalar() {
+  if (!confirm('Confirma a reconfiguração do sistema?\n\nIsso recria abas, formatação, dashboard e triggers. Os lançamentos existentes não são apagados, mas é recomendável ter feito um Backup recente.')) return;
+  setLoading('re', true, 're-spin');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('re', false, 're-spin');
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('re', 'erro', r.erro); return; }
+      showMsg('re', 'ok', r.sucesso);
+    })
+    .withFailureHandler(function(e) {
+      setLoading('re', false, 're-spin');
+      showMsg('re', 'erro', e.message);
+    })
+    .configurarPlanilha();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 1 — E-MAILS
+// ════════════════════════════════════════════════════════════
+
+function carregarEmailConfig() {
+  document.getElementById('tags-geral').innerHTML  = '⏳ Carregando...';
+  document.getElementById('tags-alerta').innerHTML = '';
+  document.getElementById('tags-transf').innerHTML = '';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      _emailsGeral  = r.geral   || [];
+      _emailsAlerta = r.alerta  || [];
+      _emailsTransf = r.transf  || [];
+      _alertaDest   = r.alertaDest || 'todos';
+
+      renderTags('geral');
+      renderTags('alerta');
+      renderTags('transf');
+
+      document.getElementById(_alertaDest === 'cc' ? 'r-cc' : 'r-todos').checked = true;
+      document.getElementById('cc-wrapper').style.display = _alertaDest === 'cc' ? 'block' : 'none';
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('tags-geral').innerHTML = '❌ Erro ao carregar: ' + e.message;
+    })
+    .obterEmailConfig();
+}
+
+function renderTags(tipo) {
+  var lista = tipo === 'geral' ? _emailsGeral : tipo === 'alerta' ? _emailsAlerta : _emailsTransf;
+  var container = document.getElementById('tags-' + tipo);
+  container.innerHTML = '';
+  if (!lista.length) {
+    container.innerHTML = '<span style="font-size:11px;color:#9CA3AF">Nenhum e-mail cadastrado.</span>';
+    return;
+  }
+  lista.forEach(function(email, idx) {
+    var span = document.createElement('span');
+    span.className = 'email-tag ' + tipo;
+    span.innerHTML = esc(email) +
+      '<button class="rm" onclick="removerEmail(\'' + tipo + '\',' + idx + ')">×</button>';
+    container.appendChild(span);
+  });
+}
+
+function addEmail(tipo) {
+  var inputId = tipo === 'geral' ? 'inp-geral' : tipo === 'alerta' ? 'inp-alerta' : 'inp-transf';
+  var el      = document.getElementById(inputId);
+  var email   = el.value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showMsg('em','erro','❌ Informe um e-mail válido.'); return;
+  }
+  var lista = tipo === 'geral' ? _emailsGeral : tipo === 'alerta' ? _emailsAlerta : _emailsTransf;
+  if (lista.indexOf(email) !== -1) {
+    showMsg('em','aviso','⚠️ Este e-mail já está na lista de ' + tipo + '.'); return;
+  }
+  lista.push(email);
+  el.value = '';
+  renderTags(tipo);
+  document.getElementById('em-msg').style.display = 'none';
+}
+
+function removerEmail(tipo, idx) {
+  if (tipo === 'geral')  _emailsGeral.splice(idx, 1);
+  else if (tipo === 'alerta') _emailsAlerta.splice(idx, 1);
+  else                   _emailsTransf.splice(idx, 1);
+  renderTags(tipo);
+}
+
+function onAlertaChange() {
+  _alertaDest = document.querySelector('input[name="alerta-dest"]:checked').value;
+  document.getElementById('cc-wrapper').style.display = _alertaDest === 'cc' ? 'block' : 'none';
+}
+
+function salvarEmailConfig() {
+  if (!_emailsGeral.length) { showMsg('em','erro','❌ Adicione ao menos um e-mail na lista geral.'); return; }
+  if (_alertaDest === 'cc' && !_emailsAlerta.length) {
+    showMsg('em','erro','❌ Adicione ao menos um e-mail CC para alertas de atraso.'); return;
+  }
+  setLoading('em', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('em', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('em','ok', r.ok);
+      else      showMsg('em','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('em',false); showMsg('em','erro','❌ '+e.message); })
+    .salvarEmailConfig({ geral: _emailsGeral, alerta: _emailsAlerta, alertaDest: _alertaDest, transf: _emailsTransf });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 2 — CORES
+// ════════════════════════════════════════════════════════════
+
+function carregarCoresSalvas() {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      var c = r.cores || _coresPadrao;
+      ['pendente','devolvido','venda','alerta','header'].forEach(function(id) {
+        if (c[id]) setCorInput(id, c[id]);
+      });
+    })
+    .withFailureHandler(function() {}) // silencioso — usa valores padrão do HTML
+    .obterCoresSalvas();
+}
+
+function setCorInput(id, hex) {
+  var el = document.getElementById('cor-' + id);
+  if (el) {
+    el.value = hex;
+    document.getElementById('hex-' + id).textContent = hex.toUpperCase();
+  }
+}
+
+function restaurarCoresPadrao() {
+  Object.keys(_coresPadrao).forEach(function(k) { setCorInput(k, _coresPadrao[k]); });
+}
+
+function salvarCores() {
+  var cores = {};
+  ['pendente','devolvido','venda','alerta','header'].forEach(function(id) {
+    cores[id] = document.getElementById('cor-' + id).value;
+  });
+  setLoading('c', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('c', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('c','ok', r.ok);
+      else      showMsg('c','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('c',false); showMsg('c','erro','❌ '+e.message); })
+    .salvarCoresEReaplicar(cores);
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 3 — NOVO FORNECEDOR
+// ════════════════════════════════════════════════════════════
+
+function criarFornecedor() {
+  var nome  = document.getElementById('f-nome').value.trim();
+  var fixar = document.getElementById('f-fixar').value === 'sim';
+  if (!nome) { showMsg('f','erro','❌ Informe o nome do fornecedor.'); return; }
+  setLoading('f', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('f', false);
+      var r = JSON.parse(resp);
+      if (r.ok) { showMsg('f','ok', r.ok); document.getElementById('f-nome').value=''; }
+      else       showMsg('f','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('f',false); showMsg('f','erro','❌ '+e.message); })
+    .criarNovoFornecedor({ nome: nome, fixar: fixar });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 4 — DIAGNÓSTICO
+// ════════════════════════════════════════════════════════════
+
+function carregarDiagnostico() {
+  document.getElementById('diag-spin').style.display = 'block';
+  document.getElementById('diag-conteudo').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('diag-spin').style.display = 'none';
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('diag','erro','❌ '+r.erro); return; }
+      preencherDiagnostico(r);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('diag-spin').style.display = 'none';
+      showMsg('diag','erro','❌ '+e.message);
+    })
+    .obterDiagnostico();
+}
+
+function preencherDiagnostico(r) {
+  setText('diag-versao',      r.versao        || '—');
+  setText('diag-backup',      r.ultimoBackup  || '—');
+  setText('diag-concluidos',  String(r.contConcluidos || 0));
+  setText('diag-protecoes',   (r.contProtecoes || 0) + ' / 380');
+
+  (r.abas || []).forEach(function(a) {
+    var ids = { 'Britania':'diag-brit','Unilever':'diag-unilever','Fornecedores Variados':'diag-variados' };
+    var el  = document.getElementById(ids[a.nome] || '');
+    if (!el) return;
+    var pct = Math.round(a.usado / 200 * 100);
+    var cls = pct >= 90 ? 'diag-erro' : pct >= 70 ? 'diag-warn' : 'diag-ok';
+    el.innerHTML = '<span class="' + cls + '">' + a.usado + '/200 (' + pct + '%)</span>';
+  });
+
+  var trig = document.getElementById('diag-triggers');
+  trig.innerHTML = (r.triggers && r.triggers.length)
+    ? r.triggers.map(function(t) {
+        return '<div class="diag-linha"><span>' + esc(t.func) + '</span>' +
+               '<span class="diag-ok diag-val">' + esc(t.tipo) + '</span></div>';
+      }).join('')
+    : '<div class="diag-linha"><span class="diag-erro">Nenhum trigger instalado</span></div>';
+
+  setText('diag-emails-geral',  (r.totalEmailsGeral  || 0) + ' e-mail(s)');
+  setText('diag-emails-alerta', r.alertaDest === 'cc'
+    ? 'CC — ' + (r.totalEmailsAlerta || 0) + ' e-mail(s)'
+    : 'Todos da lista geral');
+
+  document.getElementById('diag-conteudo').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 5 — LIMPEZA LOG
+// ════════════════════════════════════════════════════════════
+
+function executarLimpezaLog() {
+  var meses = parseInt(document.getElementById('lg-meses').value, 10);
+  var acao  = document.getElementById('lg-acao').value;
+  setLoading('lg', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('lg', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('lg','ok', r.ok);
+      else      showMsg('lg','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('lg',false); showMsg('lg','erro','❌ '+e.message); })
+    .executarLimpezaLog({ meses: meses, acao: acao });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 6 — DRIVE
+// ════════════════════════════════════════════════════════════
+
+function resetDrive() {
+  document.getElementById('dr-preview').style.display = 'none';
+  document.getElementById('dr-btn-apagar').style.display = 'none';
+  document.getElementById('dr-msg').style.display = 'none';
+}
+
+function previewDrive() {
+  var tipo    = document.getElementById('dr-tipo').value;
+  var periodo = parseInt(document.getElementById('dr-periodo').value, 10);
+  setLoading('dr', true, 'dr-spin');
+  resetDrive();
+  document.getElementById('dr-spin').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('dr', false, 'dr-spin');
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('dr','erro','❌ ' + r.erro); return; }
+      var lista = r.arquivos || [];
+      document.getElementById('dr-preview-titulo').textContent =
+        lista.length + ' arquivo(s) encontrado(s):';
+      document.getElementById('dr-preview-lista').innerHTML = lista.length
+        ? lista.map(function(f) {
+            return '📄 ' + esc(f.nome) + (f.data?' <span style="color:#9CA3AF">('+esc(f.data)+')</span>':'');
+          }).join('<br>')
+        : '<span style="color:#6B7280">Nenhum arquivo encontrado.</span>';
+      document.getElementById('dr-preview').style.display = 'block';
+      document.getElementById('dr-btn-apagar').style.display = lista.length ? 'block' : 'none';
+    })
+    .withFailureHandler(function(e) {
+      setLoading('dr', false, 'dr-spin');
+      showMsg('dr','erro','❌ ' + e.message);
+    })
+    .previewLimpezaDrive({ tipo: tipo, periodo: periodo });
+}
+
+function executarLimpezaDrive() {
+  var tipo    = document.getElementById('dr-tipo').value;
+  var periodo = parseInt(document.getElementById('dr-periodo').value, 10);
+  document.getElementById('dr-btn-apagar').style.display = 'none';
+  setLoading('dr', true, 'dr-spin');
+  document.getElementById('dr-spin').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('dr', false, 'dr-spin');
+      var r = JSON.parse(resp);
+      if (r.ok) { showMsg('dr','ok', r.ok); document.getElementById('dr-preview').style.display='none'; }
+      else       showMsg('dr','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) {
+      setLoading('dr', false, 'dr-spin');
+      showMsg('dr','erro','❌ ' + e.message);
+    })
+    .executarLimpezaDrive({ tipo: tipo, periodo: periodo });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 7 — CONTROLE DE ACESSO
+// ════════════════════════════════════════════════════════════
+
+function carregarAdminsConfig() {
+  document.getElementById('acesso-dono').innerHTML = '⏳ Carregando...';
+  document.getElementById('tags-admin').innerHTML   = '';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) {
+        document.getElementById('acesso-dono').innerHTML = '❌ ' + esc(r.erro);
+        return;
+      }
+      _donoEmail = r.dono || '';
+      _admins    = r.admins || [];
+      document.getElementById('acesso-dono').innerHTML = _donoEmail
+        ? '<span class="dono-tag">👑 ' + esc(_donoEmail) + '</span>'
+        : '<span style="font-size:11px;color:#9CA3AF">Não foi possível detectar o dono (ex.: planilha em Drive compartilhado). Use a lista de administradores abaixo.</span>';
+      renderAdmins();
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('acesso-dono').innerHTML = '❌ Erro ao carregar: ' + esc(e.message);
+    })
+    .obterAdminsConfig();
+}
+
+function renderAdmins() {
+  var container = document.getElementById('tags-admin');
+  container.innerHTML = '';
+  if (!_admins.length) {
+    container.innerHTML = '<span style="font-size:11px;color:#9CA3AF">Nenhum administrador adicional cadastrado.</span>';
+    return;
+  }
+  _admins.forEach(function(email, idx) {
+    var span = document.createElement('span');
+    span.className = 'email-tag admin';
+    span.innerHTML = esc(email) +
+      '<button class="rm" onclick="removerAdmin(' + idx + ')">×</button>';
+    container.appendChild(span);
+  });
+}
+
+function addAdmin() {
+  var el    = document.getElementById('inp-admin');
+  var email = el.value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showMsg('ac','erro','❌ Informe um e-mail válido.'); return;
+  }
+  if (email === _donoEmail) {
+    showMsg('ac','aviso','⚠️ Este já é o dono da planilha — acesso permanente, não precisa adicionar.'); return;
+  }
+  if (_admins.indexOf(email) !== -1) {
+    showMsg('ac','aviso','⚠️ Este e-mail já está na lista.'); return;
+  }
+  _admins.push(email);
+  el.value = '';
+  renderAdmins();
+  document.getElementById('ac-msg').style.display = 'none';
+}
+
+function removerAdmin(idx) {
+  _admins.splice(idx, 1);
+  renderAdmins();
+}
+
+function salvarAdmins() {
+  setLoading('ac', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('ac', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('ac','ok', r.ok);
+      else      showMsg('ac','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('ac',false); showMsg('ac','erro','❌ '+e.message); })
+    .salvarAdminsConfig({ admins: _admins });
+}
+
+// ════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════
+
+function setLoading(p, sim, spinId) {
+  var spin = document.getElementById(spinId || (p+'-spin'));
+  var btn  = document.getElementById(p+'-btn');
+  if (spin) spin.style.display = sim ? 'block' : 'none';
+  if (btn)  btn.disabled = sim;
+}
+
+function showMsg(p, tipo, txt) {
+  var el = document.getElementById(p+'-msg');
+  if (!el) return;
+  el.className = 'msg msg-'+tipo;
+  el.textContent = txt;
+  el.style.display = 'block';
+}
+
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function esc(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

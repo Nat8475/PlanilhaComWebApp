@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_top">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>📦 Devoluções — Transben</title>
+<style>
+/* ════════════════════════════════════════════
+   TOKENS  (idênticos ao UI kit)
+════════════════════════════════════════════ */
+:root {
+  --font       : 'Plus Jakarta Sans', system-ui, sans-serif;
+  --navy-800   : #1E3A5F;   /* sidebar */
+  --navy       : #25419A;   /* brand blue */
+  --brand-red  : #C62025;
+  --bg-app     : #F4F6F9;
+  --white      : #FFFFFF;
+  --border-sub : #E5E7EB;   /* border-subtle */
+  --border-def : #D1D5DB;   /* border-default */
+  --text-str   : #111827;   /* text-strong */
+  --text-body  : #374151;
+  --text-muted : #6B7280;
+  --text-faint : #9CA3AF;
+  --slate-50   : #F8FAFC;
+  --slate-100  : #F3F4F6;
+  --navy-50    : #EEF2FF;
+  --r-md       : 8px;
+  --r-sm       : 6px;
+  --sh-sm      : 0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-md      : 0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.04);
+  --ease-out   : cubic-bezier(.4,0,.2,1);
+}
+
+/* ── reset ── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); font-size: 13px; background: var(--bg-app); color: var(--text-str); }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--border-def); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* ════════════════════════════════════════════
+   SHELL
+════════════════════════════════════════════ */
+#shell { display: flex; height: 100vh; overflow: hidden; }
+
+/* ════════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════════ */
+#sb {
+  width: 240px; flex-shrink: 0; height: 100%;
+  background: var(--navy-800); color: #fff;
+  display: flex; flex-direction: column;
+  box-shadow: 4px 0 24px rgba(0,0,0,.15);
+  transition: width .2s var(--ease-out);
+  overflow: hidden;
+}
+html.col #sb { width: 56px; }
+
+/* brand row */
+.sbr {
+  display: flex; align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  min-height: 56px; flex-shrink: 0;
+}
+#tog {
+  background: none; border: none;
+  border-right: 1px solid rgba(255,255,255,.1);
+  color: #fff; cursor: pointer;
+  height: 56px; width: 56px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; transition: background .12s;
+}
+#tog:hover { background: rgba(255,255,255,.1); }
+.sbi {
+  padding: 0 14px; white-space: nowrap; overflow: hidden;
+  display: flex; align-items: center; gap: 9px;
+}
+.sbi-ic { color: #9CC1FF; font-size: 17px; }
+.sbt  { font: 700 14px/1.1 var(--font); display: block; }
+.sbv  { font: 500 10px/1.3 var(--font); color: rgba(255,255,255,.45); display: block; margin-top: 2px; }
+
+/* nav */
+#nav { padding: 6px 0; flex: 1; overflow-y: auto; overflow-x: hidden; }
+.ns {
+  padding: 11px 16px 4px;
+  font: 700 9px/1 var(--font); text-transform: uppercase;
+  letter-spacing: .08em; color: rgba(255,255,255,.4);
+  white-space: nowrap; overflow: hidden;
+}
+.ni {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 9px 16px; text-decoration: none;
+  color: rgba(255,255,255,.78); font: 500 12.5px/1.2 var(--font);
+  border: none; border-left: 3px solid transparent;
+  background: transparent; cursor: pointer; text-align: left;
+  white-space: nowrap; transition: background .12s var(--ease-out);
+}
+.ni:hover { background: rgba(255,255,255,.07); }
+.ni.on {
+  background: rgba(255,255,255,.12) !important;
+  border-left-color: var(--brand-red) !important;
+  color: #fff !important; font-weight: 600;
+}
+.nic {
+  position: relative; display: inline-flex;
+  width: 18px; height: 18px; align-items: center;
+  justify-content: center; flex-shrink: 0; font-size: 14px;
+}
+.nil { overflow: hidden; text-overflow: ellipsis; }
+.ni-badge {
+  position: absolute; top: -6px; right: -8px;
+  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px;
+  font: 700 9px/15px var(--font); text-align: center; color: #fff;
+}
+
+/* footer */
+.sbft {
+  padding: 10px 16px; border-top: 1px solid rgba(255,255,255,.1);
+  font: 500 10px/1.4 var(--font); color: rgba(255,255,255,.3);
+  white-space: nowrap; overflow: hidden; flex-shrink: 0;
+}
+
+/* collapsed */
+html.col .ns,
+html.col .nil,
+html.col .sbi,
+html.col .sbft { display: none; }
+html.col .ni   { padding: 9px 0; justify-content: center; }
+
+/* ════════════════════════════════════════════
+   MAIN AREA
+════════════════════════════════════════════ */
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* topbar */
+#tb {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 24px; height: 60px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-sub);
+  flex-shrink: 0; position: sticky; top: 0; z-index: 10;
+}
+#tb-txt { flex: 1; min-width: 0; }
+#tb-title {
+  font: 700 17px/1.2 var(--font); color: var(--text-str);
+  letter-spacing: -.01em; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+#tb-sub { font: 500 12px/1.3 var(--font); color: var(--text-muted); margin-top: 2px; }
+.tb-brand { font: 800 14px/1 var(--font); color: var(--navy); letter-spacing: -.01em; white-space: nowrap; }
+
+/* content */
+#content { flex: 1; position: relative; overflow: hidden; }
+
+/* index hub — scrollable */
+#idx {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  display: none;
+}
+
+/* page iframe */
+#pgf {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border: none; background: var(--bg-app);
+  display: none;
+}
+
+/* loading */
+#ldg {
+  position: absolute; inset: 0;
+  display: none; align-items: center; justify-content: center;
+  gap: 10px; color: var(--text-muted);
+  font: 500 13px/1 var(--font);
+}
+.spin {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--border-sub);
+  border-top-color: var(--navy);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* error */
+#err {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 40px 24px; text-align: center;
+}
+.err-i  { font-size: 34px; margin-bottom: 4px; }
+#err h3 { font: 600 15px/1.3 var(--font); color: var(--text-str); }
+#err p  { font: 400 13px/1.6 var(--font); color: var(--text-muted); max-width: 380px; }
+
+/* ════════════════════════════════════════════
+   HUB — Menu Principal
+════════════════════════════════════════════ */
+.hub { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+/* alert */
+.alert {
+  display: none; align-items: flex-start; gap: 12px;
+  padding: 13px 16px; border-radius: var(--r-md);
+  border: 1px solid #FCD34D; background: #FFFBEB;
+  margin-bottom: 20px;
+}
+.alert.show { display: flex; }
+.al-ic  { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.al-ttl { font: 600 13px/1.3 var(--font); color: #92400E; margin-bottom: 2px; }
+.al-dsc { font: 400 12px/1.5 var(--font); color: #B45309; }
+
+/* KPI row */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px; margin-bottom: 22px;
+}
+@media (max-width: 900px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi {
+  background: var(--white);
+  border: 1px solid var(--border-sub);
+  border-top: 3px solid var(--kac, var(--border-sub));
+  border-radius: var(--r-md); padding: 14px 16px;
+  box-shadow: var(--sh-sm);
+}
+.kpi-l { font: 600 10px/1 var(--font); text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 8px; }
+.kpi-v { font: 800 26px/1 var(--font); color: var(--kac, var(--text-str)); margin-bottom: 3px; }
+.kpi-s { font: 500 11px/1.3 var(--font); color: var(--text-muted); }
+
+/* two-col grid */
+.g2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 800px) { .g2 { grid-template-columns: 1fr; } }
+
+/* card */
+.card { background: var(--white); border: 1px solid var(--border-sub); border-radius: var(--r-md); box-shadow: var(--sh-sm); overflow: hidden; }
+.card-h { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border-sub); }
+.card-ht { font: 700 13px/1 var(--font); color: var(--text-str); }
+.card-b { padding: 14px 16px; }
+.card-f { padding: 12px 16px; border-top: 1px solid var(--border-sub); background: var(--slate-50); }
+
+/* table */
+table.rt { width: 100%; border-collapse: collapse; }
+table.rt thead th {
+  padding: 10px 14px; text-align: left;
+  background: var(--slate-50);
+  font: 600 10px/1 var(--font); text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-muted); border-bottom: 1px solid var(--border-sub); white-space: nowrap;
+}
+table.rt tbody td {
+  padding: 10px 14px; font: 500 13px/1.3 var(--font); color: var(--text-str);
+  border-bottom: 1px solid var(--slate-100); vertical-align: middle;
+}
+table.rt tbody tr:last-child td { border-bottom: none; }
+table.rt tbody tr:hover td { background: #FAFBFC; }
+.mono { font-family: 'JetBrains Mono','Courier New',monospace; font-size: 12px; font-feature-settings: "tnum" 1; }
+
+/* badges */
+.bdg { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font: 600 10.5px/1.2 var(--font); white-space: nowrap; }
+.b-p  { background: #EBF3FF; color: #2563EB; }
+.b-t  { background: #CFFAFE; color: #0891B2; }
+.b-d  { background: #ECFDF5; color: #059669; }
+.b-v  { background: #FFF7ED; color: #D97706; }
+.b-a  { background: #FEF2F2; color: #DC2626; }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 14px; border-radius: var(--r-sm);
+  border: none; cursor: pointer; font: 600 12px/1 var(--font);
+  font-family: var(--font); text-decoration: none;
+  transition: opacity .12s, box-shadow .12s;
+}
+.btn:hover { opacity: .87; }
+.btn-pri { background: var(--navy); color: #fff; }
+.btn-sec { background: var(--white); border: 1px solid var(--border-sub); color: var(--text-body); }
+.btn-gho { background: transparent; color: var(--text-muted); }
+.btn-gho:hover { background: var(--slate-100); opacity: 1; }
+.btn-sm  { height: 28px; padding: 0 10px; font-size: 11px; }
+.btn-blk { width: 100%; justify-content: center; }
+
+/* quick action card */
+.qa {
+  display: flex; align-items: flex-start; gap: 12px;
+  width: 100%; padding: 15px 16px; text-align: left;
+  background: var(--white); border: 1px solid var(--border-sub);
+  border-radius: var(--r-md); cursor: pointer;
+  box-shadow: var(--sh-sm); font-family: var(--font);
+  transition: box-shadow .15s var(--ease-out), border-color .15s var(--ease-out);
+}
+.qa:hover { box-shadow: var(--sh-md); border-color: var(--border-def); }
+.qa-ic {
+  width: 38px; height: 38px; border-radius: var(--r-sm); flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.qa-nm { display: block; font: 600 13px/1.3 var(--font); color: var(--text-str); margin-bottom: 2px; }
+.qa-ds { display: block; font: 400 11px/1.4 var(--font); color: var(--text-muted); }
+
+/* skeleton */
+.sk { background: linear-gradient(90deg,#F3F4F6 25%,#E9EBEE 50%,#F3F4F6 75%); background-size:200px 100%; animation:sk .9s infinite; border-radius:4px; }
+@keyframes sk{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="shell">
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside id="sb">
+  <div class="sbr">
+    <button id="tog" onclick="cdvT()" title="Recolher / Expandir">&#9776;</button>
+    <div class="sbi">
+      <span class="sbi-ic">&#128230;</span>
+      <div><span class="sbt">Devoluções</span><span class="sbv">Transben · v7.0</span></div>
+    </div>
+  </div>
+  <nav id="nav"></nav>
+  <div class="sbft">Sistema Transben · Controle de Devoluções</div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div id="main">
+
+  <!-- topbar -->
+  <header id="tb">
+    <div id="tb-txt">
+      <div id="tb-title">Menu Principal</div>
+      <div id="tb-sub">Acesso direto · Transben · Controle de devoluções de fornecedores</div>
+    </div>
+    <div class="tb-brand">📦 Transben</div>
+  </header>
+
+  <!-- content -->
+  <main id="content">
+
+    <div id="ldg"><div class="spin"></div> Carregando...</div>
+    <div id="err">
+      <div class="err-i">⚠️</div>
+      <h3>Não foi possível carregar esta página</h3>
+      <p id="err-msg">Tente novamente ou recarregue o sistema.</p>
+    </div>
+
+    <!-- HUB — Menu Principal -->
+    <div id="idx">
+      <div class="hub">
+
+        <!-- alert bar -->
+        <div id="hub-al" class="alert">
+          <span class="al-ic">⚠️</span>
+          <div>
+            <div class="al-ttl" id="hub-al-ttl"></div>
+            <div class="al-dsc" id="hub-al-dsc"></div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpis" id="hub-kpis">
+          <div class="kpi"><div class="sk" style="width:65%;height:9px;margin-bottom:10px"></div><div class="sk" style="width:45%;height:24px;margin-bottom:5px"></div><div class="sk" style="width:70%;height:9px"></div></div>
+          <div class="kpi"><div class="sk" style="width:65%;height:9px;margin-bottom:10px"></div><div class="sk" style="width:45%;height:24px;margin-bottom:5px"></div><div class="sk" style="width:70%;height:9px"></div></div>
+          <div class="kpi"><div class="sk" style="width:65%;height:9px;margin-bottom:10px"></div><div class="sk" style="width:45%;height:24px;margin-bottom:5px"></div><div class="sk" style="width:70%;height:9px"></div></div>
+          <div class="kpi"><div class="sk" style="width:65%;height:9px;margin-bottom:10px"></div><div class="sk" style="width:45%;height:24px;margin-bottom:5px"></div><div class="sk" style="width:70%;height:9px"></div></div>
+          <div class="kpi"><div class="sk" style="width:65%;height:9px;margin-bottom:10px"></div><div class="sk" style="width:45%;height:24px;margin-bottom:5px"></div><div class="sk" style="width:70%;height:9px"></div></div>
+        </div>
+
+        <!-- recent + quick actions -->
+        <div class="g2">
+
+          <!-- recent table -->
+          <div class="card">
+            <div class="card-h">
+              <span class="card-ht">Devoluções recentes</span>
+              <a id="a-notas" href="?page=Notas" class="btn btn-gho btn-sm">Ver todas →</a>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="rt">
+                <thead><tr>
+                  <th>NF / NFD</th><th>Fornecedor</th><th>Produto</th>
+                  <th style="text-align:right">Qtd</th>
+                  <th style="text-align:right">Valor R$</th>
+                  <th>Status</th>
+                </tr></thead>
+                <tbody id="hub-tbl">
+                  <tr><td colspan="6" class="empty"><div class="sk" style="height:13px;margin-bottom:8px"></div><div class="sk" style="height:13px;margin-bottom:8px"></div><div class="sk" style="height:13px"></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- right col -->
+          <div>
+            <div style="font:700 9px/1 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:4px 2px 10px">Ações rápidas</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+              <button class="qa" onclick="cdvRunAction('atraso')">
+                <span id="qa-ic-atraso" class="qa-ic" style="background:#FEF2F2;color:#C62025">🔔</span>
+                <span>
+                  <span class="qa-nm">Verificar Atrasos Agora</span>
+                  <span class="qa-ds">Varre pendências com +30 dias e envia alerta por e-mail</span>
+                </span>
+              </button>
+              <button class="qa" onclick="cdvRunAction('arquivar')">
+                <span id="qa-ic-arquivar" class="qa-ic" style="background:#EEF2FF;color:#25419A">📦</span>
+                <span>
+                  <span class="qa-nm">Forçar Arquivamento Manual</span>
+                  <span class="qa-ds">Move itens Devolvido / Venda para o Histórico_Arquivo</span>
+                </span>
+              </button>
+            </div>
+
+            <!-- nova devolução -->
+            <div class="card">
+              <div class="card-h"><span class="card-ht">Nova devolução</span></div>
+              <div class="card-b">
+                <p style="font:400 12.5px/1.6 var(--font);color:var(--text-body)">
+                  Registre uma NF individual, em lote, ou exclua um lançamento pendente. Anexe a foto ou PDF da nota fiscal.
+                </p>
+              </div>
+              <div class="card-f">
+                <a id="a-lancar" href="?page=Lancamento" class="btn btn-pri btn-blk">+ Lançar devolução</a>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.g2 -->
+      </div><!-- /.hub -->
+    </div><!-- /#idx -->
+
+    <!-- page iframe -->
+    <iframe id="pgf" frameborder="0" allowtransparency="true"></iframe>
+
+  </main>
+</div><!-- /#main -->
+</div><!-- /#shell -->
+
+<script>
+(function () {
+  /* ── state ── */
+  var _url  = '';   /* web app exec URL */
+  var _page = '';
+
+  /* ── page meta ── */
+  var META = {
+    Index         : { t: 'Menu Principal',           s: 'Acesso direto · Transben · Controle de devoluções de fornecedores' },
+    Dashboard     : { t: 'Dashboard',                s: 'Análise por fornecedor e distribuição geral de status' },
+    Lancamento    : { t: 'Lançar / Excluir Devolução', s: 'Registre uma NF de devolução individual, em lote, ou exclua um pendente' },
+    Notas         : { t: 'Notas Lançadas',            s: 'Todas as devoluções registradas, por fornecedor e status' },
+    Busca         : { t: 'Buscar NF / Fornecedor',   s: 'Pesquise lançamentos ativos e o histórico arquivado' },
+    Email         : { t: 'E-mail de Devolução',      s: 'Monte e envie o comunicado de devolução por NFD' },
+    Frete         : { t: 'Programar Devolução',      s: 'Defina o frete, agendamento e transportadora da retirada' },
+    Transferencias: { t: 'Transferências',            s: 'Acompanhe, baixe, reagende ou cancele as transferências' },
+    BaixaDevolucao: { t: 'Gerar PDF Devolução',      s: 'Gere o PDF de devolução e baixe NFs pendentes em lote' },
+    BaixaVenda    : { t: 'Baixa para Venda',          s: 'Baixe NFs pendentes como Venda em lote' },
+    Reabertura    : { t: 'Reabrir Devoluções',        s: 'Retorne NFs concluídas para o status Pendente' },
+    Relatorios    : { t: 'Relatórios (PDF)',          s: 'Gere relatórios consolidados salvos no Drive' },
+    Backup        : { t: 'Backup / Restauração',      s: 'Salve e restaure todos os dados das abas operacionais' },
+    Auditoria     : { t: 'Auditoria e Histórico',     s: 'Consulte o histórico de ações e registros de e-mail' },
+    Configuracoes : { t: 'Configurações',             s: 'Ajuste e-mails, cores e permissões do sistema' },
+  };
+
+  /* ── nav structure (espelha _cdvGetSidebarHtml_) ── */
+  var NAV = [
+    { s: 'Menu', items: [
+      { p: 'Dashboard',   i: '⊞', l: 'Dashboard' }
+    ]},
+    { s: 'Lançamentos', items: [
+      { p: 'Lancamento',  i: '+', l: 'Lançar / Excluir' },
+      { p: 'Notas',       i: '≡', l: 'Notas Lançadas' },
+      { p: 'Busca',       i: '◯', l: 'Buscar NF / Fornecedor' },
+      { p: 'Email',       i: '✉', l: 'E-mail de Devolução' },
+    ]},
+    { s: 'Operações', items: [
+      { p: 'Frete',          i: '▶', l: 'Programar Devolução' },
+      { p: 'Transferencias', i: '⇆', l: 'Transferências', badge: true },
+      { p: 'BaixaDevolucao', i: '☑', l: 'Gerar PDF Devolução' },
+      { p: 'BaixaVenda',     i: '$', l: 'Baixa p/ Venda' },
+      { p: 'Reabertura',     i: '↩', l: 'Reabrir Devoluções' },
+    ]},
+    { s: 'Relatórios', items: [
+      { p: 'Relatorios', i: '▤', l: 'Relatórios (PDF)' }
+    ]},
+    { s: 'Sistema', items: [
+      { p: 'Index',         i: '⌂', l: 'Menu Principal' },
+      { p: 'Backup',        i: '⊙', l: 'Backup / Restauração' },
+      { p: 'Auditoria',     i: '⌚', l: 'Auditoria e Histórico' },
+      { p: 'Configuracoes', i: '⚙', l: 'Configurações' },
+    ]}
+  ];
+
+  /* ── helpers ── */
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function link(p) {
+    return (_url ? _url + '?page=' + p : '?page=' + p);
+  }
+  function getPage() {
+    var m = (window.location.search || '').match(/[?&]page=([^&]+)/);
+    return m ? decodeURIComponent(m[1]) : 'Index';
+  }
+
+  /* ── build sidebar ── */
+  function buildNav(badgeCount, vencidas) {
+    var cur  = _page;
+    var html = '';
+    NAV.forEach(function (g) {
+      html += '<div><div class="ns">' + esc(g.s) + '</div>';
+      g.items.forEach(function (it) {
+        var active = (cur === it.p);
+        var badge  = '';
+        if (it.badge && badgeCount > 0) {
+          var bg = vencidas > 0 ? '#C62025' : '#0891B2';
+          badge = '<span class="ni-badge" style="background:' + bg + '">'
+                + (vencidas > 0 ? vencidas : badgeCount) + '</span>';
+        }
+        html += '<a class="ni' + (active ? ' on' : '') + '" href="' + link(it.p) + '">'
+             + '<span class="nic"><span>' + it.i + '</span>' + badge + '</span>'
+             + '<span class="nil">' + esc(it.l) + '</span></a>';
+      });
+      html += '</div>';
+    });
+    document.getElementById('nav').innerHTML = html;
+  }
+
+  /* ── toggle sidebar ── */
+  window.cdvT = function () {
+    var col = document.documentElement.classList.toggle('col');
+    try { localStorage.setItem('cdv-sc', col ? '1' : '0'); } catch (_) {}
+  };
+
+  /* ── show/hide states ── */
+  function show(which) {
+    var ids = ['idx','pgf','ldg','err'];
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      el.style.display = 'none';
+    });
+    var el = document.getElementById(which);
+    if (which === 'ldg' || which === 'err') {
+      el.style.display = 'flex';
+    } else {
+      el.style.display = 'block';
+    }
+  }
+
+  /* ── topbar ── */
+  function setTopbar(p) {
+    var m = META[p] || { t: p, s: '' };
+    document.getElementById('tb-title').textContent = m.t;
+    document.getElementById('tb-sub').textContent   = m.s;
+    document.title = '📦 ' + m.t + ' — Transben';
+  }
+
+  /* ── load page ── */
+  function loadPage(p) {
+    setTopbar(p);
+    if (p === 'Index') {
+      show('idx');
+      loadHubData();
+      return;
+    }
+    show('ldg');
+    try {
+      google.script.run
+        .withSuccessHandler(function (resp) {
+          try {
+            var d = JSON.parse(resp);
+            if (d.erro) { showErr(d.erro); return; }
+            var frm = document.getElementById('pgf');
+            frm.srcdoc = d.html;
+            frm.onload = function () { show('pgf'); };
+            /* fallback: mostra após 4s mesmo sem onload */
+            setTimeout(function () {
+              if (document.getElementById('ldg').style.display !== 'none') show('pgf');
+            }, 4000);
+          } catch (e) { showErr('Erro ao processar resposta: ' + e.message); }
+        })
+        .withFailureHandler(function (e) { showErr(e.message); })
+        ._getPageContent(p);
+    } catch (e) { showErr('Sem conexão com o servidor: ' + e.message); }
+  }
+
+  function showErr(msg) {
+    document.getElementById('err-msg').textContent = msg || 'Tente recarregar.';
+    show('err');
+  }
+
+  /* ── hub data ── */
+  var BM = { 'Pendente': 'b-p', 'Em Transferência': 'b-t', 'Devolvido': 'b-d', 'Venda': 'b-v' };
+
+  function loadHubData() {
+    try {
+      google.script.run
+        .withSuccessHandler(function (resp) {
+          try {
+            var d = JSON.parse(resp);
+            if (d.erro) return;
+            renderKpis(d);
+            renderTable(d.recentes || []);
+            var al = d.atrasos30 || 0;
+            if (al > 0) {
+              document.getElementById('hub-al-ttl').textContent =
+                al + ' ite' + (al === 1 ? 'm' : 'ns') + ' com mais de 30 dias armazenados';
+              document.getElementById('hub-al-dsc').textContent =
+                'Há devoluções pendentes vencidas. Revise as pendências antes do fechamento.';
+              document.getElementById('hub-al').classList.add('show');
+            }
+          } catch (_) {}
+        })
+        .withFailureHandler(function () {})
+        .obterDadosDashboard();
+    } catch (_) {}
+  }
+
+  function renderKpis(d) {
+    var c = d.counts || {};
+    var defs = [
+      { l: 'Pendentes',         v: c.Pendente        || 0, ac: '#2563EB', s: 'aguardando resolução' },
+      { l: 'Em Transferência',  v: c.EmTransferencia || 0, ac: '#0891B2', s: 'em trânsito' },
+      { l: 'Devolvidos',        v: c.Devolvido       || 0, ac: '#059669', s: 'devoluções concluídas' },
+      { l: 'Baixa p/ Venda',   v: c.Venda           || 0, ac: '#D97706', s: 'enviados para venda' },
+      { l: 'Atrasos +30d',     v: d.atrasos30       || 0, ac: '#DC2626', s: 'pendentes há mais de 30 dias' },
+    ];
+    document.getElementById('hub-kpis').innerHTML = defs.map(function (k) {
+      return '<div class="kpi" style="--kac:' + k.ac + '">'
+           + '<div class="kpi-l">' + esc(k.l) + '</div>'
+           + '<div class="kpi-v">' + k.v + '</div>'
+           + '<div class="kpi-s">' + esc(k.s) + '</div></div>';
+    }).join('');
+  }
+
+  function renderTable(recentes) {
+    var fmt = function (v) {
+      return 'R$ ' + (parseFloat(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    var rows = recentes.slice(0, 8).map(function (n) {
+      var bc = BM[n.status] || 'b-p';
+      return '<tr>'
+        + '<td><span class="mono">' + esc(n.nfd || n.nf) + '</span></td>'
+        + '<td>' + esc(n.forn) + '</td>'
+        + '<td style="color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+        + esc(n.desc || '—') + '</td>'
+        + '<td style="text-align:right;color:var(--text-muted)">' + esc(String(n.qtd || '—')) + '</td>'
+        + '<td style="text-align:right" class="mono">' + fmt(n.vlTot) + '</td>'
+        + '<td><span class="bdg ' + bc + '">' + esc(n.status) + '</span></td>'
+        + '</tr>';
+    }).join('');
+    document.getElementById('hub-tbl').innerHTML =
+      rows || '<tr><td colspan="6" class="empty">Nenhum lançamento recente.</td></tr>';
+  }
+
+  /* ── quick actions ── */
+  window.cdvRunAction = function (id) {
+    var ico = document.getElementById('qa-ic-' + id);
+    var prev = ico ? ico.textContent : '';
+    if (ico) ico.textContent = '⏳';
+    try {
+      var fn = id === 'atraso' ? 'verificarAtrasosEEnviarAlerta' : 'arquivarItensConcluidos';
+      google.script.run
+        .withSuccessHandler(function () {
+          if (ico) { ico.textContent = '✅'; setTimeout(function () { if (ico) ico.textContent = prev; }, 3000); }
+        })
+        .withFailureHandler(function () { if (ico) ico.textContent = prev; })
+        [fn]();
+    } catch (_) { if (ico) ico.textContent = prev; }
+  };
+
+  /* ── init ── */
+  function init() {
+    /* restaura estado do sidebar */
+    try { if (localStorage.getItem('cdv-sc') === '1') document.documentElement.classList.add('col'); } catch (_) {}
+
+    _page = getPage();
+    buildNav(0, 0);
+    loadPage(_page);
+
+    /* pega exec URL e atualiza links */
+    try {
+      google.script.run
+        .withSuccessHandler(function (url) {
+          _url = url || '';
+          buildNav(0, 0);
+          document.getElementById('a-notas').href  = link('Notas');
+          document.getElementById('a-lancar').href = link('Lancamento');
+        })
+        .withFailureHandler(function () {})
+        ._getWebAppExecUrl();
+    } catch (_) {}
+
+    /* badge de transferências */
+    try {
+      google.script.run
+        .withSuccessHandler(function (resp) {
+          try {
+            var d = JSON.parse(resp);
+            buildNav(d.total || 0, d.vencidas || 0);
+          } catch (_) {}
+        })
+        .withFailureHandler(function () {})
+        .obterBadgeCount();
+    } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

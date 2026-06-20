@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --font:'Plus Jakarta Sans',system-ui,sans-serif;
+      --mono:'JetBrains Mono',monospace;
+      --navy:#25419A;--brand-red:#C62025;
+      --cyan:#0891B2;--cyan-bg:#CFFAFE;
+      --red:#C62025;--red-bg:#FEF2F2;
+      --green:#059669;--green-bg:#ECFDF5;
+      --amber:#D97706;--amber-bg:#FEF3C7;
+      --bg:#F4F6F9;--surface:#fff;
+      --border:#E5E7EB;--border-def:#D1D5DB;
+      --text:#111827;--text-body:#374151;--text-muted:#6B7280;--text-faint:#9CA3AF;
+      --text-sm:#6B7280;
+      --navy-50:#EEF2FF;--r:8px;--r-sm:6px;
+      --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+      --ease:cubic-bezier(.4,0,.2,1)
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);color:var(--text);
+         display:flex;flex-direction:column;height:100vh;overflow:hidden}
+    ::-webkit-scrollbar{width:9px;height:9px}
+    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:6px}
+    #cdv-nav-webapp{display:none}
+
+    .pghdr{background:var(--navy);color:#fff;padding:11px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .pghdr h1{font-size:14px;font-weight:700}
+    .pghdr .bc{background:rgba(255,255,255,.2);border-radius:10px;padding:2px 10px;font-size:11px;margin-left:auto}
+
+    .filts{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;
+           display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+    .filts select,.filts input[type=text]{
+      padding:5px 10px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+      font-size:12px;height:30px;font-family:var(--font)}
+    .filts select:focus,.filts input:focus{
+      outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.12)}
+    .bsm{padding:5px 12px;border:none;border-radius:var(--r-sm);font-size:12px;
+         font-weight:700;cursor:pointer;height:30px;font-family:var(--font);
+         transition:opacity .15s var(--ease)}
+    .bprim{background:var(--navy);color:#fff}.bprim:hover{opacity:.88}
+    .bgreen{background:var(--green);color:#fff}.bgreen:hover{opacity:.88}
+    .bred{background:var(--red);color:#fff}.bred:hover{opacity:.88}
+    .bcyan{background:var(--cyan);color:#fff}.bcyan:hover{opacity:.88}
+    .bgray{background:#E5E7EB;color:var(--text-body);transition:background .15s}.bgray:hover{background:var(--border-def)}
+    .bsm:disabled{opacity:.45;cursor:not-allowed}
+
+    .blkbar{background:#1D4ED8;color:#fff;padding:7px 16px;display:none;align-items:center;gap:8px;font-size:12px;flex-shrink:0}
+    .blkbar .cnt{font-weight:700}
+
+    .twrap{flex:1;overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead th{background:var(--navy);color:#fff;padding:7px 10px;text-align:left;
+             position:sticky;top:0;z-index:2;font-size:11px;white-space:nowrap;font-weight:700}
+    thead th:first-child{width:34px;text-align:center}
+    tbody tr:nth-child(even) td{background:#F9FAFB}
+    tbody tr:hover td{background:var(--navy-50)!important}
+    td{padding:6px 10px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+    td:first-child{text-align:center}
+    .trat td{background:#FFF1F2!important;border-left:3px solid #EF4444}
+    .trat:hover td{background:#FFE4E6!important}
+    .tprox td{background:#FFFBEB!important;border-left:3px solid var(--amber)}
+    .tconc td{opacity:.6}
+    .tcanc td{opacity:.5;text-decoration:line-through}
+
+    .bdg{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+    .btr{background:var(--cyan-bg);color:var(--cyan)}
+    .bconc{background:#DCFCE7;color:#15803D}
+    .bcanc{background:#F3F4F6;color:var(--text-muted)}
+    .dias-ok{background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700}
+    .dias-warn{background:var(--amber-bg);color:#92400E;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700}
+    .dias-late{background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700}
+
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+    .mb{background:var(--surface);border-radius:var(--r);padding:22px;width:440px;
+        max-width:95vw;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+    .mb h3{font-size:14px;color:var(--navy);margin-bottom:12px;font-weight:700}
+    .mb label{display:block;font-size:12px;font-weight:700;color:var(--text-body);
+              margin-bottom:4px;margin-top:10px}
+    .mb textarea,.mb input[type=text],.mb input[type=date]{
+      width:100%;padding:7px 10px;border:1px solid var(--border-def);
+      border-radius:var(--r-sm);font-size:12px;font-family:var(--font)}
+    .mb textarea:focus,.mb input:focus{
+      outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.12)}
+    .mb textarea{resize:vertical}
+    .mb input[type=file]{width:100%;padding:5px 0;font-size:12px}
+    .mf{margin-top:14px;display:flex;gap:8px;justify-content:flex-end}
+    .mmsg{margin-top:8px;font-size:11px;display:none}
+    .mmsg.err{display:block;color:var(--red)}
+    .mmsg.ok{display:block;color:var(--green)}
+
+    .empty{padding:36px;text-align:center;color:var(--text-faint);font-size:13px}
+    .spn{display:none;padding:12px;text-align:center;font-size:12px;color:var(--text-muted)}
+    .toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:var(--r-sm);
+           font-size:12px;z-index:200;display:none;max-width:380px;line-height:1.5;color:#fff}
+    .tst-ok{background:#065F46}.tst-err{background:#991B1B}
+    .acoes-td{display:flex;gap:4px;flex-wrap:nowrap}
+    .bact{padding:3px 8px;border:none;border-radius:var(--r-sm);font-size:11px;
+          font-weight:700;cursor:pointer;font-family:var(--font);transition:opacity .15s}
+    .bact:hover{opacity:.82}
+  </style>
+</head>
+<body>
+
+<div id="cdv-nav-webapp"></div>
+
+<div class="pghdr">
+  <span>&#8644;</span>
+  <h1>Transferências — Devoluções Programadas</h1>
+  <div class="bc" id="bcnt">…</div>
+</div>
+
+<div class="filts">
+  <select id="fst" onchange="filtrar()">
+    <option value="Em Transferência" selected>Em Transferência</option>
+    <option value="">Todos</option>
+    <option value="Concluída">Concluída</option>
+    <option value="Cancelada">Cancelada</option>
+  </select>
+  <input type="text" id="fbusca" placeholder="Buscar NF, fornecedor, transportadora..." oninput="filtrar()" style="min-width:200px">
+  <button class="bsm bprim" onclick="carregar()">&#8635; Atualizar</button>
+  <button class="bsm bgray" onclick="document.getElementById('fst').value='Em Transferência';document.getElementById('fbusca').value='';filtrar()">Limpar</button>
+  <span style="margin-left:auto;font-size:11px;color:#9CA3AF" id="uatt"></span>
+</div>
+
+<div class="blkbar" id="blkbar">
+  <span class="cnt" id="blkcnt">0 selecionada(s)</span>
+  <button class="bsm bred" onclick="abrirCancelarLote()">&#10006; Cancelar em Lote</button>
+  <button class="bsm bgray" onclick="limparSel()">&#10005; Limpar</button>
+</div>
+
+<div class="spn" id="spn">&#9203; Carregando...</div>
+
+<div class="twrap">
+  <table id="tbl" style="display:none">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="chkAll" onchange="toggleTodos(this.checked)"></th>
+        <th>NF / NFD</th>
+        <th>Fornecedor</th>
+        <th>Transportadora</th>
+        <th>Aba Origem</th>
+        <th>Frete</th>
+        <th>Agendamento</th>
+        <th>Dias Transf.</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">Nenhuma transferência encontrada para os filtros atuais.</div>
+</div>
+
+<!-- Modal Baixa -->
+<div class="ov" id="mBaixa" style="display:none" onclick="if(event.target===this)fecharModais()">
+  <div class="mb">
+    <h3 id="mBaixaTitulo">&#9989; Confirmar Baixa</h3>
+    <p style="font-size:11px;color:var(--text-sm);margin-bottom:4px" id="mBaixaDesc"></p>
+    <label>Observação (opcional)</label>
+    <textarea id="bObs" rows="2" placeholder="Ex: Transportadora retirou em..."></textarea>
+    <label style="margin-top:12px">Comprovante (CTe / Protocolo) — opcional</label>
+    <input type="file" id="bArq" accept=".pdf,.jpg,.jpeg,.png,.xml">
+    <div class="mf">
+      <button class="bsm bgray" onclick="fecharModais()">Cancelar</button>
+      <button class="bsm bgreen" id="btnConfBaixa" onclick="confirmarBaixa()">&#9989; Confirmar Baixa</button>
+    </div>
+    <div class="mmsg" id="mBaixaMsg"></div>
+  </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="ov" id="mCancel" style="display:none" onclick="if(event.target===this)fecharModais()">
+  <div class="mb">
+    <h3 id="mCancelTitulo" style="color:var(--red)">&#10006; Cancelar Transferência</h3>
+    <p style="font-size:11px;color:var(--text-sm);margin-bottom:4px" id="mCancelDesc"></p>
+    <label>Motivo do cancelamento <span style="color:var(--red)">*</span></label>
+    <textarea id="cObs" rows="3" placeholder="Informe o motivo obrigatório do cancelamento..."></textarea>
+    <p style="font-size:10px;color:var(--text-sm);margin-top:6px">O item voltará para a aba de origem como <strong>Pendente</strong>. O registro aqui fica como Cancelada para auditoria.</p>
+    <div class="mf">
+      <button class="bsm bgray" onclick="fecharModais()">Voltar</button>
+      <button class="bsm bred" id="btnConfCancel" onclick="confirmarCancelar()">&#10006; Confirmar Cancelamento</button>
+    </div>
+    <div class="mmsg" id="mCancelMsg"></div>
+  </div>
+</div>
+
+<!-- Modal Reagendar -->
+<div class="ov" id="mReag" style="display:none" onclick="if(event.target===this)fecharModais()">
+  <div class="mb">
+    <h3 style="color:var(--cyan)">&#128197; Reagendar Transferência</h3>
+    <p style="font-size:11px;color:var(--text-sm);margin-bottom:4px" id="mReagDesc"></p>
+    <label>Nova data de agendamento <span style="color:var(--red)">*</span></label>
+    <input type="date" id="rData">
+    <label>Observação (opcional)</label>
+    <input type="text" id="rObs" placeholder="Motivo do reagendamento">
+    <div class="mf">
+      <button class="bsm bgray" onclick="fecharModais()">Cancelar</button>
+      <button class="bsm bcyan" id="btnConfReag" onclick="confirmarReagendar()">&#128197; Confirmar</button>
+    </div>
+    <div class="mmsg" id="mReagMsg"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var _itens = [], _filt = [], _sel = [];
+var _idxAcao = -1, _linhaBaixa = 0, _linhaCancel = 0, _linhaReag = 0;
+
+function carregar() {
+  document.getElementById('spn').style.display = 'block';
+  document.getElementById('tbl').style.display = 'none';
+  document.getElementById('empty').style.display = 'none';
+  _itens = []; _filt = []; _sel = [];
+  atualizarBulk();
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('spn').style.display = 'none';
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { toast(r.erro, 'err'); return; }
+        _itens = r.itens || [];
+        document.getElementById('uatt').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+        filtrar();
+      } catch(e) { toast('Erro: ' + e.message, 'err'); }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('spn').style.display = 'none';
+      toast('Erro: ' + e.message, 'err');
+    })
+    .obterTransferencias({});
+}
+
+function filtrar() {
+  var fs = document.getElementById('fst').value;
+  var fb = (document.getElementById('fbusca').value || '').toLowerCase().trim();
+  _filt = _itens.filter(function(it) {
+    if (fs && it.stTransf !== fs) return false;
+    if (fb) {
+      var h = ((it.nf||'')+(it.nfd||'')+(it.forn||'')+(it.transportadora||'')+(it.abaOrigem||'')).toLowerCase();
+      if (h.indexOf(fb) === -1) return false;
+    }
+    return true;
+  });
+  _sel = new Array(_filt.length).fill(false);
+  renderTabela();
+  atualizarBulk();
+  var em = _itens.filter(function(it){ return it.stTransf === 'Em Transferência'; }).length;
+  var venc = _itens.filter(function(it){ return it.atrasado; }).length;
+  document.getElementById('bcnt').textContent =
+    em + ' em transf.' + (venc > 0 ? ' · ' + venc + ' vencida(s)' : '');
+}
+
+function renderTabela() {
+  var tb = document.getElementById('tbody');
+  if (!_filt.length) {
+    document.getElementById('tbl').style.display = 'none';
+    document.getElementById('empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('tbl').style.display = 'table';
+  document.getElementById('empty').style.display = 'none';
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  tb.innerHTML = _filt.map(function(it, i) {
+    var ativo = it.stTransf === 'Em Transferência';
+    var agendDt = it.dataAgend ? parseDtBR(it.dataAgend) : null;
+    var diasTag = '';
+    if (ativo && agendDt) {
+      var diff = Math.ceil((agendDt - hoje) / 864e5);
+      if (diff < 0)    diasTag = '<span class="dias-late">' + Math.abs(diff) + 'd atr.</span>';
+      else if (diff<=2) diasTag = '<span class="dias-warn">em ' + diff + 'd</span>';
+      else              diasTag = '<span class="dias-ok">em ' + diff + 'd</span>';
+    }
+    var cls = it.atrasado ? 'trat' : (it.stTransf==='Concluída' ? 'tconc' : it.stTransf==='Cancelada' ? 'tcanc' : '');
+    var badge = it.stTransf === 'Em Transferência'
+      ? '<span class="bdg btr">Em Transferência</span>'
+      : it.stTransf === 'Concluída'
+      ? '<span class="bdg bconc">Concluída</span>'
+      : '<span class="bdg bcanc">Cancelada</span>';
+    var fvStr = it.freteValor > 0 ? 'R$ ' + it.freteValor.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—';
+    var acoes = ativo
+      ? '<div class="acoes-td">'
+        + '<button class="bact bgreen" onclick="abrirBaixa(' + i + ')">&#9989; Baixa</button>'
+        + '<button class="bact bcyan" style="background:var(--cyan-bg);color:var(--cyan)" onclick="abrirReagendar(' + i + ')">&#128197;</button>'
+        + '<button class="bact bred" style="background:var(--red-bg);color:var(--red)" onclick="abrirCancelar(' + i + ')">&#10006;</button>'
+        + '</div>'
+      : '<span style="font-size:10px;color:var(--text-sm)">' + esc(it.dataBaixa||it.obsCancel||'') + '</span>';
+
+    return '<tr class="' + cls + '">'
+      + '<td><input type="checkbox"' + (!ativo ? ' disabled' : '') + (ativo ? ' onchange="toggleItem(' + i + ',this)"' : '') + '></td>'
+      + '<td><b style="color:var(--navy);font-size:11px">' + esc(it.nf) + '</b><div style="font-size:10px;color:var(--text-sm)">' + esc(it.nfd) + '</div></td>'
+      + '<td>' + esc(it.forn) + '</td>'
+      + '<td style="color:var(--cyan);font-weight:600">' + esc(it.transportadora || '—') + '</td>'
+      + '<td style="font-size:11px;color:var(--text-sm)">' + esc(it.abaOrigem) + '</td>'
+      + '<td style="font-size:11px">' + esc(it.freteTipo) + '<br><span style="color:var(--text-sm)">' + fvStr + '</span></td>'
+      + '<td>' + esc(it.dataAgend||'—') + ' ' + diasTag + '</td>'
+      + '<td style="text-align:center"><span style="font-size:10px;color:var(--text-sm)">' + (it.diasEmTransf || 0) + 'd</span></td>'
+      + '<td>' + badge + '</td>'
+      + '<td>' + acoes + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function toggleItem(i, chk) { _sel[i] = chk.checked; atualizarBulk(); }
+function toggleTodos(s) {
+  _sel = _filt.map(function(it){ return s && it.stTransf === 'Em Transferência'; });
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c,i){ if (!c.disabled) c.checked = _sel[i]; });
+  atualizarBulk();
+}
+function limparSel() {
+  _sel = new Array(_filt.length).fill(false);
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c){ c.checked = false; });
+  document.getElementById('chkAll').checked = false;
+  atualizarBulk();
+}
+function atualizarBulk() {
+  var cnt = _sel.filter(Boolean).length;
+  document.getElementById('blkbar').style.display = cnt > 0 ? 'flex' : 'none';
+  document.getElementById('blkcnt').textContent = cnt + ' selecionada(s)';
+}
+
+// ── Baixa ─────────────────────────────────────────────────────
+function abrirBaixa(i) {
+  _idxAcao = i;
+  _linhaBaixa = _filt[i].linha;
+  document.getElementById('mBaixaTitulo').textContent = '✅ Confirmar Baixa — NF ' + _filt[i].nf;
+  document.getElementById('mBaixaDesc').textContent = 'Fornecedor: ' + _filt[i].forn
+    + ((_filt[i].transportadora) ? ' · Transp.: ' + _filt[i].transportadora : '');
+  document.getElementById('bObs').value = '';
+  document.getElementById('bArq').value = '';
+  document.getElementById('mBaixaMsg').className = 'mmsg';
+  document.getElementById('mBaixa').style.display = 'flex';
+}
+
+function confirmarBaixa() {
+  var btn = document.getElementById('btnConfBaixa');
+  btn.disabled = true; btn.textContent = '⏳';
+  var obs   = document.getElementById('bObs').value.trim();
+  var arqEl = document.getElementById('bArq');
+  var arq   = arqEl.files && arqEl.files[0];
+  var params = { linha: _linhaBaixa, obs: obs };
+
+  function enviar() {
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        btn.disabled = false; btn.textContent = '✅ Confirmar Baixa';
+        try {
+          var r = JSON.parse(resp);
+          if (r.ok) { fecharModais(); toast(r.ok, 'ok'); setTimeout(carregar, 800); }
+          else { showMsg('mBaixaMsg', r.erro || 'Erro.', 'err'); }
+        } catch(e) { showMsg('mBaixaMsg', e.message, 'err'); }
+      })
+      .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = '✅ Confirmar Baixa'; showMsg('mBaixaMsg', e.message, 'err'); })
+      .darBaixaTransferencia(params);
+  }
+
+  if (arq) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var b64 = ev.target.result.split(',')[1];
+      params.base64      = b64;
+      params.mimeType    = arq.type || 'application/octet-stream';
+      params.nomeArquivo = arq.name;
+      enviar();
+    };
+    reader.onerror = function(){ showMsg('mBaixaMsg', 'Erro ao ler arquivo.', 'err'); btn.disabled = false; btn.textContent = '✅ Confirmar Baixa'; };
+    reader.readAsDataURL(arq);
+  } else {
+    enviar();
+  }
+}
+
+// ── Cancelar ──────────────────────────────────────────────────
+function abrirCancelar(i) {
+  _idxAcao = i;
+  _linhaCancel = _filt[i].linha;
+  document.getElementById('mCancelTitulo').textContent = '❌ Cancelar — NF ' + _filt[i].nf;
+  document.getElementById('mCancelDesc').textContent = 'Fornecedor: ' + _filt[i].forn;
+  document.getElementById('cObs').value = '';
+  document.getElementById('mCancelMsg').className = 'mmsg';
+  document.getElementById('mCancel').style.display = 'flex';
+}
+
+function abrirCancelarLote() {
+  _linhaCancel = null; // sinaliza lote
+  var sel = _filt.filter(function(_,i){ return _sel[i]; });
+  document.getElementById('mCancelTitulo').textContent = '❌ Cancelar ' + sel.length + ' Transferência(s)';
+  document.getElementById('mCancelDesc').textContent = sel.map(function(it){ return 'NF ' + it.nf; }).join(', ');
+  document.getElementById('cObs').value = '';
+  document.getElementById('mCancelMsg').className = 'mmsg';
+  document.getElementById('mCancel').style.display = 'flex';
+}
+
+function confirmarCancelar() {
+  var obs = document.getElementById('cObs').value.trim();
+  if (!obs) { showMsg('mCancelMsg', 'O motivo do cancelamento é obrigatório.', 'err'); return; }
+  var btn = document.getElementById('btnConfCancel');
+  btn.disabled = true; btn.textContent = '⏳';
+
+  if (_linhaCancel) {
+    // Cancelamento único
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        btn.disabled = false; btn.textContent = '❌ Confirmar Cancelamento';
+        try {
+          var r = JSON.parse(resp);
+          if (r.ok) { fecharModais(); toast(r.ok, 'ok'); setTimeout(carregar, 800); }
+          else { showMsg('mCancelMsg', r.erro || 'Erro.', 'err'); }
+        } catch(e) { showMsg('mCancelMsg', e.message, 'err'); }
+      })
+      .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = '❌ Confirmar Cancelamento'; showMsg('mCancelMsg', e.message, 'err'); })
+      .cancelarTransferencia({ linha: _linhaCancel, obs: obs });
+  } else {
+    // Cancelamento em lote (chama uma a uma em sequência)
+    var linhas = _filt.filter(function(_,i){ return _sel[i]; }).map(function(it){ return it.linha; });
+    var ok = 0, errs = [];
+    var idx = 0;
+    function next() {
+      if (idx >= linhas.length) {
+        btn.disabled = false; btn.textContent = '❌ Confirmar Cancelamento';
+        fecharModais(); limparSel();
+        toast('✅ ' + ok + ' cancelada(s)' + (errs.length ? ' · ' + errs.length + ' erro(s)' : ''), ok > 0 ? 'ok' : 'err');
+        setTimeout(carregar, 800);
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(resp) {
+          try { var r = JSON.parse(resp); if (r.ok) ok++; else errs.push(r.erro); } catch(e) { errs.push(e.message); }
+          idx++; next();
+        })
+        .withFailureHandler(function(e) { errs.push(e.message); idx++; next(); })
+        .cancelarTransferencia({ linha: linhas[idx], obs: obs });
+    }
+    next();
+  }
+}
+
+// ── Reagendar ─────────────────────────────────────────────────
+function abrirReagendar(i) {
+  _idxAcao = i;
+  _linhaReag = _filt[i].linha;
+  document.getElementById('mReagDesc').textContent = 'NF ' + _filt[i].nf + ' · ' + _filt[i].forn;
+  var dAtual = _filt[i].dataAgend ? parseDtBR(_filt[i].dataAgend) : null;
+  document.getElementById('rData').value = dAtual ? dAtual.toISOString().split('T')[0] : '';
+  document.getElementById('rObs').value = '';
+  document.getElementById('mReagMsg').className = 'mmsg';
+  document.getElementById('mReag').style.display = 'flex';
+}
+
+function confirmarReagendar() {
+  var nova = document.getElementById('rData').value;
+  if (!nova) { showMsg('mReagMsg', 'Selecione a nova data.', 'err'); return; }
+  var btn = document.getElementById('btnConfReag');
+  btn.disabled = true; btn.textContent = '⏳';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      btn.disabled = false; btn.textContent = '📅 Confirmar';
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) { fecharModais(); toast(r.ok, 'ok'); setTimeout(carregar, 800); }
+        else { showMsg('mReagMsg', r.erro || 'Erro.', 'err'); }
+      } catch(e) { showMsg('mReagMsg', e.message, 'err'); }
+    })
+    .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = '📅 Confirmar'; showMsg('mReagMsg', e.message, 'err'); })
+    .reagendarTransferencia({ linha: _linhaReag, dataAgendamento: nova, obs: document.getElementById('rObs').value.trim() });
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function fecharModais() {
+  ['mBaixa','mCancel','mReag'].forEach(function(id){ document.getElementById(id).style.display='none'; });
+  _linhaCancel = 0; _linhaBaixa = 0; _linhaReag = 0;
+}
+function showMsg(id, txt, tipo) {
+  var el = document.getElementById(id);
+  el.textContent = txt; el.className = 'mmsg ' + tipo;
+}
+function parseDtBR(s) {
+  if (!s) return null;
+  var p = s.split('/'); if (p.length !== 3) return null;
+  return new Date(+p[2], +p[1]-1, +p[0]);
+}
+function esc(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function toast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.className = 'toast tst-' + (tipo||'ok');
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.style.display = 'none'; }, 4500);
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') fecharModais();
+});
+
+carregar();
+</script>
+</body>
+</html>

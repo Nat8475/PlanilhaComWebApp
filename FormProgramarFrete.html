@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --font:'Plus Jakarta Sans',system-ui,sans-serif;
+      --navy:#25419A;--brand-red:#C62025;
+      --amber:#D97706;--amber-bg:#FEF3C7;
+      --green:#059669;--green-bg:#ECFDF5;
+      --red:#DC2626;--red-bg:#FEF2F2;
+      --bg:#F4F6F9;--surface:#fff;
+      --border:#E5E7EB;--border-def:#D1D5DB;
+      --text:#111827;--text-body:#374151;--text-muted:#6B7280;
+      --navy-50:#EEF2FF;--r:8px;--r-sm:6px;
+      --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+      --ease:cubic-bezier(.4,0,.2,1)
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
+    ::-webkit-scrollbar{width:9px;height:9px}
+    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:6px}
+
+    .titulo{background:var(--navy);color:#fff;padding:12px 16px;border-radius:var(--r-sm);
+            font-size:14px;font-weight:700;margin-bottom:14px}
+
+    .campo{margin-bottom:10px}
+    label{display:block;font-weight:700;color:#333;margin-bottom:3px;font-size:12px}
+    .obrig{color:var(--brand-red)}
+    input[type=text],select{
+      width:100%;padding:8px 10px;border:1px solid var(--border-def);
+      border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface)}
+    input:focus,select:focus{
+      outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.12)}
+
+    .barra{display:flex;gap:8px;margin-bottom:6px}
+    .barra input{flex:1}
+
+    .info{background:var(--navy-50);border-left:4px solid var(--navy);padding:9px 12px;
+          border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:11px;color:var(--text-body);
+          margin-bottom:12px;line-height:1.6}
+
+    .card-item{background:var(--surface);border:1px solid var(--border-def);
+               border-radius:var(--r);padding:12px 14px;margin-bottom:10px;
+               display:none;box-shadow:var(--sh)}
+    .card-item.ativo{display:block}
+    .ci-linha{display:flex;justify-content:space-between;font-size:12px;
+              padding:3px 0;color:var(--text-body);border-bottom:1px solid var(--border)}
+    .ci-linha:last-of-type{border-bottom:none}
+    .ci-linha b{color:var(--text)}
+    .ci-status-ja{background:var(--amber-bg);color:#92400E;border-radius:var(--r-sm);
+                  padding:6px 10px;font-size:11px;margin-top:8px;border:1px solid #FCD34D}
+
+    .secao{background:var(--navy-50);border-left:3px solid var(--navy);padding:8px 10px;
+           border-radius:0 var(--r-sm) var(--r-sm) 0;margin:12px 0 9px;font-size:11px;
+           font-weight:700;color:var(--navy);letter-spacing:.3px}
+
+    .frete-opcoes{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .frete-radio{display:flex;align-items:flex-start;gap:8px;background:var(--surface);
+                 border:1.5px solid var(--border-def);border-radius:var(--r-sm);
+                 padding:9px 12px;cursor:pointer;
+                 transition:border-color .15s var(--ease),background .15s var(--ease)}
+    .frete-radio:hover{border-color:var(--navy);background:var(--navy-50)}
+    .frete-radio.sel{border-color:var(--navy);background:var(--navy-50);
+                     box-shadow:0 0 0 2px rgba(37,65,154,.1)}
+    .frete-radio input[type=radio]{margin-top:2px;accent-color:var(--navy);cursor:pointer}
+    .frete-radio .txt strong{display:block;font-size:12px;color:var(--navy)}
+    .frete-radio .txt span{font-size:11px;color:var(--text-muted)}
+
+    #campo-valor{display:none}
+
+    .botoes{display:flex;gap:8px;margin-top:14px}
+    button.btn-principal{flex:1;padding:9px;border:none;border-radius:var(--r-sm);
+                         font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);
+                         background:var(--navy);color:#fff;transition:opacity .15s var(--ease)}
+    button.btn-principal:hover{opacity:.88}
+    button.btn-principal:disabled{opacity:.45;cursor:not-allowed}
+    button.btn-cancel{flex:1;padding:9px;border:none;border-radius:var(--r-sm);
+                      font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);
+                      background:#E5E7EB;color:var(--text-body);transition:background .15s}
+    button.btn-cancel:hover{background:var(--border-def)}
+    #btnBuscar{padding:9px 14px;border:none;border-radius:var(--r-sm);font-size:12px;
+               font-weight:700;cursor:pointer;font-family:var(--font);
+               background:var(--navy);color:#fff;white-space:nowrap;transition:opacity .15s}
+    #btnBuscar:hover{opacity:.88}
+
+    .msg{margin-top:9px;padding:8px 10px;border-radius:var(--r-sm);font-size:12px;
+         display:none;white-space:pre-wrap;line-height:1.5}
+    .msg-ok   {background:var(--green-bg);color:#2e7d32;border:1px solid #a5d6a7}
+    .msg-erro {background:var(--red-bg);color:#c62828;border:1px solid #ef9a9a}
+    .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
+    .spinner  {display:none;text-align:center;color:var(--text-muted);margin-top:8px;font-size:12px}
+  </style>
+</head>
+<body>
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
+  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
+  // o diálogo idêntico ao original.
+  try {
+    google.script.run
+      .withSuccessHandler(function(_execUrl) {
+        if (!_execUrl) return;
+        var _nav = document.getElementById('cdv-nav-webapp');
+        if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
+        try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+      })
+      ._getWebAppExecUrl();
+  } catch (_e) {}
+</script>
+
+
+<div class="titulo">🚚 Programar Devolução</div>
+
+<div class="info">
+  Busque a NF ou NFD <strong>Pendente</strong> e defina o frete antes da baixa final.
+  Tipo <strong>Tabela</strong> é calculado pelo TMS/CTe — não informe valor manual aqui.
+</div>
+
+<div class="barra">
+  <input type="text" id="termo" placeholder="Nº NF ou NFD" onkeydown="if(event.key==='Enter')buscar()">
+  <button id="btnBuscar" onclick="buscar()">🔍 Buscar</button>
+</div>
+
+<div class="spinner" id="spin-busca">⏳ Buscando...</div>
+<div id="msg-busca" class="msg"></div>
+
+<div id="card-item" class="card-item">
+  <div class="ci-linha"><span>NF / NFD</span><b id="ci-nf"></b></div>
+  <div class="ci-linha"><span>Fornecedor</span><b id="ci-forn"></b></div>
+  <div class="ci-linha"><span>Descrição</span><b id="ci-desc"></b></div>
+  <div class="ci-linha"><span>Data de entrada</span><b id="ci-data"></b></div>
+  <div class="ci-linha"><span>Peso</span><b id="ci-peso"></b></div>
+  <div id="ci-ja-programado" class="ci-status-ja" style="display:none"></div>
+
+  <div class="secao">🚚 TIPO DE FRETE</div>
+  <div class="frete-opcoes" id="frete-opcoes">
+    <label class="frete-radio" data-tipo="Tabela">
+      <input type="radio" name="frete" value="Tabela" onchange="onFreteChange()">
+      <span class="txt"><strong>Tabela</strong><span>Calculado pelo sistema de emissão de CTe / TMS — sem valor manual</span></span>
+    </label>
+    <label class="frete-radio" data-tipo="Valor + ICMS">
+      <input type="radio" name="frete" value="Valor + ICMS" onchange="onFreteChange()">
+      <span class="txt"><strong>Valor + ICMS</strong><span>Informe o valor do frete já com ICMS incluso</span></span>
+    </label>
+    <label class="frete-radio" data-tipo="Valor">
+      <input type="radio" name="frete" value="Valor" onchange="onFreteChange()">
+      <span class="txt"><strong>Valor</strong><span>Informe o valor do frete (sem ICMS)</span></span>
+    </label>
+    <label class="frete-radio" data-tipo="Cortesia">
+      <input type="radio" name="frete" value="Cortesia" onchange="onFreteChange()">
+      <span class="txt"><strong>Cortesia</strong><span>Sem custo de frete (R$ 0,00)</span></span>
+    </label>
+  </div>
+
+  <div class="campo" id="campo-valor">
+    <label>Valor do Frete (R$) <span class="obrig">*</span></label>
+    <input type="text" id="frete-valor" placeholder="0,00">
+  </div>
+
+  <div class="campo" id="campo-agendamento">
+    <label>📅 Data de Agendamento <span style="color:#6B7280;font-weight:normal;font-size:11px">(opcional)</span></label>
+    <input type="date" id="data-agendamento" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+    <small style="color:#6B7280;font-size:11px;margin-top:3px;display:block">Data prevista para a transportadora retirar a mercadoria</small>
+  </div>
+
+  <div class="campo">
+    <label>🚛 Transportadora <span style="color:#6B7280;font-weight:normal;font-size:11px">(opcional)</span></label>
+    <input type="text" id="transportadora" placeholder="Ex: Jadlog, Correios, Mercúrio...">
+  </div>
+
+  <div class="campo">
+    <label>Observações <span style="color:#6B7280;font-weight:normal;font-size:11px">(opcional)</span></label>
+    <input type="text" id="obs-prog" placeholder="Instruções ou observações para a transferência">
+  </div>
+
+  <div class="botoes">
+    <button class="btn-principal" id="btn-salvar" onclick="salvar()">💾 Salvar Programação</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <div class="spinner" id="spin-salvar">⏳ Salvando...</div>
+  <div id="msg-salvar" class="msg"></div>
+</div>
+
+<div class="botoes" id="botoes-fechar">
+  <button class="btn-cancel" onclick="google.script.host.close()" style="flex:1">✖ Fechar</button>
+</div>
+
+<script>
+var _itemAtual = null;
+
+function buscar() {
+  var termo = document.getElementById('termo').value.trim();
+  if (!termo) { mostrar('busca','erro','❌ Informe a NF ou NFD.'); return; }
+
+  document.getElementById('card-item').classList.remove('ativo');
+  document.getElementById('msg-busca').style.display = 'none';
+  document.getElementById('spin-busca').style.display = 'block';
+  document.getElementById('btnBuscar').disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('spin-busca').style.display = 'none';
+      document.getElementById('btnBuscar').disabled = false;
+      var r = JSON.parse(resp);
+      if (r.erro) { mostrar('busca','erro','❌ ' + r.erro); return; }
+      if (r.itens.length > 1) {
+        mostrar('busca','aviso','⚠️ ' + r.itens.length + ' itens encontrados. Usando o primeiro: NF ' + r.itens[0].nf);
+      }
+      preencherCard(r.itens[0]);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('spin-busca').style.display = 'none';
+      document.getElementById('btnBuscar').disabled = false;
+      mostrar('busca','erro','❌ ' + e.message);
+    })
+    .buscarNFParaProgramar(termo);
+}
+
+function preencherCard(it) {
+  _itemAtual = it;
+  document.getElementById('ci-nf').textContent   = (it.nfd ? it.nfd + ' / ' : '') + it.nf;
+  document.getElementById('ci-forn').textContent  = it.forn;
+  document.getElementById('ci-desc').textContent  = it.desc;
+  document.getElementById('ci-data').textContent  = it.data;
+  document.getElementById('ci-peso').textContent  = it.peso ? (String(it.peso).replace('.',',') + ' kg') : 'Não informado';
+
+  var jaProg = document.getElementById('ci-ja-programado');
+  if (it.freteTipo) {
+    jaProg.style.display = 'block';
+    jaProg.textContent = '⚠️ Já programado anteriormente como "' + it.freteTipo + '"' +
+      (it.freteValor ? ' — R$ ' + it.freteValor.toFixed(2).replace('.',',') : '') +
+      '. Salvar novamente irá substituir.';
+  } else {
+    jaProg.style.display = 'none';
+  }
+
+  document.querySelectorAll('input[name=frete]').forEach(function(r){ r.checked = false; });
+  document.querySelectorAll('.frete-radio').forEach(function(l){ l.classList.remove('sel'); });
+  document.getElementById('campo-valor').style.display = 'none';
+  document.getElementById('frete-valor').value = '';
+  document.getElementById('msg-salvar').style.display = 'none';
+
+  document.getElementById('card-item').classList.add('ativo');
+}
+
+function onFreteChange() {
+  var tipo = document.querySelector('input[name=frete]:checked');
+  document.querySelectorAll('.frete-radio').forEach(function(l){ l.classList.remove('sel'); });
+  if (!tipo) return;
+  document.querySelector('.frete-radio[data-tipo="' + tipo.value + '"]').classList.add('sel');
+  var precisaValor = (tipo.value === 'Valor + ICMS' || tipo.value === 'Valor');
+  document.getElementById('campo-valor').style.display = precisaValor ? 'block' : 'none';
+}
+
+function salvar() {
+  if (!_itemAtual) return;
+  var tipoEl = document.querySelector('input[name=frete]:checked');
+  if (!tipoEl) { mostrar('salvar','erro','❌ Selecione o tipo de frete.'); return; }
+  var tipo = tipoEl.value;
+  var valor = document.getElementById('frete-valor').value.trim().replace(',','.');
+
+  if ((tipo === 'Valor + ICMS' || tipo === 'Valor')) {
+    if (!valor || isNaN(+valor) || +valor < 0) {
+      mostrar('salvar','erro','❌ Informe um valor de frete válido.'); return;
+    }
+  }
+
+  var dataAgend = document.getElementById('data-agendamento').value;
+  setLoadingSalvar(true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoadingSalvar(false);
+      var r = JSON.parse(resp);
+      if (r.ok) {
+        mostrar('salvar','ok', r.ok);
+        setTimeout(function() {
+          document.getElementById('termo').value = '';
+          document.getElementById('card-item').classList.remove('ativo');
+          document.getElementById('msg-salvar').style.display = 'none';
+          document.getElementById('data-agendamento').value = '';
+          document.getElementById('transportadora').value = '';
+          document.getElementById('obs-prog').value = '';
+          _itemAtual = null;
+        }, 2800);
+      } else {
+        mostrar('salvar','erro','❌ ' + (r.erro || 'Erro.'));
+      }
+    })
+    .withFailureHandler(function(e) { setLoadingSalvar(false); mostrar('salvar','erro','❌ ' + e.message); })
+    .salvarProgramacaoDevolucao({
+      aba:             _itemAtual.aba,
+      linha:           _itemAtual.linha,
+      freteTipo:       tipo,
+      freteValor:      valor,
+      dataAgendamento: dataAgend,
+      transportadora:  document.getElementById('transportadora').value.trim(),
+      obs:             document.getElementById('obs-prog').value.trim(),
+      forn:            _itemAtual.forn,
+      dataNF:          _itemAtual.data
+    });
+}
+
+function setLoadingSalvar(sim) {
+  document.getElementById('spin-salvar').style.display = sim ? 'block' : 'none';
+  document.getElementById('btn-salvar').disabled = sim;
+}
+
+function mostrar(prefixo, tipo, txt) {
+  var el = document.getElementById('msg-' + prefixo);
+  el.className = 'msg msg-' + tipo;
+  el.textContent = txt;
+  el.style.display = 'block';
+}
+
+document.getElementById('termo').focus();
+</script>
+</body>
+</html>
