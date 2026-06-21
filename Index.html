@@ -34,6 +34,16 @@
   --ease-out   : cubic-bezier(.4,0,.2,1);
 }
 
+body.dark {
+  --bg-app:#0F172A; --white:#1E293B;
+  --border-sub:#334155; --border-def:#475569;
+  --text-str:#F1F5F9; --text-body:#CBD5E1; --text-muted:#94A3B8; --text-faint:#64748B;
+  --slate-50:#1E293B; --slate-100:#1E293B; --navy-50:#1E3A5F;
+}
+body.dark .sidebar { background: #152040; }
+body.dark .card, body.dark .widget-card { background: #1E293B; border-color: #334155; }
+body.dark input, body.dark select { background: #0F172A; color: #F1F5F9; border-color: #475569; }
+
 /* ── reset ── */
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
@@ -305,6 +315,26 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
 .sk { background: linear-gradient(90deg,#F3F4F6 25%,#E9EBEE 50%,#F3F4F6 75%); background-size:200px 100%; animation:sk .9s infinite; border-radius:4px; }
 @keyframes sk{0%{background-position:-200px 0}100%{background-position:200px 0}}
 .empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+/* health bar */
+.health-bar { display:flex; align-items:center; gap:10px; padding:7px 14px;
+              background:var(--white); border:1px solid var(--border-sub);
+              border-radius:var(--r-sm); margin-bottom:18px;
+              font:400 11px/1.4 var(--font); color:var(--text-muted);
+              flex-wrap:wrap; }
+.hlt-dot { width:8px; height:8px; border-radius:50%; background:#D1D5DB;
+           flex-shrink:0; transition:background .2s; }
+.hlt-dot.ok   { background:#10B981; }
+.hlt-dot.warn { background:#F59E0B; }
+.hlt-dot.err  { background:#EF4444; }
+.hlt-checks { display:flex; gap:12px; flex-wrap:wrap; flex:1; }
+.hlt-chk { display:flex; align-items:center; gap:4px; }
+.hlt-chk .ok   { color:#10B981; }
+.hlt-chk .warn { color:#F59E0B; }
+.hlt-ts { margin-left:auto; font-size:10px; white-space:nowrap; }
+.hlt-btn { background:none; border:none; cursor:pointer; color:var(--text-muted);
+           font-size:13px; padding:0 3px; transition:color .12s; flex-shrink:0; }
+.hlt-btn:hover { color:var(--navy); }
 </style>
 </head>
 <body>
@@ -333,6 +363,9 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
       <div id="tb-sub">Acesso direto · Transben · Controle de devoluções de fornecedores</div>
     </div>
     <div class="tb-brand">📦 Transben</div>
+    <button id="btn-dark-idx" onclick="window._toggleDarkIdx()" title="Modo escuro"
+      style="background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;
+             padding:3px 8px;cursor:pointer;font-size:14px;margin-left:8px">🌙</button>
   </header>
 
   <!-- content -->
@@ -358,6 +391,28 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
           </div>
         </div>
 
+        <!-- health bar -->
+        <div class="health-bar" id="hub-health">
+          <span class="hlt-dot" id="hlt-dot"></span>
+          <div class="hlt-checks" id="hlt-checks">Verificando saúde do sistema...</div>
+          <span class="hlt-ts" id="hlt-ts"></span>
+          <button class="hlt-btn" onclick="verificarSaude()" title="Atualizar">↺</button>
+          <button class="hlt-btn" onclick="toggleFeedback()" title="Enviar feedback" style="margin-left:4px;background:#6B7280">💬</button>
+        </div>
+
+        <!-- Feedback inline -->
+        <div id="feedback-box" style="display:none;background:#1E293B;color:#F1F5F9;padding:10px 14px;border-radius:6px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:6px">💬 Seu feedback</div>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <button onclick="enviarFeedback('positivo')" style="flex:1;padding:5px;border:none;border-radius:4px;background:#059669;color:#fff;cursor:pointer;font-size:12px">😊 Positivo</button>
+            <button onclick="enviarFeedback('negativo')" style="flex:1;padding:5px;border:none;border-radius:4px;background:#DC2626;color:#fff;cursor:pointer;font-size:12px">😟 Negativo</button>
+            <button onclick="enviarFeedback('sugestao')" style="flex:1;padding:5px;border:none;border-radius:4px;background:#D97706;color:#fff;cursor:pointer;font-size:12px">💡 Sugestão</button>
+          </div>
+          <textarea id="feedback-msg" rows="2" placeholder="Descreva seu feedback..." style="width:100%;padding:5px 7px;border:1px solid #475569;border-radius:4px;background:#0F172A;color:#F1F5F9;font-size:11px;resize:none;box-sizing:border-box"></textarea>
+          <button onclick="confirmarFeedback()" style="margin-top:5px;width:100%;padding:5px;border:none;border-radius:4px;background:#4F9CF9;color:#fff;cursor:pointer;font-size:12px">Enviar</button>
+          <div id="feedback-ok" style="font-size:11px;color:#86EFAC;margin-top:4px"></div>
+        </div>
+
         <!-- KPIs -->
         <div class="kpis" id="hub-kpis">
           <div class="kpi"><div class="sk" style="width:65%;height:9px;margin-bottom:10px"></div><div class="sk" style="width:45%;height:24px;margin-bottom:5px"></div><div class="sk" style="width:70%;height:9px"></div></div>
@@ -374,7 +429,7 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
           <div class="card">
             <div class="card-h">
               <span class="card-ht">Devoluções recentes</span>
-              <a id="a-notas" href="?page=Notas" class="btn btn-gho btn-sm">Ver todas →</a>
+              <a id="a-notas" href="#" onclick="cdvNav('Notas');return false" class="btn btn-gho btn-sm">Ver todas →</a>
             </div>
             <div style="overflow-x:auto">
               <table class="rt">
@@ -420,12 +475,42 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
                 </p>
               </div>
               <div class="card-f">
-                <a id="a-lancar" href="?page=Lancamento" class="btn btn-pri btn-blk">+ Lançar devolução</a>
+                <a id="a-lancar" href="#" onclick="cdvNav('Lancamento');return false" class="btn btn-pri btn-blk">+ Lançar devolução</a>
               </div>
             </div>
           </div>
 
         </div><!-- /.g2 -->
+
+        <!-- Conquistas do mês -->
+        <div class="card" style="margin-top:12px">
+          <div class="card-h">
+            <span class="card-ht">🏅 Conquistas do Mês</span>
+            <button onclick="carregarConquistas()" class="hlt-btn" style="font-size:10px;padding:2px 7px">↺</button>
+          </div>
+          <div class="card-b"><div id="hub-conquistas">
+            <div style="font-size:11px;color:#9CA3AF">Carregando...</div>
+          </div></div>
+        </div>
+
+        <!-- Widget Notas Rápidas -->
+        <div class="card" id="notas-rapidas-card" style="margin-top:12px">
+          <div class="card-h" style="cursor:pointer" onclick="toggleNotasRapidas()">
+            <span class="card-ht">📝 Notas Rápidas</span>
+            <span id="notas-toggle-icon" style="font-size:12px;color:#9CA3AF">▼</span>
+          </div>
+          <div id="notas-rapidas-body" class="card-b">
+            <textarea id="notas-rapidas-txt"
+              style="width:100%;min-height:80px;padding:8px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:12px;resize:vertical;background:var(--surface);color:var(--text)"
+              placeholder="Anotações, lembretes, pendências..."></textarea>
+            <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:4px">
+              <span id="notas-saved-ind" style="font-size:10px;color:#9CA3AF;align-self:center"></span>
+              <button onclick="limparNotasRapidas()"
+                style="background:none;border:1px solid #D1D5DB;border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer;color:#6B7280">✕ Limpar</button>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /.hub -->
     </div><!-- /#idx -->
 
@@ -439,8 +524,10 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
 <script>
 (function () {
   /* ── state ── */
-  var _url  = '';   /* web app exec URL */
-  var _page = '';
+  var _url        = '';
+  var _page       = '';
+  var _badgeCount = 0;
+  var _vencidas   = 0;
 
   /* ── page meta ── */
   var META = {
@@ -464,6 +551,7 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
   /* ── nav structure (espelha _cdvGetSidebarHtml_) ── */
   var NAV = [
     { s: 'Menu', items: [
+      { p: 'Index',       i: '⌂', l: 'Menu Principal' },
       { p: 'Dashboard',   i: '⊞', l: 'Dashboard' }
     ]},
     { s: 'Lançamentos', items: [
@@ -503,6 +591,45 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
     return m ? decodeURIComponent(m[1]) : 'Index';
   }
 
+  /* ── polyfill google.script.run para iframes srcdoc ── */
+  var _POLYFILL = '(function(){'
+    + 'if(typeof google!=="undefined"&&google.script)return;'
+    + 'var _b={},_i=0;'
+    + 'window.addEventListener("message",function(e){'
+    +   'var r=e.data&&e.data.cdvRpcResult;if(!r)return;'
+    +   'var c=_b[r.id];if(!c)return;delete _b[r.id];'
+    +   'r.ok?c.ok&&c.ok(r.data):c.er&&c.er({message:r.er});'
+    + '});'
+    + 'function mk(){'
+    +   'var s={_ok:null,_er:null};'
+    +   'var p=new Proxy(s,{get:function(t,k){'
+    +     'if(k==="withSuccessHandler")return function(f){s._ok=f;return p;};'
+    +     'if(k==="withFailureHandler")return function(f){s._er=f;return p;};'
+    +     'return function(){var id=++_i,a=Array.prototype.slice.call(arguments);'
+    +       '_b[id]={ok:s._ok,er:s._er};'
+    +       'window.parent.postMessage({cdvRpc:{id:id,fn:k,args:a}},"*");};'
+    +   '}});return p;'
+    + '}'
+    + 'var run=new Proxy({},{get:function(_,k){'
+    +   'if(k==="withSuccessHandler"||k==="withFailureHandler"){var r=mk();return r[k].bind(r);}'
+    +   'return function(){var id=++_i,a=Array.prototype.slice.call(arguments);'
+    +     '_b[id]={ok:null,er:null};window.parent.postMessage({cdvRpc:{id:id,fn:k,args:a}},"*");};'
+    + '}});'
+    + 'window.google={script:{run:run,'
+    +   'host:{close:function(){window.parent.postMessage({cdvClose:true},"*");}}'
+    + '}};'
+    + 'window.cdvLoad=function(p){window.parent.postMessage({cdvNavPage:p},"*");};'
+    + 'document.addEventListener("DOMContentLoaded",function(){'
+    +   'var n=document.getElementById("cdv-nav-webapp");if(n)n.parentNode.removeChild(n);'
+    + '});'
+    + '})();';
+
+  function injectPolyfill(html) {
+    var tag = '<script>' + _POLYFILL + '<\/script>';
+    var idx = html.indexOf('</head>');
+    return idx >= 0 ? html.slice(0, idx) + tag + html.slice(idx) : tag + html;
+  }
+
   /* ── build sidebar ── */
   function buildNav(badgeCount, vencidas) {
     var cur  = _page;
@@ -517,7 +644,7 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
           badge = '<span class="ni-badge" style="background:' + bg + '">'
                 + (vencidas > 0 ? vencidas : badgeCount) + '</span>';
         }
-        html += '<a class="ni' + (active ? ' on' : '') + '" href="' + link(it.p) + '">'
+        html += '<a class="ni' + (active ? ' on' : '') + '" href="#" onclick="cdvNav(\'' + it.p + '\');return false">'
              + '<span class="nic"><span>' + it.i + '</span>' + badge + '</span>'
              + '<span class="nil">' + esc(it.l) + '</span></a>';
       });
@@ -530,6 +657,13 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
   window.cdvT = function () {
     var col = document.documentElement.classList.toggle('col');
     try { localStorage.setItem('cdv-sc', col ? '1' : '0'); } catch (_) {}
+  };
+
+  /* ── navigate (SPA, sem reload) ── */
+  window.cdvNav = function (p) {
+    _page = p;
+    buildNav(_badgeCount, _vencidas);
+    loadPage(p);
   };
 
   /* ── show/hide states ── */
@@ -571,7 +705,7 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
             var d = JSON.parse(resp);
             if (d.erro) { showErr(d.erro); return; }
             var frm = document.getElementById('pgf');
-            frm.srcdoc = d.html;
+            frm.srcdoc = injectPolyfill(d.html);
             frm.onload = function () { show('pgf'); };
             /* fallback: mostra após 4s mesmo sem onload */
             setTimeout(function () {
@@ -593,6 +727,7 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
   var BM = { 'Pendente': 'b-p', 'Em Transferência': 'b-t', 'Devolvido': 'b-d', 'Venda': 'b-v' };
 
   function loadHubData() {
+    verificarSaude();
     try {
       google.script.run
         .withSuccessHandler(function (resp) {
@@ -653,6 +788,37 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
       rows || '<tr><td colspan="6" class="empty">Nenhum lançamento recente.</td></tr>';
   }
 
+  /* ── health check ── */
+  window.verificarSaude = function () {
+    var dot   = document.getElementById('hlt-dot');
+    var chks  = document.getElementById('hlt-checks');
+    var ts    = document.getElementById('hlt-ts');
+    dot.className = 'hlt-dot';
+    chks.textContent = 'Verificando...';
+    ts.textContent   = '';
+    try {
+      google.script.run
+        .withSuccessHandler(function (resp) {
+          try {
+            var r = JSON.parse(resp);
+            dot.className = 'hlt-dot ' + (r.status || 'ok');
+            if (r.erro) { chks.textContent = '❌ ' + r.erro; return; }
+            chks.innerHTML = (r.checks || []).map(function (c) {
+              var cls = c.ok ? 'ok' : 'warn';
+              var ic  = c.ok ? '✓' : '⚠';
+              return '<span class="hlt-chk"><span class="' + cls + '">' + ic + '</span> ' + c.label + ': <strong>' + c.valor + '</strong></span>';
+            }).join('');
+            ts.textContent = r.ts ? 'Atualizado ' + r.ts : '';
+          } catch (ex) { chks.textContent = '❌ Erro: ' + ex.message; }
+        })
+        .withFailureHandler(function (e) {
+          dot.className = 'hlt-dot err';
+          chks.textContent = '❌ ' + e.message;
+        })
+        .verificarSaudeSistema();
+    } catch (ex) { chks.textContent = '❌ ' + ex.message; }
+  };
+
   /* ── quick actions ── */
   window.cdvRunAction = function (id) {
     var ico = document.getElementById('qa-ic-' + id);
@@ -677,15 +843,25 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
     _page = getPage();
     buildNav(0, 0);
     loadPage(_page);
+    // dark mode
+    (function() {
+      var _DK = 'cdv_dark_mode';
+      function applyDark(on) {
+        document.body.classList.toggle('dark', on);
+        var btn = document.getElementById('btn-dark-idx');
+        if (btn) btn.textContent = on ? '☀️' : '🌙';
+        try { localStorage.setItem(_DK, on ? '1' : '0'); } catch(_){}
+      }
+      if (localStorage.getItem(_DK) === '1') applyDark(true);
+      window._toggleDarkIdx = function() { applyDark(!document.body.classList.contains('dark')); };
+    })();
 
     /* pega exec URL e atualiza links */
     try {
       google.script.run
         .withSuccessHandler(function (url) {
           _url = url || '';
-          buildNav(0, 0);
-          document.getElementById('a-notas').href  = link('Notas');
-          document.getElementById('a-lancar').href = link('Lancamento');
+          buildNav(_badgeCount, _vencidas);
         })
         .withFailureHandler(function () {})
         ._getWebAppExecUrl();
@@ -697,7 +873,9 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
         .withSuccessHandler(function (resp) {
           try {
             var d = JSON.parse(resp);
-            buildNav(d.total || 0, d.vencidas || 0);
+            _badgeCount = d.total    || 0;
+            _vencidas   = d.vencidas || 0;
+            buildNav(_badgeCount, _vencidas);
           } catch (_) {}
         })
         .withFailureHandler(function () {})
@@ -705,7 +883,196 @@ table.rt tbody tr:hover td { background: #FAFBFC; }
     } catch (_) {}
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  /* ── proxy RPC e navegação de iframes srcdoc → parent ── */
+  window.addEventListener('message', function (e) {
+    if (!e.data) return;
+
+    // Proxy google.script.run
+    if (e.data.cdvRpc) {
+      var req = e.data.cdvRpc;
+      var src = e.source;
+      try {
+        google.script.run
+          .withSuccessHandler(function (resp) {
+            try { src.postMessage({ cdvRpcResult: { id: req.id, ok: true,  data: resp } }, '*'); } catch (_) {}
+          })
+          .withFailureHandler(function (err) {
+            try { src.postMessage({ cdvRpcResult: { id: req.id, ok: false, er: err.message || String(err) } }, '*'); } catch (_) {}
+          })
+          [req.fn].apply(null, req.args || []);
+      } catch (ex) {
+        try { src.postMessage({ cdvRpcResult: { id: req.id, ok: false, er: ex.message || String(ex) } }, '*'); } catch (_) {}
+      }
+      return;
+    }
+
+    // Navegação solicitada por iframe (cdvLoad)
+    if (e.data.cdvNavPage) { window.cdvNav(e.data.cdvNavPage); return; }
+
+    // Fechar diálogo → volta ao menu
+    if (e.data.cdvClose) { window.cdvNav('Index'); return; }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() { init(); _initNotasRapidas(); carregarConquistas(); });
+})();
+
+// ── Hotkeys de navegação global (item 73) ──────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (!e.altKey) return;
+  var acao = {
+    '1': 'Notas',    '2': 'Lancamento', '3': 'Dashboard',
+    '4': 'Relatorios','5': 'Auditoria',  '6': 'Configuracoes'
+  }[e.key];
+  if (acao) { e.preventDefault(); cdvNav(acao); }
+});
+
+// ── Feedback inline (item 71) ──────────────────────────────
+var _fbTipo = 'positivo';
+function toggleFeedback() {
+  var b = document.getElementById('feedback-box');
+  b.style.display = b.style.display === 'none' ? 'block' : 'none';
+}
+function enviarFeedback(tipo) { _fbTipo = tipo; }
+function confirmarFeedback() {
+  var msg = document.getElementById('feedback-msg').value.trim();
+  if (!msg) { document.getElementById('feedback-ok').textContent = 'Escreva algo primeiro.'; return; }
+  try {
+    google.script.run.withSuccessHandler(function(r) {
+      try {
+        var p=JSON.parse(r);
+        document.getElementById('feedback-ok').textContent = p.ok || p.erro || '';
+        document.getElementById('feedback-msg').value = '';
+        setTimeout(function(){ document.getElementById('feedback-box').style.display='none'; }, 2000);
+      } catch(_){}
+    }).registrarFeedback(_fbTipo, msg, 'Hub');
+  } catch(_) { document.getElementById('feedback-ok').textContent = 'Obrigado!'; }
+}
+
+// ── Conquistas do mês (item 69) ────────────────────────────
+function carregarConquistas() {
+  try {
+    google.script.run.withSuccessHandler(function(r) {
+      try {
+        var p = JSON.parse(r);
+        var el = document.getElementById('hub-conquistas');
+        if (!el) return;
+        el.innerHTML =
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+          +'<div style="background:#ECFDF5;border:1px solid #6EE7B7;border-radius:6px;padding:6px 10px;text-align:center">'
+          +'<div style="font-size:20px;font-weight:bold;color:#059669">'+p.total+'</div>'
+          +'<div style="font-size:10px;color:#065F46">Lançamentos este mês</div></div>'
+          +'<div style="background:#EFF6FF;border:1px solid #93C5FD;border-radius:6px;padding:6px 10px;text-align:center">'
+          +'<div style="font-size:20px;font-weight:bold;color:#2563EB">'+p.devolvidos+'</div>'
+          +'<div style="font-size:10px;color:#1E40AF">Resolvidos</div></div>'
+          +'<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:6px 10px;text-align:center">'
+          +'<div style="font-size:20px;font-weight:bold;color:#D97706">'+p.taxaResolucao+'%</div>'
+          +'<div style="font-size:10px;color:#92400E">Taxa de resolução</div></div>'
+          +'</div>';
+      } catch(_){}
+    }).obterConquistasMes();
+  } catch(_){}
+}
+
+// ── Widget Notas Rápidas ────────────────────────────────────
+var _NOTAS_KEY = 'cdv_notas_rapidas';
+var _notasTimer = null;
+
+function _initNotasRapidas() {
+  var ta = document.getElementById('notas-rapidas-txt');
+  if (!ta) return;
+  try { ta.value = localStorage.getItem(_NOTAS_KEY) || ''; } catch(_){}
+  ta.addEventListener('input', function() {
+    clearTimeout(_notasTimer);
+    _notasTimer = setTimeout(function() {
+      try { localStorage.setItem(_NOTAS_KEY, ta.value); }
+      catch(_){}
+      var ind = document.getElementById('notas-saved-ind');
+      if (ind) { ind.textContent = 'Salvo'; setTimeout(function(){ ind.textContent=''; }, 1500); }
+    }, 700);
+  });
+}
+
+function toggleNotasRapidas() {
+  var body = document.getElementById('notas-rapidas-body');
+  var icon = document.getElementById('notas-toggle-icon');
+  if (!body) return;
+  var hidden = body.style.display === 'none';
+  body.style.display = hidden ? 'block' : 'none';
+  if (icon) icon.textContent = hidden ? '▼' : '▶';
+}
+
+function limparNotasRapidas() {
+  var ta = document.getElementById('notas-rapidas-txt');
+  if (!ta) return;
+  if (!confirm('Limpar todas as notas rápidas?')) return;
+  ta.value = '';
+  try { localStorage.removeItem(_NOTAS_KEY); } catch(_){}
+}
+
+// ── Onboarding interativo ───────────────────────────────────
+(function() {
+  var _OB_KEY = 'cdv_onboarding_done';
+  var _steps = [
+    { sel: '#tb-title',   txt: '👋 Bem-vindo ao Controle de Devoluções Transben!', pos: 'bottom' },
+    { sel: '.nav-item:first-child', txt: '📋 Use o menu lateral para navegar entre os módulos.', pos: 'right' },
+    { sel: '#hub-health', txt: '🩺 Este painel de saúde mostra o estado do sistema em tempo real.', pos: 'bottom' },
+    { sel: '#btn-dark-idx', txt: '🌙 Aqui você ativa o modo escuro.', pos: 'bottom' }
+  ];
+  var _step = 0;
+  var _overlay = null;
+
+  function _criarOverlay() {
+    var div = document.createElement('div');
+    div.id = 'ob-overlay';
+    div.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;';
+    document.body.appendChild(div);
+    _overlay = div;
+  }
+
+  function _mostrarStep(n) {
+    if (!_overlay) return;
+    _overlay.innerHTML = '';
+    if (n >= _steps.length) { _encerrar(); return; }
+    var s = _steps[n];
+    var el = document.querySelector(s.sel);
+    var r = el ? el.getBoundingClientRect() : { top: 100, left: 100, width: 120, height: 32 };
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;background:#1E3A5F;color:#fff;padding:12px 16px;border-radius:8px;'
+      +'max-width:280px;font-size:12px;box-shadow:0 4px 24px rgba(0,0,0,.3);pointer-events:all;z-index:10000;';
+    box.style.top  = (r.bottom + 10) + 'px';
+    box.style.left = Math.min(r.left, window.innerWidth - 310) + 'px';
+    box.innerHTML  = '<div style="margin-bottom:8px">'+s.txt+'</div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+      +'<button onclick="_obPular()" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px">Pular</button>'
+      +(n>0?'<button onclick="_obAnterior()" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px">← Anterior</button>':'')
+      +'<button onclick="_obProximo()" style="background:#4F9CF9;color:#fff;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px">'+(n<_steps.length-1?'Próximo →':'Concluir ✓')+'</button>'
+      +'</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px">'+(n+1)+'/'+_steps.length+'</div>';
+    if (el) {
+      var highlight = document.createElement('div');
+      highlight.style.cssText = 'position:fixed;border:2px solid #4F9CF9;border-radius:6px;pointer-events:none;'
+        +'box-shadow:0 0 0 4000px rgba(0,0,0,.4);';
+      highlight.style.top    = (r.top - 4) + 'px';
+      highlight.style.left   = (r.left - 4) + 'px';
+      highlight.style.width  = (r.width + 8) + 'px';
+      highlight.style.height = (r.height + 8) + 'px';
+      _overlay.appendChild(highlight);
+    }
+    _overlay.appendChild(box);
+  }
+
+  window._obProximo   = function() { _step++; _mostrarStep(_step); };
+  window._obAnterior  = function() { _step--; _mostrarStep(_step); };
+  window._obPular     = function() { _encerrar(); };
+  function _encerrar() {
+    if (_overlay) { document.body.removeChild(_overlay); _overlay = null; }
+    try { localStorage.setItem(_OB_KEY, '1'); } catch(_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    try { if (localStorage.getItem(_OB_KEY)) return; } catch(_) { return; }
+    setTimeout(function() { _criarOverlay(); _mostrarStep(0); }, 1500);
+  });
 })();
 </script>
 </body>

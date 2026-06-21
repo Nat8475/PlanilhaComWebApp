@@ -170,11 +170,6 @@
   </div>
 
   <div class="campo">
-    <label>🚛 Transportadora <span style="color:#6B7280;font-weight:normal;font-size:11px">(opcional)</span></label>
-    <input type="text" id="transportadora" placeholder="Ex: Jadlog, Correios, Mercúrio...">
-  </div>
-
-  <div class="campo">
     <label>Observações <span style="color:#6B7280;font-weight:normal;font-size:11px">(opcional)</span></label>
     <input type="text" id="obs-prog" placeholder="Instruções ou observações para a transferência">
   </div>
@@ -284,7 +279,6 @@ function salvar() {
           document.getElementById('card-item').classList.remove('ativo');
           document.getElementById('msg-salvar').style.display = 'none';
           document.getElementById('data-agendamento').value = '';
-          document.getElementById('transportadora').value = '';
           document.getElementById('obs-prog').value = '';
           _itemAtual = null;
         }, 2800);
@@ -299,7 +293,6 @@ function salvar() {
       freteTipo:       tipo,
       freteValor:      valor,
       dataAgendamento: dataAgend,
-      transportadora:  document.getElementById('transportadora').value.trim(),
       obs:             document.getElementById('obs-prog').value.trim(),
       forn:            _itemAtual.forn,
       dataNF:          _itemAtual.data

@@ -91,6 +91,13 @@ var _KEY_ALERTA_DEST      = 'cdv_alerta_dest';   // 'todos' | 'cc'
 var _KEY_EMAILS_TRANSF    = 'cdv_emails_transf'; // destinatários alertas de transferência vencida
 var _KEY_ADMINS_CONFIG    = 'cdv_admins_config'; // e-mails extras autorizados nas Configurações
 var _KEY_CORES            = 'cdv_cores';
+var _KEY_READONLY         = 'cdv_modo_somente_leitura';
+var _KEY_EMAIL_TEMPLATES  = 'cdv_email_templates';   // JSON: { avaria: {assunto, corpo}, vencimento: {...}, ... }
+var _KEY_CC_FORN          = 'cdv_cc_fornecedores';   // JSON: { "Ambev": { cc: "...", bcc: "..." }, ... }
+var _KEY_PERMISSOES       = 'cdv_permissoes_modulos'; // JSON: { "notas": ["email1","email2"], "lancamento": [...] }
+var _KEY_ASSINATURAS      = 'cdv_assinaturas';        // JSON: { "email@": "driveFileId", ... }
+var _KEY_EMAILS_AGENDADOS = 'cdv_emails_agendados';   // JSON: [{ id, params, dataEnvio, usuario }]
+var _KEY_CONFIG_HISTORICO = 'cdv_config_historico';   // JSON: [{ ts, usuario, snapshot }] (últimos 5)
 
 // ── Dashboard: sentinela e células de filtro ─────────────────
 var DASH_SENTINEL_CELL    = 'K1';
@@ -134,6 +141,7 @@ const EMAILS_DESTINATARIOS   = ['cidamara.silva@transben.com.br',
                                 'luiz.borba@transben.com.br',
                                 'graziela.rodrigues@transben.com.br'];
 const ID_MODELO_DOC          = '1zhS4HRlUvKoDUZCxf9HkaUAv0VnA-laSWfAHJJkz8l4';
+const ID_LOGO_TRANSBEN       = '1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap';
 const ID_PASTA_DESTINO       = '1W4dZMqV4d4qcs8-TIzLVvDNCQDh_CDPp';
 const ID_PASTA_DESTINO_VENDA = '1McE2mLTyfK1J2d5BOz4nvecP0T4eJ3Wz';
 const ID_PASTA_ANEXOS        = '14W3s-LnHl2aDCbz0h-Zi_FGmar3xLiNd';
@@ -386,6 +394,23 @@ function _pastaAnexos() {
     : DriveApp.getFolderById(ID_PASTA_DESTINO);
 }
 
+/**
+ * Garante subpasta Drive: AnexosNFs/{aba}/{NF_nf}
+ * Retorna a pasta; silencioso em caso de erro.
+ */
+function _garantirPastaNF(aba, nf) {
+  try {
+    var raiz = _pastaAnexos();
+    // Subpasta por aba/fornecedor
+    var abaIter = raiz.getFoldersByName(aba);
+    var pastaAba = abaIter.hasNext() ? abaIter.next() : raiz.createFolder(aba);
+    // Subpasta por NF
+    var nfNome = 'NF_' + String(nf).replace(/[\/\\:*?"<>|]/g, '_');
+    var nfIter = pastaAba.getFoldersByName(nfNome);
+    return nfIter.hasNext() ? nfIter.next() : pastaAba.createFolder(nfNome);
+  } catch(e) { return null; }
+}
+
 /** Fórmula de valor total para a linha `row` da planilha. */
 function _formulaTotal(row) {
   return '=IF(OR(H' + row + '="";I' + row + '="");"";H' + row + '*I' + row + ')';
@@ -587,6 +612,47 @@ function garantirAbaLog(ss) {
     });
   }
   return ws;
+}
+
+function garantirAbaAcesso(ss) {
+  var ws = ss.getSheetByName('_AcessoLog');
+  if (!ws) {
+    ws = ss.insertSheet('_AcessoLog');
+    ws.hideSheet();
+    ws.getRange(1, 1, 1, 4)
+      .setValues([['Data/Hora','Usuário','Página','Agente']])
+      .setBackground('#25419A').setFontColor('#FFFFFF').setFontWeight('bold');
+    ws.setFrozenRows(1);
+    [160, 230, 140, 200].forEach(function(w, i){ ws.setColumnWidth(i + 1, w); });
+  }
+  return ws;
+}
+
+function registrarAcesso(pagina) {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName('_AcessoLog') || garantirAbaAcesso(ss);
+    var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+    var user  = Session.getActiveUser().getEmail() || 'sistema';
+    var next  = ws.getLastRow() + 1;
+    ws.getRange(next, 1, 1, 4).setValues([[agora, user, pagina || '', '']]);
+  } catch(e) { console.error('registrarAcesso: ' + e); }
+}
+
+function obterLogAcesso(limite) {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName('_AcessoLog');
+    if (!ws || ws.getLastRow() < 2) return JSON.stringify({ linhas: [] });
+    var n   = Math.min(parseInt(limite, 10) || 200, 500);
+    var ul  = ws.getLastRow();
+    var ini = Math.max(2, ul - n + 1);
+    var vals = ws.getRange(ini, 1, ul - ini + 1, 4).getValues();
+    var linhas = vals.reverse().map(function(r) {
+      return { dt: String(r[0]||''), user: String(r[1]||''), pagina: String(r[2]||''), agente: String(r[3]||'') };
+    });
+    return JSON.stringify({ linhas: linhas });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
 function registrarLog(ss, nomeAba, row, col, valorAnterior, novoValor, acao) {
@@ -2398,7 +2464,10 @@ function obterNotasParaTabela(filtros) {
     }
 
     resultado.sort(function(a,b){return b.diasArm-a.diasArm;});
-    return JSON.stringify({ itens: resultado, abas: _getTodasAbas() });
+    var limite = (filtros && filtros.limite) ? parseInt(filtros.limite) : 0;
+    var temMais = limite > 0 && resultado.length > limite;
+    var itens = temMais ? resultado.slice(0, limite) : resultado;
+    return JSON.stringify({ itens: itens, abas: _getTodasAbas(), temMais: temMais });
   } catch(e){ return JSON.stringify({ erro: e.toString() }); }
 }
 
@@ -2406,6 +2475,270 @@ function obterNotasParaTabela(filtros) {
  * Retorna métricas consolidadas para o dashboard da web app.
  * Inclui contagens por status, alertas e itens recentes.
  */
+function verificarSaudeSistema() {
+  try {
+    var ss    = getSS();
+    var tz    = Session.getScriptTimeZone();
+    var abas  = _getTodasAbas();
+    var checks = [];
+    var status = 'ok';
+
+    // Abas de dados
+    var abasOk = abas.filter(function(n){ return !!ss.getSheetByName(n); }).length;
+    checks.push({ label: 'Abas de dados', ok: abasOk === abas.length,
+                  valor: abasOk + '/' + abas.length });
+
+    // Total de NFs ativas
+    var totalNFs = 0;
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul >= LINHA_DADOS) totalNFs += ul - LINHA_DADOS + 1;
+    });
+    checks.push({ label: 'NFs ativas', ok: true, valor: totalNFs + ' registros' });
+
+    // Aba _Log
+    var wsLog  = ss.getSheetByName('_Log');
+    var logOk  = !!wsLog;
+    checks.push({ label: 'Log', ok: logOk, valor: logOk ? 'OK' : 'Ausente' });
+
+    // Aba _Dashboard
+    var wsDash = ss.getSheetByName('_Dashboard');
+    var dashOk = !!wsDash;
+    checks.push({ label: 'Dashboard', ok: dashOk, valor: dashOk ? 'OK' : 'Ausente' });
+
+    // Anexos expirados (Pendente + anexo + > 90 dias)
+    var expirados = 0;
+    var hoje = new Date(); hoje.setHours(0,0,0,0);
+    var limiteMs = 90 * 24 * 3600000;
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues().forEach(function(r) {
+        if (String(r[IDX_STATUS]||'') !== 'Pendente') return;
+        if (!r[IDX_ANEXO]) return;
+        var dt = r[IDX_DATA]; if (!(dt instanceof Date)) return;
+        if ((hoje - dt) > limiteMs) expirados++;
+      });
+    });
+    if (expirados > 0) {
+      checks.push({ label: 'Anexos sem resolução +90d', ok: false, valor: expirados + ' NF(s)' });
+      if (status === 'ok') status = 'warn';
+    }
+
+    // Status geral
+    if (checks.some(function(c){ return !c.ok; })) status = 'warn';
+
+    var agora = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm');
+    return JSON.stringify({ status: status, checks: checks, ts: agora });
+  } catch(e) {
+    return JSON.stringify({ status: 'err', checks: [], ts: '', erro: e.toString() });
+  }
+}
+
+// ── Lixeira com recuperação ────────────────────────────────
+var _NOME_ABA_LIXEIRA = 'Lixeira';
+
+function _moverParaLixeira(ss, ws, item, motivo) {
+  try {
+    var lixeira = ss.getSheetByName(_NOME_ABA_LIXEIRA);
+    if (!lixeira) {
+      lixeira = ss.insertSheet(_NOME_ABA_LIXEIRA);
+      lixeira.appendRow(['DataExclusão','Motivo','AbaOrigem','LinhaOrigem',
+        'Data','NFD','NF','Fornecedor','Status','Tipo','Motivo','Desc','Qtd','VlUnit','Obs','Resp','UrlAnexo']);
+    }
+    var rowData = ws.getRange(item.linha, 1, 1, Math.max(TOTAL_COLUNAS,17)).getValues()[0];
+    var novaLinha = [new Date(), motivo, item.aba, item.linha].concat(rowData);
+    lixeira.appendRow(novaLinha);
+  } catch(e) { console.warn('_moverParaLixeira: ' + e); }
+}
+
+function obterLixeira() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var lixeira = ss.getSheetByName(_NOME_ABA_LIXEIRA);
+    if (!lixeira || lixeira.getLastRow() < 2) return JSON.stringify({ itens: [] });
+    var ult = lixeira.getLastRow();
+    var dados = lixeira.getRange(2, 1, ult - 1, 5).getValues();
+    var itens = dados.map(function(row, i) {
+      return {
+        lixRow: i + 2,
+        dataExclusao: row[0] ? new Date(row[0]).toLocaleString('pt-BR') : '',
+        motivo: String(row[1]||''),
+        abaOrigem: String(row[2]||''),
+        linhaOrigem: row[3],
+        nf: String(row[6]||''),
+        nfd: String(row[5]||'')
+      };
+    });
+    return JSON.stringify({ itens: itens });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function restaurarDaLixeira(lixRow) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var lixeira = ss.getSheetByName(_NOME_ABA_LIXEIRA);
+    if (!lixeira) return JSON.stringify({ erro: 'Lixeira não encontrada.' });
+    var rowData = lixeira.getRange(lixRow, 1, 1, 4).getValues()[0];
+    var abaOrigem = String(rowData[2]||'');
+    var ws = ss.getSheetByName(abaOrigem);
+    if (!ws) return JSON.stringify({ erro: 'Aba "' + abaOrigem + '" não encontrada.' });
+    var dadosNF = lixeira.getRange(lixRow, 5, 1, Math.max(TOTAL_COLUNAS,17)).getValues()[0];
+    // Encontrar uma linha vazia na aba
+    var ult = obterUltimaLinhaDados(ws);
+    var novaLinha = ult + 1;
+    ws.getRange(novaLinha, 1, 1, dadosNF.length).setValues([dadosNF]);
+    lixeira.deleteRow(lixRow);
+    registrarLog(ss, abaOrigem, novaLinha, 3, '', dadosNF[2] || '', '♻️ Restaurado da lixeira.');
+    return JSON.stringify({ ok: '✅ Item restaurado para aba "' + abaOrigem + '".' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Versionamento de anexos (item 59) ──────────────────────
+var _KEY_VERSOES_ANEXO = 'cdv_versoes_anexo'; // JSON: { "aba_linha": [{ ts, url }] }
+
+function _registrarVersaoAnexo(aba, linha, url) {
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_VERSOES_ANEXO) || '{}';
+    var map  = JSON.parse(raw);
+    var chave = aba + '_' + linha;
+    if (!map[chave]) map[chave] = [];
+    map[chave].push({ ts: new Date().toISOString(), url: url });
+    map[chave] = map[chave].slice(-5); // manter últimas 5 versões
+    PropertiesService.getScriptProperties().setProperty(_KEY_VERSOES_ANEXO, JSON.stringify(map));
+  } catch(_){}
+}
+
+function obterVersoesAnexo(aba, linha) {
+  var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_VERSOES_ANEXO) || '{}';
+  try {
+    var map   = JSON.parse(raw);
+    var chave = aba + '_' + linha;
+    return JSON.stringify({ versoes: map[chave] || [] });
+  } catch(_) { return JSON.stringify({ versoes: [] }); }
+}
+
+function salvarAnexoAdicionalNF(params) {
+  if (!params || !params.aba || !params.linha || !params.urlAnexo)
+    return JSON.stringify({ erro: 'Dados insuficientes.' });
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ws = ss.getSheetByName(params.aba);
+    if (!ws) return JSON.stringify({ erro: 'Aba não encontrada.' });
+    _registrarVersaoAnexo(params.aba, params.linha, params.urlAnexo);
+    ws.getRange(params.linha, COL_ANEXO).setValue(params.urlAnexo);
+    return JSON.stringify({ ok: '✅ Anexo(s) atualizados.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function uploadFotoAvaria(params) {
+  try {
+    var pasta = _garantirPastaNF(params.aba || 'Avaria', params.nf || 'NF');
+    var dados = Utilities.base64Decode(params.base64);
+    var blob  = Utilities.newBlob(dados, params.mimeType || 'image/jpeg', params.nome || 'avaria.jpg');
+    var file  = (pasta || DriveApp.getRootFolder()).createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return JSON.stringify({ url: file.getUrl(), id: file.getId() });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterComparativoPeriodos(aDe, aAte, bDe, bAte) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    function parseDt(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+    var aI=parseDt(aDe), aF=parseDt(aAte), bI=parseDt(bDe), bF=parseDt(bAte);
+    aF.setHours(23,59,59); bF.setHours(23,59,59);
+    function _agreg(de, ate) {
+      var qtd=0, valor=0, pendentes=0, devolvidos=0, forns={}, motivos={};
+      _getTodasAbas().forEach(function(nome) {
+        var aba = ss.getSheetByName(nome);
+        if (!aba) return;
+        var ult = obterUltimaLinhaDados(aba);
+        if (ult < 2) return;
+        var vals = aba.getRange(2,1,ult-1,12).getValues();
+        vals.forEach(function(row) {
+          var dt = row[0] ? new Date(row[0]) : null;
+          if (!dt || dt < de || dt > ate) return;
+          qtd++;
+          valor += Number(row[9]||0) * Number(row[8]||0);
+          var status = String(row[3]||'');
+          if (status === 'Pendente') pendentes++;
+          if (status === 'Devolvido') devolvidos++;
+          var forn = String(row[4]||'').trim();
+          if (forn) forns[forn] = true;
+          var m = String(row[7]||'').trim();
+          if (m) motivos[m] = (motivos[m]||0)+1;
+        });
+      });
+      return { qtd:qtd, valor:valor, pendentes:pendentes, devolvidos:devolvidos,
+               fornecedores:Object.keys(forns).length, motivos:motivos };
+    }
+    var a = _agreg(aI,aF), b = _agreg(bI,bF);
+    var todasMotivos = {};
+    Object.keys(a.motivos).forEach(function(k){ todasMotivos[k]=true; });
+    Object.keys(b.motivos).forEach(function(k){ todasMotivos[k]=true; });
+    var topMotivos = Object.keys(todasMotivos).map(function(m){
+      return { motivo:m, qtdA:a.motivos[m]||0, qtdB:b.motivos[m]||0 };
+    }).sort(function(x,y){ return (y.qtdA+y.qtdB)-(x.qtdA+x.qtdB); }).slice(0,10);
+    return JSON.stringify({ a:a, b:b, topMotivos:topMotivos });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterMotivosFrequentes() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var contagem = {};
+    _getTodasAbas().forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (!aba) return;
+      var ult = obterUltimaLinhaDados(aba);
+      if (ult < 2) return;
+      var vals = aba.getRange(2, 8, ult - 1, 1).getValues(); // coluna H = motivo
+      vals.forEach(function(row) {
+        var m = String(row[0]||'').trim().toUpperCase();
+        if (m) contagem[m] = (contagem[m]||0) + 1;
+      });
+    });
+    var sorted = Object.keys(contagem).sort(function(a,b){ return contagem[b]-contagem[a]; }).slice(0,20);
+    return JSON.stringify(sorted);
+  } catch(e) { return JSON.stringify([]); }
+}
+
+function obterScorecardFornecedores(filtroStatus) {
+  try {
+    var ss = getSS();
+    var abas = _getTodasAbas();
+    var mapa = {}; // { forn: { qtd, valor, motivos:{} } }
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues().forEach(function(r) {
+        var status = String(r[IDX_STATUS]||'');
+        if (filtroStatus && status !== filtroStatus) return;
+        var forn   = String(r[IDX_FORN]||nome).trim();
+        var valor  = parseFloat(r[IDX_VL_TOT]||0)||0;
+        var motivo = String(r[IDX_MOTIVO]||'').trim();
+        if (!mapa[forn]) mapa[forn] = { forn:forn, qtd:0, valor:0, motivosMap:{} };
+        mapa[forn].qtd++;
+        mapa[forn].valor += valor;
+        if (motivo) mapa[forn].motivosMap[motivo] = (mapa[forn].motivosMap[motivo]||0)+1;
+      });
+    });
+    var lista = Object.keys(mapa).map(function(k) {
+      var e = mapa[k];
+      var motivos = Object.keys(e.motivosMap).sort(function(a,b){ return e.motivosMap[b]-e.motivosMap[a]; });
+      return { forn:e.forn, qtd:e.qtd, valor:e.valor, motivos:motivos };
+    }).sort(function(a,b){ return b.qtd - a.qtd; }).slice(0,30);
+    return JSON.stringify({ fornecedores: lista });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
 function obterDadosDashboard() {
   try {
     var ss  = getSS();
@@ -2518,6 +2851,51 @@ function obterDadosDashboard() {
 }
 
 /**
+ * Retorna agrupamento mensal de lançamentos para o gráfico de tendência.
+ * @param {number} periodo  Número de meses para trás (3, 6 ou 12).
+ */
+function obterTendencia(periodo) {
+  try {
+    var meses = parseInt(periodo, 10) || 6;
+    var ss    = getSS();
+    var tz    = Session.getScriptTimeZone();
+    var hoje  = new Date();
+
+    // Montar mapa de chaves "MM/AAAA" para os últimos N meses
+    var buckets = {};
+    var labels  = [];
+    for (var m = meses - 1; m >= 0; m--) {
+      var d = new Date(hoje.getFullYear(), hoje.getMonth() - m, 1);
+      var chave = Utilities.formatDate(d, tz, 'MM/yyyy');
+      var label = Utilities.formatDate(d, tz, 'MMM/yy');
+      buckets[chave] = { mes: label, total: 0, pendente: 0 };
+      labels.push(chave);
+    }
+
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l) {
+          var nf = String(l[IDX_NF] || '').trim();
+          if (!nf) return;
+          var dt = l[IDX_DATA];
+          if (!(dt instanceof Date)) return;
+          var chave = Utilities.formatDate(dt, tz, 'MM/yyyy');
+          if (!buckets[chave]) return;
+          buckets[chave].total++;
+          if (String(l[IDX_STATUS] || '').trim() === 'Pendente') buckets[chave].pendente++;
+        });
+    });
+
+    var tendencia = labels.map(function(k) { return buckets[k]; });
+    return JSON.stringify({ tendencia: tendencia });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
  * Retorna contagem de transferências "Em Transferência" e quantas estão vencidas.
  * Usado pelo sidebar badge (S).
  */
@@ -2582,6 +2960,33 @@ function executarAcaoEmLoteNotas(params) {
   } catch(e){ return JSON.stringify({ erro:e.toString() }); }
 }
 
+function desfazerAcaoEmLoteNotas(itens) {
+  try {
+    var ss = getSS();
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    if (!itens || !itens.length) return JSON.stringify({ erro: 'Nenhum item para desfazer.' });
+    var ok = 0, erros = [];
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(15000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente em instantes.' });
+    try {
+      itens.forEach(function(it) {
+        try {
+          var ws = ss.getSheetByName(it.aba);
+          if (!ws) { erros.push(it.nf + ': aba não encontrada'); return; }
+          var stAtual = ws.getRange(it.linha, COL_STATUS).getValue();
+          if (stAtual === 'Pendente') { erros.push(it.nf + ': já está Pendente'); return; }
+          _aplicarStatus(ss, ws, it.aba, it.linha, 'Pendente', stAtual);
+          registrarLog(ss, it.aba, it.linha, COL_STATUS, stAtual, 'Pendente',
+            'Desfazer ação em lote por ' + usuario);
+          ok++;
+        } catch(e) { erros.push(it.nf + ': ' + e.message); }
+      });
+    } finally { trava.releaseLock(); }
+    if (ok > 0) _atualizarMetricasDashboard(ss);
+    return JSON.stringify({ ok: '↩ ' + ok + ' NF(s) revertida(s) para Pendente.', erros: erros });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
 function obterDetalhesNF(aba, linha) {
   try {
     var ss=getSS(), ws=ss.getSheetByName(aba);
@@ -2610,10 +3015,11 @@ function obterDetalhesNF(aba, linha) {
         if (ref.indexOf(nf)!==-1||(nfd&&ref.indexOf(nfd)!==-1))
           logHist.push({
             data:r[0] instanceof Date?Utilities.formatDate(r[0],tz,'dd/MM/yyyy HH:mm'):String(r[0]||''),
-            usuario:String(r[1]||''), acao:String(r[7]||'')
+            usuario:String(r[1]||''), coluna:String(r[4]||''),
+            anterior:String(r[5]||''), novo:String(r[6]||''), acao:String(r[7]||'')
           });
       });
-      logHist=logHist.slice(-15);
+      logHist=logHist.slice(-20);
     }
     return JSON.stringify({
       nfd:nfd, nf:nf,
@@ -2816,6 +3222,13 @@ function salvarLancamentoFormConfirmado(dados) {
 function _validarDadosForm(dados) {
   if (!dados.abaSelecao || !dados.nf || !dados.descricao || !dados.qtd || !dados.valorUnit)
     throw new Error('Preencha todos os campos obrigatórios.');
+  // Normalização automática: remove espaços duplicados e capitaliza primeira letra
+  if (dados.fornecedor) {
+    dados.fornecedor = dados.fornecedor.replace(/\s+/g,' ').trim()
+      .replace(/\b(\w)/g, function(c){ return c.toUpperCase(); });
+  }
+  if (dados.descricao) dados.descricao = dados.descricao.replace(/\s+/g,' ').trim();
+  if (dados.motivo)    dados.motivo    = dados.motivo.replace(/\s+/g,' ').trim();
 }
 
 function _gravarLancamento(ss, ws, dados, ulPre, nfsPre) {
@@ -2824,12 +3237,14 @@ function _gravarLancamento(ss, ws, dados, ulPre, nfsPre) {
   if (isNaN(valorUnit) || valorUnit < 0) throw new Error('Valor unitário inválido.');
   if (isNaN(qtd) || qtd <= 0)            throw new Error('Quantidade inválida.');
 
-  // [P20] Upload do anexo ANTES do lock
+  // [P20] Upload do anexo ANTES do lock — usa subpasta da NF se disponível
   var urlAnexo = '';
+  var pastaNF = _garantirPastaNF(dados.abaSelecao, dados.nf);
   if (dados.base64 && dados.mimeType && dados.nomeArquivo) {
     try {
       var blob    = Utilities.newBlob(Utilities.base64Decode(dados.base64), dados.mimeType, dados.nomeArquivo);
-      var arquivo = _pastaAnexos().createFile(blob);
+      var destPasta = pastaNF || _pastaAnexos();
+      var arquivo = destPasta.createFile(blob);
       arquivo.setName('NF_' + dados.nf + '_' + dados.nomeArquivo);
       urlAnexo = arquivo.getUrl();
     } catch (eAnexo) {
@@ -3116,6 +3531,9 @@ function excluirLancamento(params) {
     ws.getRange(item.linha, 1, 1, TOTAL_COLUNAS).setBackground('#FFFFFF');
     ws.getRange(item.linha, COL_VL_TOT).setFormula(_formulaTotal(item.linha));
     ws.getRange(item.linha, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(item.linha));
+
+    // Mover para lixeira antes de limpar
+    _moverParaLixeira(ss, ws, item, motivo);
 
     registrarLog(ss, item.aba, item.linha, COL_NF, item.nfd || '', item.nf,
       '🗑️ Exclusão manual — ' + nfLabel + ' | Motivo: ' + motivo);
@@ -3574,6 +3992,98 @@ function buscarDadosNFDs(nfdsRaw) {
   });
 }
 
+// ── Agendamento de e-mail ───────────────────────────────────
+function agendarEmailDevolucao(params, dataEnvioISO) {
+  try {
+    var usuario = Session.getActiveUser().getEmail();
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+    var lista = JSON.parse(raw);
+    var id = 'ae_' + new Date().getTime();
+    lista.push({ id: id, params: params, dataEnvio: dataEnvioISO, usuario: usuario, status: 'pendente' });
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAILS_AGENDADOS, JSON.stringify(lista));
+    _garantirTriggerEmailAgendado();
+    return JSON.stringify({ ok: '✅ E-mail agendado para ' + dataEnvioISO + '.', id: id });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function cancelarEmailAgendado(id) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+    var lista = JSON.parse(raw).filter(function(e){ return e.id !== id; });
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAILS_AGENDADOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Agendamento cancelado.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function listarEmailsAgendados() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+  try { return raw; } catch(_) { return '[]'; }
+}
+
+function _garantirTriggerEmailAgendado() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === '_processarEmailsAgendados') return;
+  }
+  ScriptApp.newTrigger('_processarEmailsAgendados').timeBased().everyHours(1).create();
+}
+
+function _processarEmailsAgendados() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+    var lista = JSON.parse(raw);
+    var agora = new Date();
+    var restantes = [];
+    lista.forEach(function(item) {
+      if (item.status !== 'pendente') return;
+      var data = new Date(item.dataEnvio);
+      if (agora >= data) {
+        try { enviarEmailDevolucao(item.params); item.status = 'enviado'; }
+        catch(e) { item.status = 'erro_' + e.message; restantes.push(item); return; }
+      } else {
+        restantes.push(item);
+      }
+    });
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAILS_AGENDADOS, JSON.stringify(restantes));
+  } catch(_) {}
+}
+
+function previewEmailDevolucao(params) {
+  try {
+    var nfds = params.nfds || [];
+    if (!nfds.length) return JSON.stringify({ html: '<p>Nenhuma NFD informada.</p>' });
+    var assunto = params.assunto || 'Devolução';
+    var obs     = params.obs     || '';
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var amostra = [];
+    var forn = '';
+    _getTodasAbas().forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (!aba) return;
+      var ult = obterUltimaLinhaDados(aba);
+      if (ult < 2) return;
+      var dados = aba.getRange(2, 1, ult - 1, 15).getValues();
+      dados.forEach(function(row) {
+        var nfd = String(row[1]||'').trim();
+        if (nfds.indexOf(nfd) > -1) {
+          if (!forn) forn = String(row[4]||'');
+          amostra.push({ nfd: nfd, desc: String(row[6]||''), qtd: row[8], vlUnit: row[9], tipo: row[5]||'' });
+        }
+      });
+    });
+    var linhas = amostra.map(function(it) {
+      return '<tr><td style="padding:6px 10px;border-bottom:1px solid #E5E7EB">'+_esc(it.nfd)+'</td>'
+        +'<td style="padding:6px 10px;border-bottom:1px solid #E5E7EB">'+_esc(it.desc)+'</td>'
+        +'<td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;text-align:center">'+_esc(String(it.qtd))+'</td>'
+        +'<td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;text-align:right">R$ '+Number(it.vlUnit||0).toFixed(2).replace('.',',')+'</td></tr>';
+    });
+    var htmlBody = _montarHtmlEmail(assunto, new Date().toLocaleDateString('pt-BR'), forn || '—', linhas, 0, obs);
+    var assinHtml = _obterHtmlAssinatura();
+    if (assinHtml) htmlBody = htmlBody.replace('</body>', assinHtml + '</body>');
+    return JSON.stringify({ html: htmlBody });
+  } catch(e) { return JSON.stringify({ html: '<p style="color:red">Erro: '+e+'</p>' }); }
+}
+
 function enviarEmailDevolucao(params) {
   var nfds = params.nfdsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
   if (!nfds.length) return JSON.stringify({ erro: 'Nenhuma NFD informada.' });
@@ -3614,6 +4124,32 @@ function enviarEmailDevolucao(params) {
   var forn          = itens[0].forn;
   var destinatarios = _montarDestinatarios(params.emailsExtras);
   var assunto       = params.assunto || _montarTituloEmail(itens, forn);
+
+  // Templates customizados: usa o tipo mais frequente ou o do primeiro item
+  (function() {
+    try {
+      var rawTpl = PropertiesService.getScriptProperties().getProperty(_KEY_EMAIL_TEMPLATES);
+      if (!rawTpl) return;
+      var tpls = JSON.parse(rawTpl);
+      var tipo = itens[0].tipo || '';
+      var tplKey = tipo.toLowerCase().replace(/\s+/g, '_');
+      if (tpls[tplKey] && tpls[tplKey].assunto && !params.assunto) {
+        assunto = tpls[tplKey].assunto
+          .replace('{forn}', forn).replace('{qtd}', itens.length).replace('{tipo}', tipo);
+      }
+    } catch(_) {}
+  })();
+
+  // CC/BCC por fornecedor
+  var _ccFornConfig = (function() {
+    try {
+      var rawCC = PropertiesService.getScriptProperties().getProperty(_KEY_CC_FORN);
+      if (!rawCC) return {};
+      return JSON.parse(rawCC);
+    } catch(_) { return {}; }
+  })();
+  var _ccExtra = (_ccFornConfig[forn] || {}).cc  || '';
+  var _bccExtra= (_ccFornConfig[forn] || {}).bcc || '';
   var valorTotal    = itens.reduce(function(s, it) { return s + it.valor; }, 0);
 
   var linhasTabela = itens.map(function(it) {
@@ -3691,6 +4227,12 @@ function enviarEmailDevolucao(params) {
     avisoSemAnexo + '<p style="margin:20px 0 0;font-size:12px;color:#888">'
   );
 
+  // Assinatura de foto do Drive
+  var assinaturaHtml = _obterHtmlAssinatura();
+  if (assinaturaHtml) {
+    htmlFinal = htmlFinal.replace('</body>', assinaturaHtml + '</body>');
+  }
+
   try {
     var todosBlobs = blobs.slice();
     if (blobComunicado) todosBlobs.push(blobComunicado);
@@ -3701,6 +4243,8 @@ function enviarEmailDevolucao(params) {
       htmlBody: htmlFinal
     };
     if (todosBlobs.length) mailOpts.attachments = todosBlobs;
+    if (_ccExtra)  mailOpts.cc  = _ccExtra;
+    if (_bccExtra) mailOpts.bcc = _bccExtra;
     MailApp.sendEmail(mailOpts);
 
     var infoAnexos = todosBlobs.length
@@ -5060,6 +5604,483 @@ function abrirConfiguracoes() {
 }
 
 // ─── ADMINISTRADORES ─────────────────────────────────────────
+
+function obterModoSomenteLeitura() {
+  var val = PropertiesService.getScriptProperties().getProperty(_KEY_READONLY) || 'false';
+  return JSON.stringify({ ativo: val === 'true' });
+}
+
+function salvarModoSomenteLeitura(ativo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    PropertiesService.getScriptProperties().setProperty(_KEY_READONLY, ativo ? 'true' : 'false');
+    var ss  = getSS();
+    var msg = ativo ? 'ATIVADO' : 'DESATIVADO';
+    registrarLog(ss, 'SISTEMA', 0, 0, '', msg,
+      '🔒 Modo Somente-Leitura ' + msg + ' por ' + (Session.getActiveUser().getEmail() || 'sistema'));
+    return JSON.stringify({ ok: '✅ Modo somente-leitura ' + msg + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Permissões granulares por módulo ───────────────────────
+// módulos: notas, lancamento, email, frete, configuracoes, auditoria
+// lista vazia = todos têm acesso; lista preenchida = apenas os listados
+// ── Configurações visuais / sistema (items 62-64) ──────────
+var _KEY_CORES_STATUS    = 'cdv_cores_status';   // JSON: { Pendente:'#...', Devolvido:'#...', ... }
+var _KEY_LOGO_URL        = 'cdv_logo_url';        // URL ou Drive ID da logo customizada
+var _KEY_NOME_SISTEMA    = 'cdv_nome_sistema';    // string
+
+function obterConfigVisuais() {
+  var props = PropertiesService.getScriptProperties();
+  var raw   = props.getProperty(_KEY_CORES_STATUS) || '{}';
+  try { var cores = JSON.parse(raw); } catch(_) { var cores = {}; }
+  return JSON.stringify({
+    cores:       cores,
+    logoUrl:     props.getProperty(_KEY_LOGO_URL)     || '',
+    nomeSistema: props.getProperty(_KEY_NOME_SISTEMA) || 'Controle de Devoluções'
+  });
+}
+
+function salvarConfigVisuais(cores, logoUrl, nomeSistema) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var props = PropertiesService.getScriptProperties();
+  if (cores)       props.setProperty(_KEY_CORES_STATUS, JSON.stringify(cores));
+  if (logoUrl)     props.setProperty(_KEY_LOGO_URL, String(logoUrl));
+  if (nomeSistema) props.setProperty(_KEY_NOME_SISTEMA, String(nomeSistema));
+  return JSON.stringify({ ok: '✅ Configurações visuais salvas.' });
+}
+
+// ── Painel de erros recentes (item 65) ─────────────────────
+var _KEY_ERROS_RECENTES = 'cdv_erros_recentes'; // JSON: [{ ts, func, msg }]
+
+function registrarErroSistema(funcao, msg) {
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_ERROS_RECENTES) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ ts: new Date().toISOString(), func: String(funcao||''), msg: String(msg||'') });
+    lista = lista.slice(0, 50);
+    PropertiesService.getScriptProperties().setProperty(_KEY_ERROS_RECENTES, JSON.stringify(lista));
+  } catch(_){}
+}
+
+function obterErrosRecentes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ERROS_RECENTES) || '[]';
+  return raw;
+}
+
+// ── Monitoramento de tamanho (item 66) ─────────────────────
+function monitorarTamanhoPlanilha() {
+  try {
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+    var file    = DriveApp.getFileById(ss.getId());
+    var sizeMB  = (file.getSize() / 1048576).toFixed(2);
+    var abas    = ss.getSheets().length;
+    var totalLinhas = ss.getSheets().reduce(function(acc, aba) {
+      return acc + aba.getLastRow();
+    }, 0);
+    return JSON.stringify({ sizeMB: sizeMB, abas: abas, totalLinhas: totalLinhas,
+      alerta: parseFloat(sizeMB) > 40 });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Teste de envio de e-mail (item 67) ─────────────────────
+// ── Ping de disponibilidade (item 68) ──────────────────────
+function ping() {
+  return JSON.stringify({ ok: true, ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail() });
+}
+
+function testarEnvioEmail(emailDestino) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    MailApp.sendEmail({
+      to: emailDestino,
+      subject: '✅ Teste de E-mail — Controle de Devoluções',
+      htmlBody: '<p>Este é um e-mail de teste enviado pelo sistema <b>Controle de Devoluções Transben</b>.</p>'
+        +'<p>Se você recebeu este e-mail, a configuração de envio está funcionando corretamente.</p>'
+        +'<p style="color:#888;font-size:11px">Enviado em '+ new Date().toLocaleString('pt-BR')+'</p>'
+    });
+    return JSON.stringify({ ok: '✅ E-mail de teste enviado para ' + emailDestino + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Resumo de conquistas do mês (item 69) ──────────────────
+function obterConquistasMes() {
+  try {
+    var ss   = SpreadsheetApp.getActiveSpreadsheet();
+    var hoje = new Date();
+    var iniMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    var total = 0, devolvidos = 0, comAnexo = 0;
+    _getTodasAbas().forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (!aba) return;
+      var ult = obterUltimaLinhaDados(aba);
+      if (ult < 2) return;
+      var dados = aba.getRange(2, 1, ult - 1, 17).getValues();
+      dados.forEach(function(row) {
+        var dt = row[0] ? new Date(row[0]) : null;
+        if (!dt || dt < iniMes) return;
+        total++;
+        if (row[3] === 'Devolvido') devolvidos++;
+        if (row[16]) comAnexo++;
+      });
+    });
+    return JSON.stringify({ total: total, devolvidos: devolvidos, comAnexo: comAnexo,
+      taxaResolucao: total > 0 ? ((devolvidos/total)*100).toFixed(0) : 0 });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Changelog do sistema (item 70) ─────────────────────────
+var _KEY_CHANGELOG = 'cdv_changelog'; // JSON: [{ versao, data, itens:[] }]
+
+function obterChangelog() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CHANGELOG) || '[]';
+  return raw;
+}
+
+function adicionarChangelog(versao, itens) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_CHANGELOG) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ versao: versao, data: new Date().toLocaleDateString('pt-BR'), itens: itens });
+    lista = lista.slice(0, 20);
+    PropertiesService.getScriptProperties().setProperty(_KEY_CHANGELOG, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Changelog atualizado.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Feedback inline (item 71) ──────────────────────────────
+var _KEY_FEEDBACKS = 'cdv_feedbacks'; // JSON: [{ ts, usuario, tipo, msg, pagina }]
+
+function registrarFeedback(tipo, msg, pagina) {
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_FEEDBACKS) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail(),
+      tipo: tipo, msg: msg, pagina: pagina });
+    lista = lista.slice(0, 200);
+    PropertiesService.getScriptProperties().setProperty(_KEY_FEEDBACKS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Feedback registrado. Obrigado!' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterFeedbacks() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_FEEDBACKS) || '[]';
+  return raw;
+}
+
+// ── Biblioteca de modelos de documentos (item 58) ──────────
+function obterModelosDocumentos() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_MODELOS_DOC) || '[]';
+  try { return raw; } catch(_) { return '[]'; }
+}
+
+function salvarModeloDocumento(id, nome, corpo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_MODELOS_DOC) || '[]';
+    var lista = JSON.parse(raw);
+    var idx = -1;
+    for (var i = 0; i < lista.length; i++) { if (lista[i].id === id) { idx = i; break; } }
+    var item = { id: id || ('mdl_'+new Date().getTime()), nome: nome, corpo: corpo };
+    if (idx > -1) lista[idx] = item; else lista.push(item);
+    PropertiesService.getScriptProperties().setProperty(_KEY_MODELOS_DOC, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Modelo salvo.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function excluirModeloDocumento(id) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_MODELOS_DOC) || '[]';
+    var lista = JSON.parse(raw).filter(function(m){ return m.id !== id; });
+    PropertiesService.getScriptProperties().setProperty(_KEY_MODELOS_DOC, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Modelo excluído.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Aprovação para novos lançamentos (item 57) ─────────────
+function obterConfigAprovacao() {
+  var ativo = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACAO_ATIVA) === '1';
+  var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_APROVADORES) || '[]';
+  try { var aprovadores = JSON.parse(raw); }
+  catch(_) { var aprovadores = []; }
+  return JSON.stringify({ ativo: ativo, aprovadores: aprovadores });
+}
+
+function salvarConfigAprovacao(ativo, aprovadores) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  PropertiesService.getScriptProperties().setProperty(_KEY_APROVACAO_ATIVA, ativo ? '1' : '0');
+  PropertiesService.getScriptProperties().setProperty(_KEY_APROVADORES,
+    JSON.stringify((aprovadores||[]).map(function(e){ return String(e||'').trim().toLowerCase(); }).filter(Boolean)));
+  return JSON.stringify({ ok: '✅ Configuração de aprovação salva.' });
+}
+
+function submeterParaAprovacao(dadosLancamento) {
+  var ativo = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACAO_ATIVA) === '1';
+  if (!ativo) {
+    return _gravarLancamento(dadosLancamento); // aprovação desligada — salva direto
+  }
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+    var lista = JSON.parse(raw);
+    var id = 'ap_' + new Date().getTime();
+    lista.push({ id: id, dados: dadosLancamento, usuario: Session.getActiveUser().getEmail(), ts: new Date().toISOString(), status: 'pendente' });
+    PropertiesService.getScriptProperties().setProperty(_KEY_APROVACOES_PEND, JSON.stringify(lista));
+    _notificarAprovadores(id, dadosLancamento);
+    return JSON.stringify({ ok: '⏳ Lançamento enviado para aprovação.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function _notificarAprovadores(id, dados) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVADORES) || '[]';
+    var aprovadores = JSON.parse(raw);
+    if (!aprovadores.length) return;
+    var assunto = '🔔 Novo lançamento aguarda aprovação — NF ' + (dados.nf||'?');
+    var usuario = Session.getActiveUser().getEmail();
+    var body    = '<p>O usuário <b>'+_esc(usuario)+'</b> submeteu um lançamento para aprovação.</p>'
+      +'<p><b>NF:</b> '+_esc(String(dados.nf||''))+'<br><b>NFD:</b> '+_esc(String(dados.nfd||''))
+      +'<br><b>Fornecedor:</b> '+_esc(String(dados.fornecedor||''))
+      +'<br><b>Motivo:</b> '+_esc(String(dados.motivo||''))
+      +'<br><b>ID Aprovação:</b> '+_esc(id)+'</p>'
+      +'<p>Acesse o sistema para aprovar ou rejeitar.</p>';
+    MailApp.sendEmail({ to: aprovadores.join(','), subject: assunto, htmlBody: body });
+  } catch(_){}
+}
+
+function listarAprovacoesPendentes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+  try { return raw; } catch(_) { return '[]'; }
+}
+
+function processarAprovacao(id, aprovado, justificativa) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+    var lista = JSON.parse(raw);
+    var idx   = -1;
+    for (var i = 0; i < lista.length; i++) { if (lista[i].id === id) { idx = i; break; } }
+    if (idx === -1) return JSON.stringify({ erro: 'Aprovação não encontrada.' });
+    var item = lista[idx];
+    lista.splice(idx, 1);
+    PropertiesService.getScriptProperties().setProperty(_KEY_APROVACOES_PEND, JSON.stringify(lista));
+    if (aprovado) {
+      _gravarLancamento(item.dados);
+      return JSON.stringify({ ok: '✅ Lançamento aprovado e gravado.' });
+    } else {
+      try {
+        MailApp.sendEmail({ to: item.usuario, subject: '❌ Lançamento reprovado — NF '+(item.dados.nf||'?'),
+          htmlBody: '<p>Seu lançamento foi <b>reprovado</b>.</p><p>Justificativa: '+_esc(justificativa||'—')+'</p>' });
+      } catch(_){}
+      return JSON.stringify({ ok: '✅ Lançamento reprovado. Solicitante notificado.' });
+    }
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Retenção de dados configurável (item 52) ───────────────
+var _KEY_RETENCAO_DIAS    = 'cdv_retencao_dias'; // ex: '730'
+var _KEY_APROVACAO_ATIVA  = 'cdv_aprovacao_lancamento'; // '1' | '0'
+var _KEY_MODELOS_DOC      = 'cdv_modelos_documentos';   // JSON: [{ id, nome, corpo }]
+var _KEY_APROVADORES      = 'cdv_aprovadores';           // JSON: ["email1@", ...]
+var _KEY_APROVACOES_PEND  = 'cdv_aprovacoes_pendentes';  // JSON: [{ id, dados, usuario, ts }]
+
+function obterConfiguracaoRetencao() {
+  var dias = PropertiesService.getScriptProperties().getProperty(_KEY_RETENCAO_DIAS) || '730';
+  return JSON.stringify({ dias: parseInt(dias) });
+}
+
+function salvarConfiguracaoRetencao(dias) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  PropertiesService.getScriptProperties().setProperty(_KEY_RETENCAO_DIAS, String(parseInt(dias)||730));
+  return JSON.stringify({ ok: '✅ Retenção configurada para '+(dias||730)+' dias.' });
+}
+
+// ── Log de exportações (item 53) ───────────────────────────
+var _KEY_LOG_EXPORTACOES = 'cdv_log_exportacoes'; // JSON: [{ ts, usuario, tipo, qtd }]
+
+function registrarExportacao(tipo, qtd) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_LOG_EXPORTACOES) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail(), tipo: tipo, qtd: qtd });
+    lista = lista.slice(0, 100);
+    PropertiesService.getScriptProperties().setProperty(_KEY_LOG_EXPORTACOES, JSON.stringify(lista));
+  } catch(_){}
+}
+
+function obterLogExportacoes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_LOG_EXPORTACOES) || '[]';
+  return raw;
+}
+
+// ── Integridade do backup (item 54) ────────────────────────
+function verificarIntegridadeBackup() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abas = _getTodasAbas();
+    var totalLinhas = 0;
+    abas.forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (aba) totalLinhas += Math.max(0, obterUltimaLinhaDados(aba) - 1);
+    });
+    var drive = DriveApp.getFileById(ss.getId());
+    var sizeMB = (drive.getSize() / 1048576).toFixed(2);
+    var checks = [];
+    checks.push({ label: 'Abas ativas', valor: abas.length, ok: abas.length > 0 });
+    checks.push({ label: 'Total de registros', valor: totalLinhas, ok: totalLinhas >= 0 });
+    checks.push({ label: 'Tamanho do arquivo', valor: sizeMB + ' MB', ok: parseFloat(sizeMB) < 50 });
+    var log = ss.getSheetByName('Log');
+    checks.push({ label: 'Aba Log presente', valor: log ? 'Sim' : 'Não', ok: !!log });
+    return JSON.stringify({ checks: checks, ts: new Date().toISOString() });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Versionamento de configurações (item 51) ───────────────
+function salvarSnapshotConfiguracao(descricao) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props  = PropertiesService.getScriptProperties().getProperties();
+    var raw    = PropertiesService.getScriptProperties().getProperty(_KEY_CONFIG_HISTORICO) || '[]';
+    var hist   = JSON.parse(raw);
+    hist.unshift({ ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail(),
+      descricao: descricao || '', snapshot: props });
+    hist = hist.slice(0, 5); // manter apenas os últimos 5
+    PropertiesService.getScriptProperties().setProperty(_KEY_CONFIG_HISTORICO, JSON.stringify(hist));
+    return JSON.stringify({ ok: '✅ Snapshot salvo.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterHistoricoConfiguracao() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CONFIG_HISTORICO) || '[]';
+  try {
+    var hist = JSON.parse(raw).map(function(h) {
+      return { ts: h.ts, usuario: h.usuario, descricao: h.descricao };
+    });
+    return JSON.stringify({ historico: hist });
+  } catch(_) { return JSON.stringify({ historico: [] }); }
+}
+
+function restaurarSnapshotConfiguracao(indice) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_CONFIG_HISTORICO) || '[]';
+    var hist = JSON.parse(raw);
+    if (!hist[indice]) return JSON.stringify({ erro: 'Snapshot não encontrado.' });
+    var snap = hist[indice].snapshot;
+    var props = PropertiesService.getScriptProperties();
+    Object.keys(snap).forEach(function(k) { props.setProperty(k, snap[k]); });
+    return JSON.stringify({ ok: '✅ Configurações restauradas do snapshot de ' + hist[indice].ts + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Assinaturas de e-mail (foto Drive) ──────────────────────
+function obterAssinaturas() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+  try { return JSON.stringify({ assinaturas: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ assinaturas: {} }); }
+}
+
+function salvarAssinatura(email, driveFileId) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+    var map = JSON.parse(raw);
+    if (driveFileId) map[email.trim().toLowerCase()] = driveFileId.trim();
+    else delete map[email.trim().toLowerCase()];
+    PropertiesService.getScriptProperties().setProperty(_KEY_ASSINATURAS, JSON.stringify(map));
+    return JSON.stringify({ ok: '✅ Assinatura atualizada.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function _obterHtmlAssinatura() {
+  try {
+    var remetente = Session.getActiveUser().getEmail().toLowerCase();
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+    var map = JSON.parse(raw);
+    var fileId = map[remetente];
+    if (!fileId) return '';
+    var url = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    return '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
+      + '<img src="' + url + '" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
+      + '</div>';
+  } catch(_) { return ''; }
+}
+
+function obterPermissoesModulos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES) || '{}';
+  try { return JSON.stringify({ permissoes: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ permissoes: {} }); }
+}
+
+function salvarPermissoesModulo(modulo, emails) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES) || '{}';
+    var perm = JSON.parse(raw);
+    if (!emails || !emails.length) { delete perm[modulo]; }
+    else { perm[modulo] = emails.map(function(e){ return String(e||'').trim().toLowerCase(); }).filter(Boolean); }
+    PropertiesService.getScriptProperties().setProperty(_KEY_PERMISSOES, JSON.stringify(perm));
+    return JSON.stringify({ ok: '✅ Permissões atualizadas para módulo: ' + modulo });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function verificarAcessoModulo(modulo) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES) || '{}';
+    var perm = JSON.parse(raw);
+    if (!perm[modulo] || !perm[modulo].length) return JSON.stringify({ acesso: true });
+    var usuario = (Session.getActiveUser().getEmail() || '').toLowerCase();
+    return JSON.stringify({ acesso: perm[modulo].indexOf(usuario) !== -1 || _usuarioEhAdmin() });
+  } catch(_) { return JSON.stringify({ acesso: true }); }
+}
+
+// ── Templates de e-mail por tipo ───────────────────────────
+function obterEmailTemplates() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAIL_TEMPLATES) || '{}';
+  try { return JSON.stringify({ templates: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ templates: {} }); }
+}
+
+function salvarEmailTemplate(tipo, assunto, corpo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAIL_TEMPLATES) || '{}';
+    var tpls = JSON.parse(raw);
+    tpls[tipo] = { assunto: assunto, corpo: corpo };
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAIL_TEMPLATES, JSON.stringify(tpls));
+    return JSON.stringify({ ok: '✅ Template salvo para tipo: ' + tipo });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── CC/BCC por fornecedor ───────────────────────────────────
+function obterCCFornecedores() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_FORN) || '{}';
+  try { return JSON.stringify({ ccForn: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ ccForn: {} }); }
+}
+
+function salvarCCFornecedor(forn, cc, bcc) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_FORN) || '{}';
+    var mapa = JSON.parse(raw);
+    if (cc || bcc) { mapa[forn] = { cc: cc || '', bcc: bcc || '' }; }
+    else { delete mapa[forn]; }
+    PropertiesService.getScriptProperties().setProperty(_KEY_CC_FORN, JSON.stringify(mapa));
+    return JSON.stringify({ ok: '✅ CC/BCC atualizado para ' + forn });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
 
 function obterAdminsConfig() {
   if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });

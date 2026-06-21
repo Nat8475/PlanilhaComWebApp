@@ -223,8 +223,32 @@
     <tbody id="prevTabela"></tbody>
     <tfoot><tr class="total-row" id="prevTotal"></tr></tfoot>
   </table>
-  <div class="botoes" style="margin-top:10px">
-    <button id="btnEnviar" onclick="enviar(false)">📨 Confirmar e Enviar</button>
+  <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:8px 10px;margin-top:8px">
+    <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:5px">⏰ Agendamento</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="datetime-local" id="agendar-dt" style="flex:1;padding:5px 8px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px">
+      <button onclick="agendarEnvio()" style="background:#D97706;color:#fff;border:none;border-radius:5px;padding:6px 12px;cursor:pointer;font-size:12px">⏰ Agendar</button>
+    </div>
+    <div id="msg-agendar" style="font-size:11px;margin-top:4px"></div>
+  </div>
+  <div class="botoes" style="margin-top:10px;display:flex;gap:8px">
+    <button onclick="previewEmail()" style="background:#6B7280;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;flex:1">👁 Preview HTML</button>
+    <button id="btnEnviar" onclick="enviar(false)" style="flex:2">📨 Confirmar e Enviar</button>
+  </div>
+</div>
+
+<!-- Modal preview email -->
+<div id="modal-preview-email" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:8px;width:90vw;max-width:680px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#25419A;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700;font-size:14px">👁 Preview do E-mail</span>
+      <button onclick="document.getElementById('modal-preview-email').style.display='none'" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:12px;border-bottom:1px solid #E5E7EB;font-size:12px;color:#6B7280">
+      <strong>Para:</strong> <span id="preview-para"></span><br>
+      <strong>Assunto:</strong> <span id="preview-assunto"></span>
+    </div>
+    <iframe id="preview-iframe" style="flex:1;border:none;min-height:400px"></iframe>
   </div>
 </div>
 
@@ -460,6 +484,45 @@ function enviar(forcado) {
       mostrar('erro', '❌ ' + e.message);
     })
     .enviarEmailDevolucao(params);
+}
+
+function agendarEnvio() {
+  var dt = document.getElementById('agendar-dt').value;
+  if (!dt) { document.getElementById('msg-agendar').innerHTML = '<span style="color:#DC2626">Selecione data e hora.</span>'; return; }
+  var iso = new Date(dt).toISOString();
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('msg-agendar').innerHTML = p.ok
+        ? '<span style="color:#059669">'+p.ok+'</span>'
+        : '<span style="color:#DC2626">'+p.erro+'</span>';
+    } catch(_){}
+  }).agendarEmailDevolucao(_coletarParams(), iso);
+}
+
+function previewEmail() {
+  var assunto = document.getElementById('assunto').value.trim();
+  var destEl   = document.getElementById('destlist');
+  var dests    = destEl ? destEl.textContent : '—';
+  document.getElementById('preview-para').textContent    = dests;
+  document.getElementById('preview-assunto').textContent = assunto || '(sem assunto)';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var iframe = document.getElementById('preview-iframe');
+      iframe.srcdoc = p.html || '<p style="padding:20px;font-family:sans-serif;color:#888">Preview não disponível.</p>';
+      document.getElementById('modal-preview-email').style.display = 'flex';
+    } catch(_){}
+  }).previewEmailDevolucao(_coletarParams());
+}
+
+function _coletarParams() {
+  var nfds = (document.getElementById('nfds').value || '').split(/[\n,;]+/).map(function(s){return s.trim();}).filter(Boolean);
+  return {
+    nfds:    nfds,
+    assunto: document.getElementById('assunto').value.trim(),
+    obs:     document.getElementById('obs') ? document.getElementById('obs').value.trim() : ''
+  };
 }
 
 function mostrar(tipo, txt) {

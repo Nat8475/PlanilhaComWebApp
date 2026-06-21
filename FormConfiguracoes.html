@@ -113,6 +113,17 @@
     .diag-warn{color:var(--amber)}
     .diag-erro{color:var(--red)}
 
+    /* toggle switch */
+    .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;inset:0;background:#D1D5DB;border-radius:12px;
+                   transition:background .2s}
+    .toggle-slider:before{position:absolute;content:'';height:18px;width:18px;left:3px;top:3px;
+                          background:#fff;border-radius:50%;transition:transform .2s;
+                          box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle-switch input:checked + .toggle-slider{background:var(--navy)}
+    .toggle-switch input:checked + .toggle-slider:before{transform:translateX(20px)}
+
     .botoes{display:flex;gap:8px;margin-top:12px}
     button.btn-principal{flex:1;padding:9px;border:none;border-radius:var(--r-sm);font-size:13px;
                          font-weight:700;cursor:pointer;font-family:var(--font);
@@ -221,6 +232,97 @@
       <div class="txt">
         <strong>Configurar / Reinstalar Sistema</strong>
         <span>Recriar abas, formatação, dashboard e triggers (não apaga dados)</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('readonly')">
+      <span class="icone">🔒</span>
+      <div class="txt">
+        <strong>Modo Somente-Leitura</strong>
+        <span>Bloquear todas as ações de escrita do sistema (lançar, baixar, editar)</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('templates')">
+      <span class="icone">✉️</span>
+      <div class="txt">
+        <strong>Templates de E-mail por Tipo</strong>
+        <span>Personalizar assunto e corpo do e-mail para cada tipo de devolução</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('ccforn')">
+      <span class="icone">📧</span>
+      <div class="txt">
+        <strong>CC/BCC por Fornecedor</strong>
+        <span>Configurar cópia automática de e-mails por fornecedor</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('permissoes')">
+      <span class="icone">🛡️</span>
+      <div class="txt">
+        <strong>Permissões por Módulo</strong>
+        <span>Restringir quem pode acessar lançamento, e-mail, configurações etc.</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('assinaturas')">
+      <span class="icone">✍️</span>
+      <div class="txt">
+        <strong>Assinaturas de E-mail</strong>
+        <span>Associar foto de assinatura (Drive) a cada usuário remetente</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('retencao')">
+      <span class="icone">⏳</span>
+      <div class="txt">
+        <strong>Retenção de Dados</strong>
+        <span>Definir por quantos dias manter registros históricos</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('versioning')">
+      <span class="icone">🕒</span>
+      <div class="txt">
+        <strong>Versionamento de Configurações</strong>
+        <span>Salvar snapshots e restaurar configurações anteriores</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('logexport')">
+      <span class="icone">📤</span>
+      <div class="txt">
+        <strong>Log de Exportações</strong>
+        <span>Histórico de exportações realizadas (CSV, PDF)</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('backup')">
+      <span class="icone">🔍</span>
+      <div class="txt">
+        <strong>Integridade do Backup</strong>
+        <span>Verificar saúde e integridade dos dados da planilha</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('aprovacao')">
+      <span class="icone">✅</span>
+      <div class="txt">
+        <strong>Aprovação de Lançamentos</strong>
+        <span>Habilitar fluxo de aprovação para novos lançamentos (com notificação)</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('visuais')">
+      <span class="icone">🎨</span>
+      <div class="txt">
+        <strong>Personalização Visual</strong>
+        <span>Cores por status, logo e nome do sistema customizáveis</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('diagnostico')">
+      <span class="icone">🔧</span>
+      <div class="txt">
+        <strong>Diagnóstico do Sistema</strong>
+        <span>Erros recentes, tamanho da planilha, teste de e-mail</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('changelog')">
+      <span class="icone">📋</span>
+      <div class="txt">
+        <strong>Changelog</strong>
+        <span>Histórico de atualizações e versões do sistema</span>
       </div>
     </div>
   </div>
@@ -605,6 +707,256 @@
   <div class="msg" id="ac-msg"></div>
 </div>
 
+<!-- ════════ TELA — MODO SOMENTE-LEITURA ════════ -->
+<div id="screen-readonly" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🔒 Modo Somente-Leitura
+  </div>
+  <div class="info" style="margin-bottom:14px">
+    Quando ativado, todos os botões de escrita (lançar, baixar, editar, frete) ficam
+    desabilitados em toda a interface. Útil para manutenção ou auditorias.
+  </div>
+  <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+              padding:16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">
+        🔒 Modo somente-leitura
+      </div>
+      <div style="font-size:11px;color:var(--text-muted)" id="ro-status-txt">Verificando...</div>
+    </div>
+    <label class="toggle-switch">
+      <input type="checkbox" id="ro-toggle" onchange="alterarModoRO(this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="msg" id="ro-msg"></div>
+  <div class="botoes">
+    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  </div>
+</div>
+
+<!-- ════ TELA — PERMISSÕES POR MÓDULO ════ -->
+<div id="screen-permissoes" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🛡️ Permissões por Módulo
+  </div>
+  <div class="info" style="margin-bottom:10px">
+    Deixe a lista vazia para acesso liberado a todos. Adicione e-mails para restringir o módulo.
+  </div>
+  <div id="perm-lista"></div>
+  <div class="msg" id="perm-msg"></div>
+  <div class="botoes">
+    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  </div>
+</div>
+
+<!-- ════ TELA — ASSINATURAS E-MAIL ════ -->
+<div id="screen-assinaturas" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    ✍️ Assinaturas de E-mail
+  </div>
+  <div class="info" style="margin-bottom:10px">
+    Associe o ID do arquivo de imagem no Google Drive à assinatura de cada usuário.
+    A imagem será inserida no rodapé de todos os e-mails enviados por esse usuário.
+  </div>
+  <div id="assn-lista" style="margin-bottom:12px"></div>
+  <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px">Adicionar / atualizar assinatura</div>
+    <div style="display:grid;gap:6px">
+      <input id="assn-email" type="email" placeholder="E-mail do usuário" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+      <input id="assn-fileid" type="text" placeholder="ID do arquivo Drive (ex: 1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap)" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn-save" onclick="salvarAssinaturaConf()">💾 Salvar</button>
+      <button class="btn-cancel" onclick="document.getElementById('assn-email').value='';document.getElementById('assn-fileid').value=''">✕ Limpar</button>
+    </div>
+    <div class="msg" id="assn-msg"></div>
+  </div>
+  <div class="botoes">
+    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  </div>
+</div>
+
+<!-- ════ TELA — VISUAIS ════ -->
+<div id="screen-visuais" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🎨 Personalização Visual</div>
+  <div style="display:grid;gap:10px;margin-bottom:10px">
+    <div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px">Nome do Sistema</div>
+      <input type="text" id="vis-nome" placeholder="Controle de Devoluções"
+        style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px">URL ou ID da Logo (Google Drive)</div>
+      <input type="text" id="vis-logo" placeholder="ID do arquivo Drive ou URL da imagem"
+        style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+      <div id="vis-logo-preview" style="margin-top:6px"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px">Cores por Status</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Pendente <input type="color" id="cor-pendente" value="#D97706"></label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Devolvido <input type="color" id="cor-devolvido" value="#059669"></label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Venda <input type="color" id="cor-venda" value="#2563EB"></label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Em Frete <input type="color" id="cor-emfrete" value="#7C3AED"></label>
+      </div>
+    </div>
+  </div>
+  <button class="btn-save" onclick="salvarVisuais()" style="width:100%">💾 Salvar</button>
+  <div class="msg" id="vis-msg"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — DIAGNÓSTICO ════ -->
+<div id="screen-diagnostico" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🔧 Diagnóstico do Sistema</div>
+  <div style="display:grid;gap:8px;margin-bottom:10px">
+    <button class="btn-save" onclick="executarDiagnostico()" style="width:100%">▶ Verificar sistema</button>
+    <div class="spinner" id="diag-spin" style="display:none">⏳ Verificando...</div>
+    <div id="diag-resultado"></div>
+    <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px">
+      <div style="font-size:11px;font-weight:700;margin-bottom:6px">Teste de envio de e-mail</div>
+      <div style="display:flex;gap:6px">
+        <input type="email" id="diag-email-dest" placeholder="destinatario@email.com"
+          style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button class="btn-save" onclick="testarEmail()" style="white-space:nowrap">📧 Testar</button>
+      </div>
+      <div class="msg" id="diag-email-msg" style="margin-top:6px"></div>
+    </div>
+    <div id="diag-erros-recentes" style="margin-top:6px"></div>
+  </div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — CHANGELOG ════ -->
+<div id="screen-changelog" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>📋 Changelog</div>
+  <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;margin-bottom:6px">Nova entrada</div>
+    <input type="text" id="chl-versao" placeholder="v1.0.0"
+      style="width:100%;margin-bottom:6px;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+    <textarea id="chl-itens" rows="3" placeholder="Um item por linha"
+      style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;resize:vertical"></textarea>
+    <button class="btn-save" onclick="adicionarEntradaChangelog()" style="margin-top:6px">➕ Adicionar</button>
+    <div class="msg" id="chl-msg"></div>
+  </div>
+  <div id="chl-lista"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — APROVAÇÃO ════ -->
+<div id="screen-aprovacao" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>✅ Aprovação de Lançamentos</div>
+  <div class="info" style="margin-bottom:10px">Quando ativado, todo novo lançamento fica pendente de aprovação por um administrador antes de ser salvo.</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="aprv-ativo" style="width:16px;height:16px">
+      <strong>Ativar aprovação de lançamentos</strong>
+    </label>
+  </div>
+  <div style="margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px">E-mails dos aprovadores (um por linha)</div>
+    <textarea id="aprv-aprovadores" rows="4"
+      style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;resize:vertical"
+      placeholder="admin@empresa.com&#10;gestor@empresa.com"></textarea>
+  </div>
+  <button class="btn-save" onclick="salvarAprovacao()" style="width:100%;margin-bottom:10px">💾 Salvar configuração</button>
+  <div class="msg" id="aprv-msg"></div>
+
+  <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px">⏳ Aprovações Pendentes</div>
+    <button class="btn-save" onclick="carregarAprovacoesPendentes()" style="margin-bottom:6px;padding:5px 12px;font-size:12px">↺ Atualizar</button>
+    <div id="aprv-lista"></div>
+  </div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — RETENÇÃO ════ -->
+<div id="screen-retencao" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>⏳ Retenção de Dados</div>
+  <div class="info" style="margin-bottom:10px">Defina há quantos dias manter registros históricos. Registros mais antigos serão marcados para arquivamento.</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <input type="number" id="ret-dias" min="30" max="3650" value="730"
+      style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;width:100px">
+    <span style="font-size:12px;color:#6B7280">dias</span>
+    <button class="btn-save" onclick="salvarRetencao()">💾 Salvar</button>
+  </div>
+  <div class="msg" id="ret-msg"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — VERSIONING ════ -->
+<div id="screen-versioning" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🕒 Versionamento de Configurações</div>
+  <div class="info" style="margin-bottom:10px">Salve um snapshot das configurações atuais. Os últimos 5 snapshots são mantidos.</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input type="text" id="ver-desc" placeholder="Descrição (ex: antes da migração)"
+      style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+    <button class="btn-save" onclick="salvarSnapshot()">📸 Salvar Snapshot</button>
+  </div>
+  <div class="msg" id="ver-msg"></div>
+  <div id="ver-hist" style="margin-top:8px"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — LOG EXPORTAÇÕES ════ -->
+<div id="screen-logexport" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>📤 Log de Exportações</div>
+  <div class="spinner" id="lexp-spin">⏳ Carregando...</div>
+  <div id="lexp-lista" style="margin-top:8px"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — BACKUP ════ -->
+<div id="screen-backup" class="screen">
+  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🔍 Integridade do Backup</div>
+  <button class="btn-save" onclick="verificarBackup()" style="width:100%;margin-bottom:10px">▶ Verificar agora</button>
+  <div class="spinner" id="bk-spin" style="display:none">⏳ Verificando...</div>
+  <div id="bk-resultado"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — TEMPLATES E-MAIL ════ -->
+<div id="screen-templates" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    ✉️ Templates de E-mail por Tipo
+  </div>
+  <div class="info" style="margin-bottom:10px">
+    Defina assunto padrão para cada tipo. Use <code>{forn}</code>, <code>{qtd}</code>, <code>{tipo}</code> como variáveis.
+  </div>
+  <div id="tpl-lista"></div>
+  <div class="msg" id="tpl-msg"></div>
+  <div class="botoes">
+    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  </div>
+</div>
+
+<!-- ════ TELA — CC/BCC POR FORNECEDOR ════ -->
+<div id="screen-ccforn" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    📧 CC/BCC por Fornecedor
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+    <input type="text" id="ccf-forn" placeholder="Nome do fornecedor"
+      style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+    <input type="text" id="ccf-cc"   placeholder="CC (e-mails separados por vírgula)"
+      style="flex:2;min-width:160px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+    <input type="text" id="ccf-bcc"  placeholder="BCC"
+      style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+    <button class="btn-acao" onclick="salvarCCForn()">💾 Salvar</button>
+  </div>
+  <div class="msg" id="ccf-msg"></div>
+  <div id="ccf-lista" style="margin-top:8px"></div>
+  <div class="botoes" style="margin-top:10px">
+    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  </div>
+</div>
+
 <script>
 // ── Estado ────────────────────────────────────────────────────
 var telaAtual = 'sel';
@@ -627,8 +979,21 @@ function irPara(tela) {
   if (tela === 'emails')      carregarEmailConfig();
   if (tela === 'cores')       carregarCoresSalvas();
   if (tela === 'diagnostico') carregarDiagnostico();
+  if (tela === 'templates')    carregarTemplates();
+  if (tela === 'ccforn')       carregarCCForn();
+  if (tela === 'permissoes')   carregarPermissoes();
+  if (tela === 'assinaturas')  carregarAssinaturas();
+  if (tela === 'retencao')     carregarRetencao();
+  if (tela === 'versioning')   carregarSnapshots();
+  if (tela === 'logexport')    carregarLogExportacoes();
+  if (tela === 'backup')     {}
+  if (tela === 'aprovacao')   carregarConfigAprovacao();
+  if (tela === 'visuais')     carregarVisuais();
+  if (tela === 'diagnostico') carregarDiagnostico();
+  if (tela === 'changelog')   carregarChangelog();
   if (tela === 'drive')       resetDrive();
   if (tela === 'acesso')      carregarAdminsConfig();
+  if (tela === 'readonly')    carregarModoRO();
 }
 
 function voltar() {
@@ -1079,6 +1444,458 @@ function esc(s) {
   return String(s==null?'':s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// ── Modo somente-leitura ──────────────────────────────────────
+function carregarModoRO() {
+  document.getElementById('ro-status-txt').textContent = 'Verificando...';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      var ativo = !!r.ativo;
+      document.getElementById('ro-toggle').checked = ativo;
+      document.getElementById('ro-status-txt').textContent =
+        ativo ? '🔒 Ativo — ações de escrita bloqueadas' : '✅ Inativo — sistema em operação normal';
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('ro-status-txt').textContent = '❌ ' + e.message;
+    })
+    .obterModoSomenteLeitura();
+}
+
+function alterarModoRO(ativo) {
+  var roMsg = document.getElementById('ro-msg');
+  roMsg.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.ok) {
+        showMsg('ro', 'ok', r.ok);
+        document.getElementById('ro-status-txt').textContent =
+          ativo ? '🔒 Ativo — ações de escrita bloqueadas' : '✅ Inativo — sistema em operação normal';
+      } else {
+        showMsg('ro', 'erro', '❌ ' + (r.erro || 'Erro'));
+        document.getElementById('ro-toggle').checked = !ativo;
+      }
+    })
+    .withFailureHandler(function(e) {
+      showMsg('ro', 'erro', '❌ ' + e.message);
+      document.getElementById('ro-toggle').checked = !ativo;
+    })
+    .salvarModoSomenteLeitura(ativo);
+}
+
+// ── Templates de e-mail ────────────────────────────────────
+var _TIPOS_EMAIL = ['avaria', 'vencimento', 'rejeicao', 'extravio', 'outros'];
+
+function carregarTemplates() {
+  document.getElementById('tpl-lista').innerHTML = '<div style="color:#9CA3AF;font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('tpl-lista').innerHTML = '❌ ' + r.erro; return; }
+        renderTemplates(r.templates || {});
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterEmailTemplates();
+}
+
+function renderTemplates(tpls) {
+  var el = document.getElementById('tpl-lista');
+  el.innerHTML = _TIPOS_EMAIL.map(function(tipo) {
+    var t = tpls[tipo] || { assunto: '', corpo: '' };
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:6px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:700;font-size:12px;margin-bottom:6px;color:var(--navy)">Tipo: ' + tipo + '</div>'
+      + '<input type="text" id="tpl-ass-'+tipo+'" placeholder="Assunto (deixe vazio para padrão)" value="'+esc(t.assunto)+'" '
+      + 'style="width:100%;padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:11px;margin-bottom:4px;background:var(--surface);color:var(--text)">'
+      + '<button class="btn-acao" style="font-size:11px;padding:4px 10px" onclick="salvarTemplate(\''+tipo+'\')">💾 Salvar</button>'
+      + '</div>';
+  }).join('');
+}
+
+function salvarTemplate(tipo) {
+  var assunto = (document.getElementById('tpl-ass-'+tipo)||{}).value || '';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('tpl', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+    })
+    .withFailureHandler(function(e) { showMsg('tpl','erro','❌ '+e.message); })
+    .salvarEmailTemplate(tipo, assunto, '');
+}
+
+// ── CC/BCC por fornecedor ──────────────────────────────────
+var _ccFornLocal = {};
+
+function carregarCCForn() {
+  document.getElementById('ccf-lista').innerHTML = '<div style="color:#9CA3AF;font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('ccf-lista').innerHTML = '❌ ' + r.erro; return; }
+        _ccFornLocal = r.ccForn || {};
+        renderCCForn();
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterCCFornecedores();
+}
+
+function renderCCForn() {
+  var el = document.getElementById('ccf-lista');
+  var keys = Object.keys(_ccFornLocal);
+  if (!keys.length) { el.innerHTML = '<div style="color:#9CA3AF;font-size:11px">Nenhuma configuração.</div>'; return; }
+  el.innerHTML = '<table style="width:100%;font-size:11px;border-collapse:collapse">'
+    + '<tr style="font-weight:bold;border-bottom:1px solid var(--border-def)"><td style="padding:4px">Fornecedor</td><td>CC</td><td>BCC</td><td></td></tr>'
+    + keys.map(function(k) {
+      var v = _ccFornLocal[k] || {};
+      return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px">'+esc(k)+'</td>'
+        +'<td>'+esc(v.cc||'')+'</td><td>'+esc(v.bcc||'')+'</td>'
+        +'<td><button style="font-size:10px;padding:1px 6px;cursor:pointer" onclick="excluirCCForn(\''+k.replace(/'/g,"\\'")+'\')" title="Remover">✕</button></td></tr>';
+    }).join('')
+    + '</table>';
+}
+
+function salvarCCForn() {
+  var forn = (document.getElementById('ccf-forn').value||'').trim();
+  var cc   = (document.getElementById('ccf-cc').value||'').trim();
+  var bcc  = (document.getElementById('ccf-bcc').value||'').trim();
+  if (!forn) { showMsg('ccf','erro','❌ Informe o nome do fornecedor.'); return; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('ccf', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+      if (r.ok) carregarCCForn();
+    })
+    .withFailureHandler(function(e) { showMsg('ccf','erro','❌ '+e.message); })
+    .salvarCCFornecedor(forn, cc, bcc);
+}
+
+function excluirCCForn(forn) {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.ok) carregarCCForn();
+    })
+    .withFailureHandler(function(){})
+    .salvarCCFornecedor(forn, '', '');
+}
+
+// ── Permissões por módulo ──────────────────────────────────
+var _MODULOS = ['notas','lancamento','email','frete','configuracoes','auditoria'];
+var _permLocal = {};
+
+function carregarPermissoes() {
+  document.getElementById('perm-lista').innerHTML = '<div style="color:#9CA3AF;font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('perm-lista').innerHTML = '❌ ' + r.erro; return; }
+        _permLocal = r.permissoes || {};
+        renderPermissoes();
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterPermissoesModulos();
+}
+
+function renderPermissoes() {
+  var el = document.getElementById('perm-lista');
+  el.innerHTML = _MODULOS.map(function(mod) {
+    var lista = (_permLocal[mod] || []).join(', ');
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:6px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:700;font-size:12px;margin-bottom:5px;color:var(--navy)">📦 '+mod+'</div>'
+      + '<input type="text" id="perm-inp-'+mod+'" value="'+esc(lista)+'" placeholder="E-mails separados por vírgula (vazio = todos)" '
+      + 'style="width:100%;padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:11px;background:var(--surface);color:var(--text);margin-bottom:4px">'
+      + '<button class="btn-acao" style="font-size:11px;padding:4px 10px" onclick="salvarPermModulo(\''+mod+'\')">💾 Salvar</button>'
+      + (lista ? '<span style="font-size:10px;color:#DC2626;margin-left:8px">Restrito</span>' : '<span style="font-size:10px;color:#059669;margin-left:8px">Aberto a todos</span>')
+      + '</div>';
+  }).join('');
+}
+
+function salvarPermModulo(mod) {
+  var val = (document.getElementById('perm-inp-'+mod)||{}).value || '';
+  var emails = val.split(',').map(function(e){ return e.trim(); }).filter(Boolean);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('perm', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+      if (r.ok) carregarPermissoes();
+    })
+    .withFailureHandler(function(e) { showMsg('perm','erro','❌ '+e.message); })
+    .salvarPermissoesModulo(mod, emails);
+}
+
+// ── Assinaturas de e-mail ─────────────────────────────────
+var _assinaturasMap = {};
+
+function carregarAssinaturas() {
+  document.getElementById('assn-lista').innerHTML = '<span style="font-size:11px;color:#9CA3AF">Carregando...</span>';
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); _assinaturasMap = p.assinaturas || {}; renderAssinaturas(); }
+    catch(_) {}
+  }).obterAssinaturas();
+}
+
+function renderAssinaturas() {
+  var lista = document.getElementById('assn-lista');
+  var keys = Object.keys(_assinaturasMap);
+  if (!keys.length) { lista.innerHTML = '<div style="font-size:11px;color:#9CA3AF;padding:6px 0">Nenhuma assinatura cadastrada.</div>'; return; }
+  lista.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th>'
+    +'<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">ID Drive</th>'
+    +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Preview</th>'
+    +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>'
+    + keys.map(function(email) {
+      var id = _assinaturasMap[email];
+      var thumb = 'https://drive.google.com/thumbnail?id='+id+'&sz=w80';
+      return '<tr><td style="padding:4px 8px">'+esc(email)+'</td>'
+        +'<td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6B7280">'+esc(id)+'</td>'
+        +'<td style="padding:4px 8px;text-align:center"><img src="'+esc(thumb)+'" style="max-height:36px;border-radius:3px" onerror="this.style.display=\'none\'"></td>'
+        +'<td style="padding:4px 8px;text-align:center">'
+        +'<button class="btn-cancel" onclick="excluirAssinatura(\''+esc(email)+'\')">✕</button></td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function salvarAssinaturaConf() {
+  var email  = document.getElementById('assn-email').value.trim();
+  var fileId = document.getElementById('assn-fileid').value.trim();
+  if (!email || !fileId) { mostrarMsg('assn-msg','Preencha e-mail e ID do arquivo.','erro'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); if (p.ok) {
+      mostrarMsg('assn-msg', p.ok, 'ok');
+      document.getElementById('assn-email').value = '';
+      document.getElementById('assn-fileid').value = '';
+      carregarAssinaturas();
+    } else { mostrarMsg('assn-msg', p.erro || 'Erro', 'erro'); } } catch(_){}
+  }).salvarAssinatura(email, fileId);
+}
+
+function excluirAssinatura(email) {
+  if (!confirm('Remover assinatura de '+email+'?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); if (p.ok) carregarAssinaturas(); } catch(_){}
+  }).salvarAssinatura(email, '');
+}
+
+// ── Personalização Visual ─────────────────────────────────
+function carregarVisuais() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('vis-nome').value  = p.nomeSistema || '';
+      document.getElementById('vis-logo').value  = p.logoUrl     || '';
+      var c = p.cores || {};
+      if (c.Pendente)  document.getElementById('cor-pendente').value  = c.Pendente;
+      if (c.Devolvido) document.getElementById('cor-devolvido').value = c.Devolvido;
+      if (c.Venda)     document.getElementById('cor-venda').value     = c.Venda;
+      if (c['Em Frete']) document.getElementById('cor-emfrete').value  = c['Em Frete'];
+      if (p.logoUrl) document.getElementById('vis-logo-preview').innerHTML =
+        '<img src="https://drive.google.com/thumbnail?id='+p.logoUrl+'&sz=w120" style="max-height:40px" onerror="this.style.display=\'none\'">';
+    } catch(_){}
+  }).obterConfigVisuais();
+}
+function salvarVisuais() {
+  var cores = { Pendente: document.getElementById('cor-pendente').value,
+    Devolvido: document.getElementById('cor-devolvido').value,
+    Venda: document.getElementById('cor-venda').value,
+    'Em Frete': document.getElementById('cor-emfrete').value };
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('vis-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).salvarConfigVisuais(cores, document.getElementById('vis-logo').value.trim(), document.getElementById('vis-nome').value.trim());
+}
+
+// ── Diagnóstico ───────────────────────────────────────────
+function carregarDiagnostico() { executarDiagnostico(); }
+function executarDiagnostico() {
+  document.getElementById('diag-spin').style.display='block';
+  document.getElementById('diag-resultado').innerHTML='';
+  google.script.run.withSuccessHandler(function(r) {
+    document.getElementById('diag-spin').style.display='none';
+    try {
+      var p=JSON.parse(r);
+      if (p.erro) { document.getElementById('diag-resultado').innerHTML='<span style="color:red">'+p.erro+'</span>'; return; }
+      document.getElementById('diag-resultado').innerHTML =
+        '<div style="font-size:12px;background:#F9FAFB;border:1px solid var(--border);border-radius:6px;padding:10px">'
+        +'<div>📁 <b>Tamanho:</b> '+p.sizeMB+' MB '+(p.alerta?'<span style="color:#DC2626">⚠️ Próximo do limite</span>':'')+'</div>'
+        +'<div>🗂️ <b>Abas:</b> '+p.abas+'</div>'
+        +'<div>📊 <b>Total linhas:</b> '+p.totalLinhas+'</div></div>';
+    } catch(_){}
+  }).monitorarTamanhoPlanilha();
+  // Erros recentes
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      var el = document.getElementById('diag-erros-recentes');
+      if (!lista.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhum erro registrado.</div>'; return; }
+      el.innerHTML = '<div style="font-size:11px;font-weight:700;margin-bottom:4px">Erros recentes</div>'
+        +'<div style="max-height:120px;overflow-y:auto">'
+        + lista.slice(0,10).map(function(e) {
+          return '<div style="font-size:10px;border-bottom:1px solid var(--border);padding:3px 0">'
+            +'<span style="color:#9CA3AF">'+esc(new Date(e.ts).toLocaleString('pt-BR'))+'</span> '
+            +'<b>'+esc(e.func)+'</b>: '+esc(e.msg)+'</div>';
+        }).join('')+'</div>';
+    } catch(_){}
+  }).obterErrosRecentes();
+}
+function testarEmail() {
+  var dest = document.getElementById('diag-email-dest').value.trim();
+  if (!dest) { mostrarMsg('diag-email-msg','Informe um e-mail.','erro'); return; }
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('diag-email-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).testarEnvioEmail(dest);
+}
+
+// ── Changelog ─────────────────────────────────────────────
+function carregarChangelog() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      var el = document.getElementById('chl-lista');
+      if (!lista.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhuma entrada.</div>'; return; }
+      el.innerHTML = lista.map(function(e) {
+        return '<div style="margin-bottom:10px;border-left:3px solid var(--navy);padding:6px 10px;background:#F9FAFB;border-radius:0 6px 6px 0">'
+          +'<div style="font-weight:700;font-size:13px">'+esc(e.versao)+' <span style="font-size:10px;color:#9CA3AF">'+esc(e.data)+'</span></div>'
+          +'<ul style="font-size:12px;margin:4px 0 0 14px">'
+          + (e.itens||[]).map(function(i){ return '<li>'+esc(i)+'</li>'; }).join('')
+          +'</ul></div>';
+      }).join('');
+    } catch(_){}
+  }).obterChangelog();
+}
+function adicionarEntradaChangelog() {
+  var versao = document.getElementById('chl-versao').value.trim();
+  var itens  = document.getElementById('chl-itens').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!versao || !itens.length) { mostrarMsg('chl-msg','Preencha versão e itens.','erro'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('chl-msg',p.ok||p.erro,p.ok?'ok':'erro'); if(p.ok) carregarChangelog(); } catch(_){}
+  }).adicionarChangelog(versao, itens);
+}
+
+// ── Aprovação de Lançamentos ──────────────────────────────
+function carregarConfigAprovacao() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('aprv-ativo').checked = !!p.ativo;
+      document.getElementById('aprv-aprovadores').value = (p.aprovadores||[]).join('\n');
+    } catch(_){}
+  }).obterConfigAprovacao();
+}
+function salvarAprovacao() {
+  var ativo = document.getElementById('aprv-ativo').checked;
+  var emails = document.getElementById('aprv-aprovadores').value.split('\n')
+    .map(function(e){ return e.trim(); }).filter(Boolean);
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('aprv-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).salvarConfigAprovacao(ativo, emails);
+}
+function carregarAprovacoesPendentes() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      var el = document.getElementById('aprv-lista');
+      if (!lista.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhuma aprovação pendente.</div>'; return; }
+      el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+        +'<th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Data</th>'
+        +'<th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Usuário</th>'
+        +'<th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">NF</th>'
+        +'<th style="padding:5px 8px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>'
+        + lista.map(function(it) {
+          return '<tr><td style="padding:5px 8px">'+esc(new Date(it.ts).toLocaleString('pt-BR'))+'</td>'
+            +'<td style="padding:5px 8px">'+esc(it.usuario)+'</td>'
+            +'<td style="padding:5px 8px">'+esc(it.dados&&it.dados.nf||'—')+'</td>'
+            +'<td style="padding:5px 8px;display:flex;gap:4px">'
+            +'<button class="btn-save" onclick="_acaoAprv(\''+esc(it.id)+'\',true)" style="font-size:11px;padding:3px 8px">✅</button>'
+            +'<button class="btn-cancel" onclick="_acaoAprv(\''+esc(it.id)+'\',false)" style="font-size:11px;padding:3px 8px">❌</button>'
+            +'</td></tr>';
+        }).join('')+'</tbody></table>';
+    } catch(_){}
+  }).listarAprovacoesPendentes();
+}
+function _acaoAprv(id, aprovar) {
+  var just = aprovar ? '' : (prompt('Justificativa da reprovação:')||'');
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('aprv-msg',p.ok||p.erro,p.ok?'ok':'erro'); if(p.ok) carregarAprovacoesPendentes(); } catch(_){}
+  }).processarAprovacao(id, aprovar, just);
+}
+
+// ── Retenção ──────────────────────────────────────────────
+function carregarRetencao() {
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); document.getElementById('ret-dias').value = p.dias||730; } catch(_){}
+  }).obterConfiguracaoRetencao();
+}
+function salvarRetencao() {
+  var dias = parseInt(document.getElementById('ret-dias').value)||730;
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('ret-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).salvarConfiguracaoRetencao(dias);
+}
+
+// ── Versionamento ─────────────────────────────────────────
+function carregarSnapshots() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p=JSON.parse(r); var hist=p.historico||[];
+      var el=document.getElementById('ver-hist');
+      if (!hist.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhum snapshot salvo.</div>'; return; }
+      el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Data</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Descrição</th><th></th></tr></thead><tbody>'
+      + hist.map(function(h,i){ return '<tr><td style="padding:4px 8px">'+esc(new Date(h.ts).toLocaleString('pt-BR'))+'</td><td style="padding:4px 8px">'+esc(h.usuario)+'</td><td style="padding:4px 8px">'+esc(h.descricao)+'</td><td style="padding:4px 8px"><button class="btn-cancel" onclick="restaurarSnapshot('+i+')" style="font-size:11px">♻️ Restaurar</button></td></tr>'; }).join('')
+      +'</tbody></table>';
+    } catch(_){}
+  }).obterHistoricoConfiguracao();
+}
+function salvarSnapshot() {
+  var desc=document.getElementById('ver-desc').value.trim();
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('ver-msg',p.ok||p.erro,p.ok?'ok':'erro'); if(p.ok) carregarSnapshots(); } catch(_){}
+  }).salvarSnapshotConfiguracao(desc);
+}
+function restaurarSnapshot(i) {
+  if (!confirm('Restaurar snapshot #'+i+'? As configurações atuais serão substituídas.')) return;
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('ver-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).restaurarSnapshotConfiguracao(i);
+}
+
+// ── Log de Exportações ────────────────────────────────────
+function carregarLogExportacoes() {
+  var spin=document.getElementById('lexp-spin'); var lista=document.getElementById('lexp-lista');
+  spin.style.display='block'; lista.innerHTML='';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display='none';
+    try {
+      var log=JSON.parse(r);
+      if (!log.length) { lista.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhuma exportação registrada.</div>'; return; }
+      lista.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Data</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Tipo</th><th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border)">Qtd</th></tr></thead><tbody>'
+      + log.map(function(l,i){ return '<tr style="'+(i%2===0?'background:#F9FAFB':'')+'"><td style="padding:4px 8px">'+esc(new Date(l.ts).toLocaleString('pt-BR'))+'</td><td style="padding:4px 8px">'+esc(l.usuario)+'</td><td style="padding:4px 8px">'+esc(l.tipo)+'</td><td style="padding:4px 8px;text-align:right">'+esc(String(l.qtd||'—'))+'</td></tr>'; }).join('')
+      +'</tbody></table>';
+    } catch(_){}
+  }).obterLogExportacoes();
+}
+
+// ── Integridade do Backup ─────────────────────────────────
+function verificarBackup() {
+  var spin=document.getElementById('bk-spin'); var res=document.getElementById('bk-resultado');
+  spin.style.display='block'; res.innerHTML='';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display='none';
+    try {
+      var p=JSON.parse(r);
+      if (p.erro) { res.innerHTML='<span style="color:red">'+p.erro+'</span>'; return; }
+      res.innerHTML='<div style="font-size:10px;color:#9CA3AF;margin-bottom:6px">Verificado em '+(new Date(p.ts).toLocaleString('pt-BR'))+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Verificação</th><th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Valor</th><th style="padding:5px 8px;border-bottom:1px solid var(--border)">Status</th></tr></thead><tbody>'
+        + (p.checks||[]).map(function(c,i){ return '<tr style="'+(i%2===0?'background:#F9FAFB':'')+'"><td style="padding:5px 8px">'+esc(c.label)+'</td><td style="padding:5px 8px;text-align:right">'+esc(String(c.valor))+'</td><td style="padding:5px 8px;text-align:center">'+(c.ok?'<span style="color:#059669">✓</span>':'<span style="color:#DC2626">✗</span>')+'</td></tr>'; }).join('')
+        +'</tbody></table>';
+    } catch(_){}
+  }).verificarIntegridadeBackup();
+}
+
+function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>

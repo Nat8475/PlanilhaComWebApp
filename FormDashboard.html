@@ -169,6 +169,10 @@ table.rt tbody tr:hover td{background:#FAFBFC}
     animation:sk .9s infinite;border-radius:4px}
 @keyframes sk{0%{background-position:-200px 0}100%{background-position:200px 0}}
 .empty{padding:24px;text-align:center;color:var(--text-sm);font-size:12px}
+
+/* ── trend chart ── */
+.trend-period{cursor:pointer}
+.trend-period.on{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}
 </style>
 </head>
 <body>
@@ -237,6 +241,21 @@ table.rt tbody tr:hover td{background:#FAFBFC}
     </div>
   </div>
 
+  <!-- Tendência por Mês -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-hdr">
+      <span>📈 Tendência — Devoluções por Mês</span>
+      <div style="display:flex;gap:5px">
+        <button class="btn sm outline trend-period" data-p="3" onclick="selPeriodo(this)">3m</button>
+        <button class="btn sm outline trend-period on" data-p="6" onclick="selPeriodo(this)">6m</button>
+        <button class="btn sm outline trend-period" data-p="12" onclick="selPeriodo(this)">12m</button>
+      </div>
+    </div>
+    <div id="trend-wrap" style="padding:16px 20px;min-height:180px">
+      <div class="sk" style="height:140px;border-radius:4px"></div>
+    </div>
+  </div>
+
   <!-- Tabela recentes filtrada pelo fornecedor -->
   <div class="card">
     <div class="sec-hdr">
@@ -284,6 +303,89 @@ function carregar() {
       .withFailureHandler(function(e) { document.getElementById('ts-update').textContent = 'Erro: ' + e.message; })
       .obterDadosDashboard();
   } catch(e) { document.getElementById('ts-update').textContent = 'Erro.'; }
+  carregarTendencia();
+}
+
+/* ── Trend chart ── */
+var _periodo   = 6;
+var _tendencia = null;
+
+function selPeriodo(el) {
+  document.querySelectorAll('.trend-period').forEach(function(b){ b.classList.remove('on'); });
+  el.classList.add('on');
+  _periodo = parseInt(el.dataset.p, 10);
+  carregarTendencia();
+}
+
+function carregarTendencia() {
+  document.getElementById('trend-wrap').innerHTML =
+    '<div class="sk" style="height:140px;border-radius:4px"></div>';
+  try {
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        try {
+          var d = JSON.parse(resp);
+          if (!d || d.erro) { renderTrendEmpty(); return; }
+          _tendencia = d.tendencia || [];
+          renderTrend();
+        } catch(e) { renderTrendEmpty(); }
+      })
+      .withFailureHandler(renderTrendEmpty)
+      .obterTendencia(_periodo);
+  } catch(e) { renderTrendEmpty(); }
+}
+
+function renderTrendEmpty() {
+  document.getElementById('trend-wrap').innerHTML =
+    '<div class="empty">Sem dados de tendência para o período.</div>';
+}
+
+function renderTrend() {
+  var data = _tendencia;
+  if (!data || !data.length) { renderTrendEmpty(); return; }
+
+  var W=620, H=170, pL=38, pR=20, pT=16, pB=38;
+  var cW=W-pL-pR, cH=H-pT-pB;
+  var maxVal = Math.max.apply(null, data.map(function(d){ return d.total||0; })) || 1;
+  var n = data.length;
+
+  function xp(i){ return pL + (n<2 ? cW/2 : (i/(n-1))*cW); }
+  function yp(v){ return pT + cH - (v/maxVal)*cH; }
+
+  var pts  = data.map(function(d,i){ return xp(i)+','+yp(d.total||0);   });
+  var pPts = data.map(function(d,i){ return xp(i)+','+yp(d.pendente||0); });
+  var area = 'M'+pL+','+(pT+cH)+' L'+pts.join(' L')+' L'+xp(n-1)+','+(pT+cH)+' Z';
+
+  var svg = '<svg width="100%" viewBox="0 0 '+W+' '+H+'" style="overflow:visible;display:block">';
+
+  for (var g=0; g<=4; g++) {
+    var gy = pT + (g/4)*cH;
+    var gv = Math.round(maxVal*(1-g/4));
+    svg += '<line x1="'+pL+'" y1="'+gy+'" x2="'+(W-pR)+'" y2="'+gy+'" stroke="#F3F4F6" stroke-width="1"/>';
+    svg += '<text x="'+(pL-5)+'" y="'+(gy+4)+'" text-anchor="end" font-size="9" fill="#9CA3AF">'+gv+'</text>';
+  }
+
+  svg += '<path d="'+area+'" fill="rgba(37,65,154,.07)"/>';
+  svg += '<path d="M'+pts.join(' L')+'" fill="none" stroke="#25419A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  svg += '<path d="M'+pPts.join(' L')+'" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5 3" stroke-linejoin="round" stroke-linecap="round"/>';
+
+  data.forEach(function(d,i) {
+    svg += '<circle cx="'+xp(i)+'" cy="'+yp(d.total||0)+'" r="3.5" fill="#25419A" stroke="#fff" stroke-width="1.5">'
+         + '<title>'+_esc(d.mes)+': '+d.total+' total</title></circle>';
+    svg += '<text x="'+xp(i)+'" y="'+(pT+cH+18)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+_esc(d.mes)+'</text>';
+  });
+
+  svg += '</svg>';
+
+  var legend = '<div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">'
+    + '<div class="leg-item"><div class="leg-dot" style="background:#25419A;border-radius:2px"></div>Total</div>'
+    + '<div class="leg-item">'
+    +   '<svg width="14" height="10" style="flex-shrink:0"><line x1="0" y1="5" x2="14" y2="5" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="4 2"/></svg>'
+    +   '<span style="margin-left:4px">Pendentes</span>'
+    + '</div>'
+    + '</div>';
+
+  document.getElementById('trend-wrap').innerHTML = legend + svg;
 }
 
 function renderAll() {
