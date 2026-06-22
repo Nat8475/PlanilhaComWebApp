@@ -759,19 +759,23 @@
     ✍️ Assinaturas de E-mail
   </div>
   <div class="info" style="margin-bottom:10px">
-    Associe o ID do arquivo de imagem no Google Drive à assinatura de cada usuário.
-    A imagem será inserida no rodapé de todos os e-mails enviados por esse usuário.
+    Cadastre as assinaturas disponíveis para seleção ao enviar e-mail. Use um <strong>nome livre</strong>
+    como identificador (ex: "João Silva", "Diretoria"). No formulário de e-mail, o usuário escolhe qual assinar.
   </div>
   <div id="assn-lista" style="margin-bottom:12px"></div>
   <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px">
     <div style="font-size:12px;font-weight:600;margin-bottom:8px">Adicionar / atualizar assinatura</div>
     <div style="display:grid;gap:6px">
-      <input id="assn-email" type="email" placeholder="E-mail do usuário" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+      <input id="assn-email" type="text" placeholder="Nome / identificador (ex: João Silva, Setor Logística)" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
       <input id="assn-fileid" type="text" placeholder="ID do arquivo Drive (ex: 1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap)" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+      <div id="assn-preview-thumb" style="display:none;margin-top:4px">
+        <img id="assn-thumb-img" src="" alt="Preview" style="max-height:60px;max-width:220px;border:1px solid var(--border);border-radius:4px;object-fit:contain">
+      </div>
     </div>
     <div style="display:flex;gap:6px;margin-top:8px">
       <button class="btn-save" onclick="salvarAssinaturaConf()">💾 Salvar</button>
-      <button class="btn-cancel" onclick="document.getElementById('assn-email').value='';document.getElementById('assn-fileid').value=''">✕ Limpar</button>
+      <button class="btn-cancel" onclick="previewAssinaturaThumb()">👁 Preview</button>
+      <button class="btn-cancel" onclick="document.getElementById('assn-email').value='';document.getElementById('assn-fileid').value='';document.getElementById('assn-preview-thumb').style.display='none'">✕ Limpar</button>
     </div>
     <div class="msg" id="assn-msg"></div>
   </div>
@@ -1645,40 +1649,61 @@ function renderAssinaturas() {
   var keys = Object.keys(_assinaturasMap);
   if (!keys.length) { lista.innerHTML = '<div style="font-size:11px;color:#9CA3AF;padding:6px 0">Nenhuma assinatura cadastrada.</div>'; return; }
   lista.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th>'
+    +'<thead><tr>'
+    +'<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Nome / Identificador</th>'
     +'<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">ID Drive</th>'
     +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Preview</th>'
-    +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>'
-    + keys.map(function(email) {
-      var id = _assinaturasMap[email];
+    +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)"></th>'
+    +'</tr></thead><tbody>'
+    + keys.map(function(nome) {
+      var id = _assinaturasMap[nome];
       var thumb = 'https://drive.google.com/thumbnail?id='+id+'&sz=w80';
-      return '<tr><td style="padding:4px 8px">'+esc(email)+'</td>'
+      return '<tr>'
+        +'<td style="padding:4px 8px;font-weight:600">'+esc(nome)+'</td>'
         +'<td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6B7280">'+esc(id)+'</td>'
-        +'<td style="padding:4px 8px;text-align:center"><img src="'+esc(thumb)+'" style="max-height:36px;border-radius:3px" onerror="this.style.display=\'none\'"></td>'
+        +'<td style="padding:4px 8px;text-align:center"><img src="'+esc(thumb)+'" style="max-height:40px;border-radius:3px" onerror="this.style.display=\'none\'"></td>'
         +'<td style="padding:4px 8px;text-align:center">'
-        +'<button class="btn-cancel" onclick="excluirAssinatura(\''+esc(email)+'\')">✕</button></td></tr>';
+        +'<button class="btn-cancel" onclick="editarAssinatura(\''+esc(nome)+'\',\''+esc(id)+'\')">✏️</button> '
+        +'<button class="btn-cancel" onclick="excluirAssinatura(\''+esc(nome)+'\')">✕</button></td></tr>';
     }).join('')+'</tbody></table>';
 }
 
-function salvarAssinaturaConf() {
-  var email  = document.getElementById('assn-email').value.trim();
+function previewAssinaturaThumb() {
   var fileId = document.getElementById('assn-fileid').value.trim();
-  if (!email || !fileId) { mostrarMsg('assn-msg','Preencha e-mail e ID do arquivo.','erro'); return; }
+  if (!fileId) { mostrarMsg('assn-msg','Informe o ID do arquivo Drive.','erro'); return; }
+  var thumb = document.getElementById('assn-preview-thumb');
+  var img   = document.getElementById('assn-thumb-img');
+  img.src   = 'https://drive.google.com/uc?export=view&id=' + fileId;
+  thumb.style.display = 'block';
+}
+
+function editarAssinatura(nome, fileId) {
+  document.getElementById('assn-email').value  = nome;
+  document.getElementById('assn-fileid').value = fileId;
+  previewAssinaturaThumb();
+  document.getElementById('assn-email').focus();
+}
+
+function salvarAssinaturaConf() {
+  var nome   = document.getElementById('assn-email').value.trim();
+  var fileId = document.getElementById('assn-fileid').value.trim();
+  if (!nome || !fileId) { mostrarMsg('assn-msg','Preencha o nome e o ID do arquivo.','erro'); return; }
   google.script.run.withSuccessHandler(function(r) {
     try { var p = JSON.parse(r); if (p.ok) {
       mostrarMsg('assn-msg', p.ok, 'ok');
-      document.getElementById('assn-email').value = '';
+      document.getElementById('assn-email').value  = '';
       document.getElementById('assn-fileid').value = '';
+      document.getElementById('assn-preview-thumb').style.display = 'none';
       carregarAssinaturas();
     } else { mostrarMsg('assn-msg', p.erro || 'Erro', 'erro'); } } catch(_){}
-  }).salvarAssinatura(email, fileId);
+  }).salvarAssinatura(nome, fileId);
 }
 
-function excluirAssinatura(email) {
-  if (!confirm('Remover assinatura de '+email+'?')) return;
+function excluirAssinatura(nome) {
+  if (!confirm('Remover assinatura "'+nome+'"?')) return;
   google.script.run.withSuccessHandler(function(r) {
     try { var p = JSON.parse(r); if (p.ok) carregarAssinaturas(); } catch(_){}
-  }).salvarAssinatura(email, '');
+  }).salvarAssinatura(nome, '');
 }
 
 // ── Personalização Visual ─────────────────────────────────

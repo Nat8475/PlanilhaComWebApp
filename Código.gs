@@ -4078,7 +4078,7 @@ function previewEmailDevolucao(params) {
         +'<td style="padding:6px 10px;border-bottom:1px solid #E5E7EB;text-align:right">R$ '+Number(it.vlUnit||0).toFixed(2).replace('.',',')+'</td></tr>';
     });
     var htmlBody = _montarHtmlEmail(assunto, new Date().toLocaleDateString('pt-BR'), forn || '—', linhas, 0, obs);
-    var assinHtml = _obterHtmlAssinatura();
+    var assinHtml = _obterHtmlAssinaturaById(params.assinaturaFileId || '');
     if (assinHtml) htmlBody = htmlBody.replace('</body>', assinHtml + '</body>');
     return JSON.stringify({ html: htmlBody });
   } catch(e) { return JSON.stringify({ html: '<p style="color:red">Erro: '+e+'</p>' }); }
@@ -4227,8 +4227,8 @@ function enviarEmailDevolucao(params) {
     avisoSemAnexo + '<p style="margin:20px 0 0;font-size:12px;color:#888">'
   );
 
-  // Assinatura de foto do Drive
-  var assinaturaHtml = _obterHtmlAssinatura();
+  // Assinatura de foto do Drive (selecionada manualmente pelo usuário)
+  var assinaturaHtml = _obterHtmlAssinaturaById(params.assinaturaFileId || '');
   if (assinaturaHtml) {
     htmlFinal = htmlFinal.replace('</body>', assinaturaHtml + '</body>');
   }
@@ -6001,17 +6001,27 @@ function salvarAssinatura(email, driveFileId) {
 }
 
 function _obterHtmlAssinatura() {
+  return '';  // substituído por seleção manual — ver _obterHtmlAssinaturaById
+}
+
+function _obterHtmlAssinaturaById(fileId) {
+  if (!fileId) return '';
   try {
-    var remetente = Session.getActiveUser().getEmail().toLowerCase();
-    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
-    var map = JSON.parse(raw);
-    var fileId = map[remetente];
-    if (!fileId) return '';
-    var url = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    var url = 'https://drive.google.com/uc?export=view&id=' + fileId.trim();
     return '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
       + '<img src="' + url + '" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
       + '</div>';
   } catch(_) { return ''; }
+}
+
+// Lista pública de assinaturas (sem restrição admin) para o seletor no formulário de e-mail
+function obterListaAssinaturasPublico() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+  try {
+    var map   = JSON.parse(raw);
+    var lista = Object.keys(map).map(function(nome) { return { nome: nome, fileId: map[nome] }; });
+    return JSON.stringify({ lista: lista });
+  } catch(_) { return JSON.stringify({ lista: [] }); }
 }
 
 function obterPermissoesModulos() {

@@ -197,6 +197,24 @@
   <textarea id="obs" rows="2" placeholder="Observações adicionais que aparecerão no e-mail..."></textarea>
 </div>
 
+<div class="secao">✍️ ASSINATURA</div>
+<div class="campo">
+  <label>Assinatura do remetente <span style="font-weight:normal;color:#888">(selecione ou deixe sem assinatura)</span></label>
+  <div style="display:flex;gap:8px;align-items:flex-start">
+    <select id="sel-assinatura" onchange="onMudarAssinatura()"
+      style="flex:1;padding:7px 9px;border:1px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface)">
+      <option value="">— Sem assinatura —</option>
+    </select>
+    <button onclick="carregarAssinaturas()" title="Recarregar lista"
+      style="background:none;border:1px solid var(--border-def);border-radius:var(--r-sm);padding:7px 10px;cursor:pointer;font-size:13px;color:var(--text-muted)">↺</button>
+  </div>
+  <div id="assn-thumb-preview" style="display:none;margin-top:8px">
+    <img id="assn-thumb-img-email" src="" alt="Assinatura"
+      style="max-height:70px;max-width:280px;border:1px solid var(--border-def);border-radius:4px;object-fit:contain;padding:4px">
+    <div style="font-size:10px;color:var(--text-muted);margin-top:3px">Preview da assinatura que será inserida no e-mail</div>
+  </div>
+</div>
+
 <div class="botoes">
   <button id="btnPreview" onclick="buscarPreview()">🔍 Buscar e Pré-visualizar</button>
   <button id="btnCancelar" onclick="google.script.host.close()">✖ Cancelar</button>
@@ -261,6 +279,44 @@ var _jaEnviadas        = [];
 var _comBase64         = '';   // base64 do arquivo do comunicado
 var _comMime           = '';
 var _comNome           = '';
+var _assinaturas       = [];   // lista de { nome, fileId }
+
+// ── Assinaturas ────────────────────────────────────────────
+function carregarAssinaturas() {
+  var sel = document.getElementById('sel-assinatura');
+  sel.innerHTML = '<option value="">— Sem assinatura —</option>';
+  try {
+    google.script.run
+      .withSuccessHandler(function(r) {
+        try {
+          var p = JSON.parse(r);
+          _assinaturas = p.lista || [];
+          _assinaturas.forEach(function(a) {
+            var opt = document.createElement('option');
+            opt.value = a.fileId;
+            opt.textContent = a.nome;
+            sel.appendChild(opt);
+          });
+        } catch(_){}
+      })
+      .withFailureHandler(function(){})
+      .obterListaAssinaturasPublico();
+  } catch(_){}
+}
+
+function onMudarAssinatura() {
+  var sel    = document.getElementById('sel-assinatura');
+  var fileId = sel.value;
+  var thumb  = document.getElementById('assn-thumb-preview');
+  var img    = document.getElementById('assn-thumb-img-email');
+  if (fileId) {
+    img.src = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    thumb.style.display = 'block';
+  } else {
+    thumb.style.display = 'none';
+    img.src = '';
+  }
+}
 // ── Comunicado — toggle ──────────────────────────────────────
 function toggleComunicado() {
   var chk = document.getElementById('chk-comunicado').checked;
@@ -443,14 +499,15 @@ function enviar(forcado) {
   }
 
   var params = {
-    nfdsRaw:          document.getElementById('nfds').value.trim(),
-    emailsExtras:     document.getElementById('emailsExtras').value.trim(),
-    assunto:          document.getElementById('assunto').value.trim(),
-    obs:              document.getElementById('obs').value.trim(),
-    comBase64:        usaComunicado ? _comBase64 : '',
-    comMime:          usaComunicado ? _comMime   : '',
-    comNome:          usaComunicado ? _comNome   : '',
-    comObs:           usaComunicado ? document.getElementById('obs-comunicado').value.trim() : ''
+    nfdsRaw:           document.getElementById('nfds').value.trim(),
+    emailsExtras:      document.getElementById('emailsExtras').value.trim(),
+    assunto:           document.getElementById('assunto').value.trim(),
+    obs:               document.getElementById('obs').value.trim(),
+    assinaturaFileId:  document.getElementById('sel-assinatura').value,
+    comBase64:         usaComunicado ? _comBase64 : '',
+    comMime:           usaComunicado ? _comMime   : '',
+    comNome:           usaComunicado ? _comNome   : '',
+    comObs:            usaComunicado ? document.getElementById('obs-comunicado').value.trim() : ''
   };
 
   google.script.run
@@ -519,11 +576,15 @@ function previewEmail() {
 function _coletarParams() {
   var nfds = (document.getElementById('nfds').value || '').split(/[\n,;]+/).map(function(s){return s.trim();}).filter(Boolean);
   return {
-    nfds:    nfds,
-    assunto: document.getElementById('assunto').value.trim(),
-    obs:     document.getElementById('obs') ? document.getElementById('obs').value.trim() : ''
+    nfds:             nfds,
+    assunto:          document.getElementById('assunto').value.trim(),
+    obs:              document.getElementById('obs') ? document.getElementById('obs').value.trim() : '',
+    assinaturaFileId: document.getElementById('sel-assinatura').value
   };
 }
+
+// Carregar assinaturas ao iniciar o formulário
+try { carregarAssinaturas(); } catch(_){}
 
 function mostrar(tipo, txt) {
   var el = document.getElementById('msg');
