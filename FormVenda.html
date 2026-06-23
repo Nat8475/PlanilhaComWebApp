@@ -50,6 +50,9 @@
     .link-pdf{display:inline-block;margin-top:6px;background:var(--amber);color:#fff;
               padding:5px 10px;border-radius:var(--r-sm);text-decoration:none;
               font-weight:700;font-size:12px}
+    .link-doc{display:inline-block;margin-top:6px;margin-left:6px;background:var(--navy);color:#fff;
+              padding:5px 10px;border-radius:var(--r-sm);cursor:pointer;border:none;
+              font-weight:700;font-size:12px;font-family:var(--font)}
     .spinner{display:none;text-align:center;color:#666;margin-top:8px;font-size:12px}
   </style>
 </head>
@@ -116,8 +119,13 @@
           if (r.urlPdf) {
             html += '<br><a class="link-pdf" href="' + r.urlPdf + '" target="_blank">📥 Abrir Relatório no Drive</a>';
           }
+          if (r.itens && r.itens.length) {
+            html += '<br><button class="link-doc" onclick="gerarDocVenda()">🖨️ Abrir Doc. Carga</button>';
+            _itensVenda = r.itens;
+          }
           mostrarHtml('ok', html);
           document.getElementById('nfs').value = '';
+          if (r.itens && r.itens.length) gerarDocVenda();
         } else {
           mostrar('erro', '❌ ' + r.erro);
         }
@@ -142,6 +150,92 @@
     el.className = 'msg-' + tipo;
     el.innerHTML = html;
     el.style.display = 'block';
+  }
+
+  var _itensVenda = [];
+
+  function gerarDocVenda() {
+    var itens = _itensVenda;
+    if (!itens.length) return;
+    var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w200';
+    var now = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    var fmt = function(v){ return 'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+    var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var totalCxs = itens.reduce(function(s,it){ return s+(parseFloat(it.qtd)||0); }, 0);
+    var totalVal = itens.reduce(function(s,it){ return s+(parseFloat(it.vlTot)||0); }, 0);
+
+    var rows = itens.map(function(it,i) {
+      return '<tr>'
+        +'<td style="text-align:center;color:#6B7280">'+(i+1)+'</td>'
+        +'<td style="font-family:monospace;font-weight:700;font-size:13px">'+(it.nfd||it.nf||'')+'</td>'
+        +'<td style="font-family:monospace">'+(it.nfd&&it.nf&&it.nfd!==it.nf?it.nf:'—')+'</td>'
+        +'<td>'+esc(it.forn)+'</td>'
+        +'<td>'+esc(it.tipo||'—')+'</td>'
+        +'<td>'+esc(it.motivo||'—')+'</td>'
+        +'<td style="text-align:center;font-weight:700">'+(parseFloat(it.qtd)||0)+'</td>'
+        +'<td style="text-align:right;font-family:monospace">'+fmt(it.vlTot)+'</td>'
+        +'<td style="white-space:nowrap">'+esc(it.data)+'</td>'
+        +'</tr>';
+    }).join('');
+
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+      +'<title>Documentação de Carga — Venda</title>'
+      +'<style>'
+      +'*{box-sizing:border-box;margin:0;padding:0}'
+      +'body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;padding:20px}'
+      +'.hdr{display:flex;align-items:center;gap:16px;border-bottom:3px solid #25419A;padding-bottom:10px;margin-bottom:14px}'
+      +'.hdr img{height:48px;object-fit:contain}'
+      +'.hdr-txt h1{font-size:15px;color:#25419A;margin-bottom:2px;font-weight:700}'
+      +'.hdr-txt p{font-size:10px;color:#6B7280}'
+      +'.resumo{display:flex;gap:12px;margin-bottom:14px}'
+      +'.res-card{flex:1;border:1px solid #E5E7EB;border-radius:6px;padding:10px 14px;text-align:center}'
+      +'.res-card .lbl{font-size:9px;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}'
+      +'.res-card .val{font-size:18px;font-weight:700;color:#D97706}'
+      +'table{width:100%;border-collapse:collapse;margin-bottom:12px}'
+      +'th{background:#D97706;color:#fff;padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em}'
+      +'td{padding:5px 8px;border-bottom:1px solid #F3F4F6;vertical-align:middle}'
+      +'tr:nth-child(even) td{background:#FFFBEB}'
+      +'.tot-row td{font-weight:700;border-top:2px solid #E5E7EB;background:#FEF3C7}'
+      +'.assinatura{display:flex;gap:40px;margin-top:28px;padding-top:16px;border-top:1px solid #E5E7EB}'
+      +'.ass-campo{flex:1;text-align:center}'
+      +'.ass-linha{border-top:1px solid #374151;margin-top:32px;padding-top:4px;font-size:10px;color:#6B7280}'
+      +'.footer{margin-top:10px;font-size:9px;color:#9CA3AF;text-align:right}'
+      +'@media print{body{padding:8px}}'
+      +'</style></head><body>'
+      +'<div class="hdr">'
+      +'<img src="'+logoUrl+'" onerror="this.style.display=\'none\'" alt="Transben">'
+      +'<div class="hdr-txt"><h1>🛒 Documentação de Carga — Venda</h1>'
+      +'<p>Gerado em '+now+' &nbsp;·&nbsp; '+itens.length+' NFD(s) listada(s)</p></div>'
+      +'</div>'
+      +'<div class="resumo">'
+      +'<div class="res-card"><div class="lbl">Total de NFDs</div><div class="val">'+itens.length+'</div></div>'
+      +'<div class="res-card"><div class="lbl">Total de Cxs</div><div class="val">'+totalCxs.toLocaleString('pt-BR')+'</div></div>'
+      +'<div class="res-card"><div class="lbl">Valor Total</div><div class="val" style="font-size:13px">'+fmt(totalVal)+'</div></div>'
+      +'</div>'
+      +'<table><thead><tr>'
+      +'<th style="width:32px">#</th><th>NFD</th><th>NF</th><th>Fornecedor</th>'
+      +'<th>Tipo</th><th>Motivo</th><th style="text-align:center">Cxs</th>'
+      +'<th style="text-align:right">Valor</th><th>Data Entrada</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody>'
+      +'<tfoot><tr class="tot-row">'
+      +'<td colspan="6" style="text-align:right;font-size:11px">TOTAL</td>'
+      +'<td style="text-align:center">'+totalCxs.toLocaleString('pt-BR')+'</td>'
+      +'<td style="text-align:right">'+fmt(totalVal)+'</td>'
+      +'<td></td></tr></tfoot>'
+      +'</table>'
+      +'<div class="assinatura">'
+      +'<div class="ass-campo"><div class="ass-linha">Conferência / Responsável</div></div>'
+      +'<div class="ass-campo"><div class="ass-linha">Transportadora / Motorista</div></div>'
+      +'<div class="ass-campo"><div class="ass-linha">Data / Hora da Entrega</div></div>'
+      +'</div>'
+      +'<div class="footer">Transben · Sistema de Controle de Devoluções · '+now+'</div>'
+      +'</body></html>';
+
+    var w = window.open('','_blank','width=1000,height=760');
+    if (!w) return; // popup bloqueado — usuário pode clicar no botão "Abrir Doc. Carga"
+    w.document.write(html);
+    w.document.close();
+    setTimeout(function(){ w.focus(); w.print(); }, 900);
   }
 
   document.getElementById('nfs').focus();

@@ -3158,10 +3158,12 @@ function executarBaixaVenda(txtNfsRaw) {
   if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF válida identificada.' });
 
   var ss               = getSS();
+  var tz               = ss.getSpreadsheetTimeZone();
   var itensEncontrados = [];
+  var itensDoc         = [];
   var nfsOk            = [];
   var processados      = new Set();
-  var agora            = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+  var agora            = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm:ss');
   var porAba           = {};
 
   ABAS_OPERACIONAIS.forEach(function(nomeAba) {
@@ -3181,6 +3183,17 @@ function executarBaixaVenda(txtNfsRaw) {
       processados.add(bat.termoBateu);
       var linha = LINHA_DADOS + i;
       itensEncontrados.push([nfd || nf, String(l[IDX_FORN]).trim(), String(l[IDX_DESC]).trim(), l[IDX_QTD] || 0]);
+      var dtVenda = l[IDX_DATA];
+      itensDoc.push({
+        nfd:    nfd,
+        nf:     nf,
+        forn:   String(l[IDX_FORN]   || '').trim(),
+        tipo:   String(l[IDX_TIPO]   || '').trim(),
+        motivo: String(l[IDX_MOTIVO] || '').trim(),
+        qtd:    parseFloat(l[IDX_QTD]    || 0) || 0,
+        vlTot:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
+        data:   dtVenda instanceof Date ? Utilities.formatDate(dtVenda, tz, 'dd/MM/yyyy') : ''
+      });
 
       // [P18] status + checkboxes + obs em 1 setValues
       ws.getRange(linha, COL_STATUS, 1, 5).setValues([[
@@ -3213,7 +3226,8 @@ function executarBaixaVenda(txtNfsRaw) {
 
   if (!ID_PASTA_DESTINO_VENDA || ID_PASTA_DESTINO_VENDA.startsWith('INSIRA'))
     return JSON.stringify({
-      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída! (PDF não gerado — configure ID_PASTA_DESTINO_VENDA).'
+      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída! (PDF não gerado — configure ID_PASTA_DESTINO_VENDA).',
+      itens: itensDoc
     });
 
   try {
@@ -3247,11 +3261,13 @@ function executarBaixaVenda(txtNfsRaw) {
     DriveApp.getFileById(ssTemp.getId()).setTrashed(true);
     return JSON.stringify({
       sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída!',
-      urlPdf: arquivo.getUrl()
+      urlPdf: arquivo.getUrl(),
+      itens: itensDoc
     });
   } catch (e) {
     return JSON.stringify({
-      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída! ⚠️ Erro no PDF: ' + e.toString()
+      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída! ⚠️ Erro no PDF: ' + e.toString(),
+      itens: itensDoc
     });
   }
 }
