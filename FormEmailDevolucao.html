@@ -109,14 +109,15 @@
               padding:14px 10px;text-align:center;cursor:pointer;transition:background .15s;
               font-size:12px;color:#92400E}
     .drop-com:hover,.drop-com.over{background:#FEF9C3;border-color:#EAB308}
-    .drop-com.ok{background:var(--green-bg);border-color:#4ADE80;color:#166534}
+    .drop-com.has-files{background:#F0FDF4;border-color:#86EFAC;color:#166534}
 
-    .prev-com{display:none;margin-top:8px;background:var(--surface);
+    .com-lista{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+    .com-item{display:flex;align-items:center;gap:8px;background:var(--surface);
               border:1px solid var(--border);border-radius:var(--r-sm);
-              padding:7px 10px;font-size:11px;color:var(--text-body);
-              align-items:center;gap:8px}
-    .prev-com .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .prev-com .rm{background:none;border:none;cursor:pointer;color:var(--red);
+              padding:6px 10px;font-size:11px;color:var(--text-body)}
+    .com-item .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .com-item .tam{color:#9CA3AF;font-size:10px;flex-shrink:0}
+    .com-item .rm{background:none;border:none;cursor:pointer;color:var(--red);
                   font-size:15px;font-weight:700;flex:none;padding:0 2px}
   </style>
 </head>
@@ -164,27 +165,22 @@
   </label>
 
   <div id="comunicado-fields">
-    <!-- Input oculto para o arquivo -->
+    <!-- Input oculto (sem multiple — abre uma vez por vez, pode ser acionado várias vezes) -->
     <input type="file" id="file-comunicado" accept=".pdf,.jpg,.jpeg,.png"
            style="display:none" onchange="onFileComunicado(this)">
 
-    <!-- Drop zone -->
+    <!-- Drop zone — sempre visível para adicionar mais -->
     <div class="drop-com" id="drop-com"
          onclick="document.getElementById('file-comunicado').click()"
          ondragover="event.preventDefault();this.classList.add('over')"
          ondragleave="this.classList.remove('over')"
          ondrop="onDropComunicado(event)">
-      📎 Clique ou arraste o arquivo do comunicado aqui<br>
-      <span style="font-size:10px;opacity:.7">(PDF, JPG ou PNG — máx. 8 MB)</span>
+      📎 Clique ou arraste para adicionar arquivo(s) ao comunicado<br>
+      <span style="font-size:10px;opacity:.7">(PDF, JPG ou PNG — máx. 8 MB por arquivo)</span>
     </div>
 
-    <!-- Preview do arquivo selecionado -->
-    <div class="prev-com" id="prev-com" style="display:none">
-      <span style="font-size:16px">📄</span>
-      <span class="nome" id="prev-com-nome"></span>
-      <span id="prev-com-tam" style="color:#9CA3AF;font-size:10px;flex-shrink:0"></span>
-      <button class="rm" onclick="removerComunicado()" title="Remover arquivo">✕</button>
-    </div>
+    <!-- Lista de arquivos adicionados -->
+    <div class="com-lista" id="com-lista"></div>
 
     <div class="campo" style="margin-top:8px;margin-bottom:0">
       <label>Observação sobre o comunicado <span style="font-weight:normal;color:#888">(opcional — aparece no corpo do e-mail)</span></label>
@@ -283,9 +279,7 @@
 <script>
 var _dadosPreview      = null;
 var _jaEnviadas        = [];
-var _comBase64         = '';   // base64 do arquivo do comunicado
-var _comMime           = '';
-var _comNome           = '';
+var _comunicados       = [];   // [{base64, mime, nome}]
 var _assinaturas       = [];   // lista de { nome, fileId }
 
 // ── Assinaturas ────────────────────────────────────────────
@@ -338,68 +332,94 @@ function onMudarAssinatura() {
     })
     .obterAssinaturaBase64(fileId);
 }
-// ── Comunicado — toggle ──────────────────────────────────────
+// ── Comunicado — múltiplos arquivos ─────────────────────────
 function toggleComunicado() {
   var chk = document.getElementById('chk-comunicado').checked;
   document.getElementById('comunicado-fields').style.display = chk ? 'block' : 'none';
   if (!chk) removerComunicado();
 }
 
+function _renderComunicados() {
+  var lista = document.getElementById('com-lista');
+  var drop  = document.getElementById('drop-com');
+  lista.innerHTML = '';
+  _comunicados.forEach(function(c, i) {
+    var item = document.createElement('div');
+    item.className = 'com-item';
+    var tamStr = c.size < 1048576
+      ? Math.round(c.size / 1024) + ' KB'
+      : (c.size / 1048576).toFixed(1) + ' MB';
+    item.innerHTML = '<span style="font-size:15px">📄</span>'
+      + '<span class="nome">' + c.nome + '</span>'
+      + '<span class="tam">' + tamStr + '</span>'
+      + '<button class="rm" title="Remover" onclick="removerComunicadoIdx(' + i + ')">✕</button>';
+    lista.appendChild(item);
+  });
+  if (_comunicados.length > 0) {
+    drop.classList.add('has-files');
+    drop.innerHTML = '➕ Clique ou arraste para adicionar mais arquivos<br>'
+      + '<span style="font-size:10px;opacity:.7">(' + _comunicados.length + ' arquivo(s) selecionado(s))</span>';
+  } else {
+    drop.classList.remove('has-files');
+    drop.innerHTML = '📎 Clique ou arraste para adicionar arquivo(s) ao comunicado<br>'
+      + '<span style="font-size:10px;opacity:.7">(PDF, JPG ou PNG — máx. 8 MB por arquivo)</span>';
+  }
+  // reset input so same file can be re-added after removal
+  document.getElementById('file-comunicado').value = '';
+}
+
 // ── Comunicado — drop ────────────────────────────────────────
 function onDropComunicado(evt) {
   evt.preventDefault();
   document.getElementById('drop-com').classList.remove('over');
-  var f = evt.dataTransfer.files[0];
-  if (f) processarArquivoComunicado(f);
+  var arquivos = evt.dataTransfer.files;
+  for (var i = 0; i < arquivos.length; i++) processarArquivoComunicado(arquivos[i]);
 }
 
 function onFileComunicado(input) {
-  if (input.files && input.files[0]) processarArquivoComunicado(input.files[0]);
+  if (input.files) {
+    for (var i = 0; i < input.files.length; i++) processarArquivoComunicado(input.files[i]);
+  }
 }
 
 function processarArquivoComunicado(file) {
   var maxBytes = 8 * 1024 * 1024;
   if (file.size > maxBytes) {
-    mostrar('erro', '❌ Arquivo muito grande. O limite é 8 MB.');
+    mostrar('erro', '❌ Arquivo muito grande: ' + file.name + ' (limite 8 MB).');
     return;
   }
   var tipos = ['application/pdf','image/jpeg','image/jpg','image/png'];
   if (tipos.indexOf(file.type) === -1) {
-    mostrar('erro', '❌ Formato inválido. Use PDF, JPG ou PNG.');
+    mostrar('erro', '❌ Formato inválido: ' + file.name + '. Use PDF, JPG ou PNG.');
     return;
+  }
+  // evitar duplicatas pelo nome
+  for (var k = 0; k < _comunicados.length; k++) {
+    if (_comunicados[k].nome === file.name) {
+      mostrar('aviso', '⚠️ Arquivo "' + file.name + '" já adicionado.');
+      return;
+    }
   }
 
   var reader = new FileReader();
-  reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    _comBase64  = dataUrl.split(',')[1];
-    _comMime    = file.type;
-    _comNome    = file.name;
-
-    var drop = document.getElementById('drop-com');
-    drop.classList.add('ok');
-    drop.innerHTML = '✅ Arquivo selecionado — clique para trocar';
-
-    var prev = document.getElementById('prev-com');
-    document.getElementById('prev-com-nome').textContent = file.name;
-    document.getElementById('prev-com-tam').textContent  =
-      (file.size / 1024 < 1024)
-        ? Math.round(file.size / 1024) + ' KB'
-        : (file.size / 1048576).toFixed(1) + ' MB';
-    prev.style.display = 'flex';
-    document.getElementById('msg').style.display = 'none';
-  };
+  reader.onload = (function(f) {
+    return function(e) {
+      _comunicados.push({ base64: e.target.result.split(',')[1], mime: f.type, nome: f.name, size: f.size });
+      _renderComunicados();
+      document.getElementById('msg').style.display = 'none';
+    };
+  })(file);
   reader.readAsDataURL(file);
 }
 
+function removerComunicadoIdx(idx) {
+  _comunicados.splice(idx, 1);
+  _renderComunicados();
+}
+
 function removerComunicado() {
-  _comBase64 = ''; _comMime = ''; _comNome = '';
-  document.getElementById('file-comunicado').value = '';
-  var drop = document.getElementById('drop-com');
-  drop.classList.remove('ok');
-  drop.innerHTML = '📎 Clique ou arraste o arquivo do comunicado aqui<br>' +
-    '<span style="font-size:10px;opacity:.7">(PDF, JPG ou PNG — máx. 8 MB)</span>';
-  document.getElementById('prev-com').style.display = 'none';
+  _comunicados = [];
+  _renderComunicados();
 }
 
 // ── Preview / Envio ──────────────────────────────────────────
@@ -511,8 +531,8 @@ function enviar(forcado) {
   document.getElementById('aviso-duplicado').style.display  = 'none';
 
   var usaComunicado = document.getElementById('chk-comunicado').checked;
-  if (usaComunicado && !_comBase64) {
-    mostrar('erro', '❌ Selecione o arquivo do comunicado de retorno antes de enviar.');
+  if (usaComunicado && _comunicados.length === 0) {
+    mostrar('erro', '❌ Adicione ao menos um arquivo de comunicado antes de enviar.');
     document.getElementById('btnEnviar').disabled           = false;
     document.getElementById('btn-confirmar-envio').disabled = false;
     document.getElementById('spinner').style.display        = 'none';
@@ -525,9 +545,7 @@ function enviar(forcado) {
     assunto:           document.getElementById('assunto').value.trim(),
     obs:               document.getElementById('obs').value.trim(),
     assinaturaFileId:  document.getElementById('sel-assinatura').value,
-    comBase64:         usaComunicado ? _comBase64 : '',
-    comMime:           usaComunicado ? _comMime   : '',
-    comNome:           usaComunicado ? _comNome   : '',
+    comunicados:       usaComunicado ? _comunicados.map(function(c){ return {base64:c.base64,mime:c.mime,nome:c.nome}; }) : [],
     comObs:            usaComunicado ? document.getElementById('obs-comunicado').value.trim() : ''
   };
 
@@ -619,6 +637,16 @@ function esc(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Pré-preencher NFDs enviadas da seleção em FormNotas
+(function() {
+  try {
+    var nfds = localStorage.getItem('cdv_email_nfds');
+    if (nfds) {
+      document.getElementById('nfds').value = nfds;
+      localStorage.removeItem('cdv_email_nfds');
+    }
+  } catch(_) {}
+})();
 document.getElementById('nfds').focus();
 (function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>

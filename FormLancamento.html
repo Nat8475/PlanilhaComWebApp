@@ -111,6 +111,17 @@
     .msg-erro {background:var(--red-bg);color:#c62828;border:1px solid #ef9a9a}
     .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
     .spinner  {display:none;text-align:center;color:var(--text-muted);margin-top:8px;font-size:12px}
+
+    .foto-lista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .foto-thumb{position:relative;width:70px;height:70px;border-radius:var(--r-sm);
+                border:1px solid var(--border-def);overflow:hidden;background:#f3f4f6}
+    .foto-thumb img{width:100%;height:100%;object-fit:cover}
+    .foto-thumb .rm-foto{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);
+                         border:none;color:#fff;font-size:11px;border-radius:3px;cursor:pointer;
+                         padding:1px 5px;line-height:1.4;font-weight:700}
+    .foto-thumb.pdf-item{display:flex;flex-direction:column;align-items:center;
+                         justify-content:center;font-size:10px;color:var(--text-muted);gap:2px}
+    .foto-thumb.pdf-item span.icon{font-size:22px}
   </style>
 </head>
 <body>
@@ -186,7 +197,7 @@
   <datalist id="forn-datalist"></datalist>
   <div id="u-campo-forn" class="campo" style="display:none">
     <label>Nome do Fornecedor <span class="obrig">*</span></label>
-    <input type="text" id="u-fornecedor" list="forn-datalist" placeholder="Ex: Ambev, P&G..." autocomplete="off">
+    <input type="text" id="u-fornecedor" list="forn-datalist" placeholder="Ex: AMBEV, P&G..." autocomplete="off" oninput="this.value=this.value.toUpperCase()">
   </div>
 
   <div class="secao">📋 DADOS DA NOTA</div>
@@ -238,6 +249,17 @@
   </div>
   <input type="file" id="u-file" accept="image/jpeg,image/png,application/pdf" onchange="onFileSelect(this.files[0],'u')">
 
+  <div class="secao">📸 FOTOS (opcional)</div>
+  <div class="drop" id="u-foto-drop" onclick="document.getElementById('u-foto-file').click()"
+       ondragover="event.preventDefault();this.classList.add('over')"
+       ondragleave="this.classList.remove('over')"
+       ondrop="onFotoDrop(event)">
+    📷 Clique ou arraste fotos aqui (JPG ou PNG)<br>
+    <small>Máx. 5 MB por foto — as fotos serão incluídas no e-mail de devolução</small>
+  </div>
+  <input type="file" id="u-foto-file" accept="image/jpeg,image/png" multiple onchange="onFotoSelect(this)">
+  <div class="foto-lista" id="u-foto-lista"></div>
+
   <div class="botoes">
     <button class="btn-principal" id="u-btn" onclick="salvarUnico()">💾 Salvar</button>
     <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
@@ -265,7 +287,7 @@
   </div>
   <div id="l-campo-forn" class="campo" style="display:none">
     <label>Nome do Fornecedor <span class="obrig">*</span></label>
-    <input type="text" id="l-fornecedor" list="forn-datalist" placeholder="Ex: Ambev, P&G..." autocomplete="off">
+    <input type="text" id="l-fornecedor" list="forn-datalist" placeholder="Ex: AMBEV, P&G..." autocomplete="off" oninput="this.value=this.value.toUpperCase()">
   </div>
 
   <div class="secao">📋 ITENS DO LOTE</div>
@@ -320,6 +342,7 @@
 // ── Estado ───────────────────────────────────────────────────
 var telaAtual = 'sel';
 var _u_b64 = null, _u_mime = null, _u_nome = null, _u_dadosConfirmar = null;
+var _u_fotos = []; // [{base64, mime, nome, src}]
 var _e_itemEncontrado = null;
 var _contadorItens = 0;
 
@@ -340,10 +363,35 @@ function voltar() {
 }
 
 // ── ABA change ───────────────────────────────────────────────
+var _fornVariadosList = null; // cache dos fornecedores variados
+
 function onAbaChange(prefix) {
   var v = document.getElementById(prefix + '-aba').value;
-  document.getElementById(prefix + '-campo-forn').style.display =
-    v === 'Fornecedores Variados' ? 'block' : 'none';
+  var isVar = v === 'Fornecedores Variados';
+  document.getElementById(prefix + '-campo-forn').style.display = isVar ? 'block' : 'none';
+  if (isVar) _carregarFornVariadosDatalist();
+}
+
+function _carregarFornVariadosDatalist() {
+  if (_fornVariadosList !== null) { _aplicarFornDatalist(_fornVariadosList); return; }
+  google.script.run
+    .withSuccessHandler(function(r) {
+      try {
+        var p = JSON.parse(r);
+        _fornVariadosList = (p.variados || []).map(function(s){ return s.toUpperCase(); });
+        _aplicarFornDatalist(_fornVariadosList);
+      } catch(_) {}
+    })
+    .listarFornecedoresVariados();
+}
+
+function _aplicarFornDatalist(lista) {
+  var dl = document.getElementById('forn-datalist');
+  if (!dl) return;
+  dl.innerHTML = '';
+  lista.forEach(function(nome) {
+    var opt = document.createElement('option'); opt.value = nome; dl.appendChild(opt);
+  });
 }
 
 // ── Upload (apenas individual) ───────────────────────────────
@@ -374,6 +422,51 @@ function onFileSelect(file, prefix) {
     pn.style.display = 'block';
   };
   reader.readAsDataURL(file);
+}
+
+// ── Fotos extras ─────────────────────────────────────────────
+function onFotoDrop(evt) {
+  evt.preventDefault();
+  document.getElementById('u-foto-drop').classList.remove('over');
+  var files = evt.dataTransfer.files;
+  for (var i = 0; i < files.length; i++) _adicionarFoto(files[i]);
+}
+
+function onFotoSelect(input) {
+  if (!input.files) return;
+  for (var i = 0; i < input.files.length; i++) _adicionarFoto(input.files[i]);
+  input.value = '';
+}
+
+function _adicionarFoto(file) {
+  if (file.size > 5 * 1024 * 1024) { mostrar('u', 'aviso', '⚠️ Foto muito grande: ' + file.name + ' (máx. 5 MB)'); return; }
+  if (['image/jpeg','image/png'].indexOf(file.type) === -1) { mostrar('u', 'aviso', '⚠️ Use JPG ou PNG para fotos.'); return; }
+  for (var k = 0; k < _u_fotos.length; k++) { if (_u_fotos[k].nome === file.name) return; }
+  var reader = new FileReader();
+  reader.onload = (function(f) {
+    return function(e) {
+      _u_fotos.push({ base64: e.target.result.split(',')[1], mime: f.type, nome: f.name, src: e.target.result });
+      _renderFotos();
+    };
+  })(file);
+  reader.readAsDataURL(file);
+}
+
+function _renderFotos() {
+  var lista = document.getElementById('u-foto-lista');
+  lista.innerHTML = '';
+  _u_fotos.forEach(function(f, i) {
+    var thumb = document.createElement('div');
+    thumb.className = 'foto-thumb';
+    thumb.innerHTML = '<img src="' + f.src + '" alt="foto">'
+      + '<button class="rm-foto" onclick="_removerFoto(' + i + ')">✕</button>';
+    lista.appendChild(thumb);
+  });
+}
+
+function _removerFoto(idx) {
+  _u_fotos.splice(idx, 1);
+  _renderFotos();
 }
 
 // ── Lançamento Individual ────────────────────────────────────
@@ -423,10 +516,11 @@ function coletarDadosUnico() {
     descricao:  document.getElementById('u-desc').value.trim(),
     qtd:        document.getElementById('u-qtd').value.trim(),
     valorUnit:  document.getElementById('u-valor').value.trim().replace(',','.'),
-    fornecedor: document.getElementById('u-fornecedor').value.trim(),
+    fornecedor: document.getElementById('u-fornecedor').value.trim().toUpperCase(),
     base64:     _u_b64 || '',
     mimeType:   _u_mime || '',
-    nomeArquivo:_u_nome || ''
+    nomeArquivo:_u_nome || '',
+    fotos:      _u_fotos.map(function(f){ return {base64:f.base64,mime:f.mime,nome:f.nome}; })
   };
 }
 
@@ -443,6 +537,7 @@ function limparUnico() {
   document.getElementById('u-confirmar').style.display = 'none';
   document.getElementById('u-msg').style.display = 'none';
   _u_b64=null; _u_mime=null; _u_nome=null; _u_dadosConfirmar=null;
+  _u_fotos=[]; document.getElementById('u-foto-lista').innerHTML='';
 }
 
 // ── Lançamento em Lote — store de arquivos por item ──────────
@@ -530,7 +625,7 @@ function salvarLote() {
   if (!aba) { mostrar('l','erro','❌ Selecione o fornecedor/aba.'); return; }
   var forn = '';
   if (aba === 'Fornecedores Variados') {
-    forn = document.getElementById('l-fornecedor').value.trim();
+    forn = document.getElementById('l-fornecedor').value.trim().toUpperCase();
     if (!forn) { mostrar('l','erro','❌ Informe o nome do fornecedor.'); return; }
   }
   var itens = [];
@@ -689,25 +784,6 @@ function esc(s) {
     .obterAbasExtras();
 })();
 
-// ── Popula datalist de fornecedores para auto-complete ─────────
-function popularFornDatalist() {
-  var dl = document.getElementById('forn-datalist');
-  if (!dl) return;
-  var vistos = {};
-  var sel = document.getElementById('u-aba');
-  if (sel) {
-    for (var i = 0; i < sel.options.length; i++) {
-      var v = sel.options[i].value;
-      if (v && v !== 'Fornecedores Variados' && !vistos[v]) {
-        vistos[v] = true;
-        var opt = document.createElement('option');
-        opt.value = v;
-        dl.appendChild(opt);
-      }
-    }
-  }
-}
-popularFornDatalist();
 
 // ── Sugestão de motivos (datalist dinâmico) ────────────────
 (function popularMotivoDatalist() {

@@ -411,6 +411,26 @@ function _garantirPastaNF(aba, nf) {
   } catch(e) { return null; }
 }
 
+/**
+ * Apaga (move para lixeira do Drive) a pasta e arquivos de uma NF.
+ * Tenta pelos nomes NF_nfd e NF_nf. Silencioso em caso de erro.
+ */
+function _apagarPastaNFDrive(aba, nf, nfd) {
+  try {
+    var raiz = _pastaAnexos();
+    var abaIter = raiz.getFoldersByName(aba);
+    if (!abaIter.hasNext()) return;
+    var pastaAba = abaIter.next();
+    var nomes = [];
+    if (nfd) nomes.push('NF_' + String(nfd).replace(/[\/\\:*?"<>|]/g, '_'));
+    if (nf)  nomes.push('NF_' + String(nf).replace(/[\/\\:*?"<>|]/g, '_'));
+    nomes.forEach(function(nome) {
+      var iter = pastaAba.getFoldersByName(nome);
+      if (iter.hasNext()) iter.next().setTrashed(true);
+    });
+  } catch(e) { console.warn('_apagarPastaNFDrive: ' + e); }
+}
+
 /** Fórmula de valor total para a linha `row` da planilha. */
 function _formulaTotal(row) {
   return '=IF(OR(H' + row + '="";I' + row + '="");"";H' + row + '*I' + row + ')';
@@ -2982,6 +3002,7 @@ function executarAcaoEmLoteNotas(params) {
           var r=JSON.parse(salvarProgramacaoDevolucao({
             aba:it.aba, linha:it.linha, freteTipo:fp.tipo, freteValor:fp.valor,
             dataAgendamento:fp.dataAgend, obs:fp.obs||'',
+            numeroPedido:fp.numeroPedido||'',
             nf:it.nf, nfd:it.nfd, forn:it.forn, dataNF:it.data
           }));
           if (r.ok) ok++; else erros.push(it.nf+': '+(r.erro||'Erro'));
@@ -3303,6 +3324,17 @@ function _gravarLancamento(ss, ws, dados, ulPre, nfsPre) {
       console.error('Erro ao salvar anexo: ' + eAnexo);
     }
   }
+  // Fotos extras (múltiplas — salvas na mesma pasta com prefixo FOTO_)
+  if (dados.fotos && dados.fotos.length) {
+    var destPastaFotos = pastaNF || _pastaAnexos();
+    dados.fotos.forEach(function(foto, idx) {
+      try {
+        var fb = Utilities.newBlob(Utilities.base64Decode(foto.base64), foto.mime, foto.nome);
+        var arq = destPastaFotos.createFile(fb);
+        arq.setName('FOTO_' + (idx + 1) + '_NF_' + dados.nf + '_' + foto.nome);
+      } catch (eFoto) { console.error('Erro ao salvar foto ' + foto.nome + ': ' + eFoto); }
+    });
+  }
 
   var trava = LockService.getScriptLock();
   if (!trava.tryLock(8000)) throw new Error('Sistema ocupado. Tente novamente.');
@@ -3586,6 +3618,9 @@ function excluirLancamento(params) {
 
     // Mover para lixeira antes de limpar
     _moverParaLixeira(ss, ws, item, motivo);
+
+    // Apagar pasta Drive da NF (fotos, anexos)
+    _apagarPastaNFDrive(item.aba, item.nf, item.nfd);
 
     registrarLog(ss, item.aba, item.linha, COL_NF, item.nfd || '', item.nf,
       '🗑️ Exclusão manual — ' + nfLabel + ' | Motivo: ' + motivo);
@@ -4265,26 +4300,29 @@ function enviarEmailDevolucao(params) {
   }).join('');
 
   var dataEnvio = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
-  // ── Comunicado de retorno: blob direto na memória, sem salvar no Drive ──
-  var blobComunicado = null;
-  if (params.comBase64 && params.comMime && params.comNome) {
-    try {
-      blobComunicado = Utilities.newBlob(
-        Utilities.base64Decode(params.comBase64),
-        params.comMime,
-        params.comNome
-      );
-    } catch (eCom) {
-      console.error('Erro ao decodificar comunicado: ' + eCom);
-    }
+  // ── Comunicados de retorno: suporta múltiplos arquivos ──
+  var blobsComunicado = [];
+  // novo formato: array params.comunicados
+  var comList = params.comunicados && params.comunicados.length ? params.comunicados : [];
+  // backward compat: campo único legado
+  if (!comList.length && params.comBase64 && params.comMime && params.comNome) {
+    comList = [{ base64: params.comBase64, mime: params.comMime, nome: params.comNome }];
   }
+  comList.forEach(function(c) {
+    try {
+      if (c.base64 && c.mime && c.nome) {
+        blobsComunicado.push(Utilities.newBlob(Utilities.base64Decode(c.base64), c.mime, c.nome));
+      }
+    } catch (eCom) { console.error('Erro ao decodificar comunicado "' + (c.nome||'?') + '": ' + eCom); }
+  });
 
   var comObsHtml = '';
-  if (blobComunicado) {
+  if (blobsComunicado.length) {
     comObsHtml =
       '<div style="margin:14px 0 0;padding:10px 14px;background:#FFF8E1;' +
       'border-left:4px solid #F59E0B;border-radius:0 4px 4px 0">' +
-      '<p style="margin:0;font-size:13px;color:#92400E;font-weight:bold">📋 Comunicado de Retorno em Anexo</p>';
+      '<p style="margin:0;font-size:13px;color:#92400E;font-weight:bold">📋 Comunicado de Retorno em Anexo'
+      + (blobsComunicado.length > 1 ? ' (' + blobsComunicado.length + ' arquivos)' : '') + '</p>';
     if (params.comObs) {
       comObsHtml += '<p style="margin:6px 0 0;font-size:13px;color:#444">' + _esc(params.comObs) + '</p>';
     }
@@ -4300,17 +4338,34 @@ function enviarEmailDevolucao(params) {
 
   var blobs = [], semAnexo = [];
   itens.forEach(function(it) {
-    if (!it.urlAnexo || !it.urlAnexo.startsWith('http')) { semAnexo.push(it.nfd); return; }
-    try {
-      var fileId = _extrairIdDriveUrl(it.urlAnexo);
-      if (!fileId) { semAnexo.push(it.nfd); return; }
-      // [P23] Busca o arquivo 1× e reusa para getBlob e getName
-      var driveFile = DriveApp.getFileById(fileId);
-      blobs.push(driveFile.getBlob().setName('NFD_' + it.nfd + '_' + driveFile.getName()));
-    } catch (eBlob) {
-      console.warn('Não foi possível anexar arquivo da NFD ' + it.nfd + ': ' + eBlob);
-      semAnexo.push(it.nfd);
+    var temAnexo = false;
+    if (it.urlAnexo && it.urlAnexo.startsWith('http')) {
+      try {
+        var fileId = _extrairIdDriveUrl(it.urlAnexo);
+        if (fileId) {
+          var driveFile = DriveApp.getFileById(fileId);
+          blobs.push(driveFile.getBlob().setName('NFD_' + it.nfd + '_' + driveFile.getName()));
+          temAnexo = true;
+        }
+      } catch (eBlob) {
+        console.warn('Não foi possível anexar arquivo da NFD ' + it.nfd + ': ' + eBlob);
+      }
     }
+    // Fotos extras (FOTO_*) salvas na pasta da NF
+    try {
+      var pasta = _garantirPastaNF(it.nomeAba, it.nf);
+      if (pasta) {
+        var iter = pasta.getFiles();
+        while (iter.hasNext()) {
+          var f = iter.next();
+          if (f.getName().indexOf('FOTO_') === 0) {
+            blobs.push(f.getBlob().setName('FOTO_NFD_' + it.nfd + '_' + f.getName()));
+            temAnexo = true;
+          }
+        }
+      }
+    } catch (eFoto) { console.warn('Erro ao buscar fotos NFD ' + it.nfd + ': ' + eFoto); }
+    if (!temAnexo) semAnexo.push(it.nfd);
   });
 
   var avisoSemAnexo = semAnexo.length
@@ -4335,7 +4390,7 @@ function enviarEmailDevolucao(params) {
 
   try {
     var todosBlobs = blobs.slice();
-    if (blobComunicado) todosBlobs.push(blobComunicado);
+    blobsComunicado.forEach(function(b){ todosBlobs.push(b); });
 
     var mailOpts = {
       to:       destinatarios.join(','),
@@ -4349,7 +4404,7 @@ function enviarEmailDevolucao(params) {
     MailApp.sendEmail(mailOpts);
 
     var infoAnexos = todosBlobs.length
-      ? ' | ' + todosBlobs.length + ' arquivo(s) anexado(s)' + (blobComunicado ? ' (incl. comunicado)' : '')
+      ? ' | ' + todosBlobs.length + ' arquivo(s) anexado(s)' + (blobsComunicado.length ? ' (incl. ' + blobsComunicado.length + ' comunicado(s))' : '')
       : ' | sem anexos';
     registrarLog(ss, 'SISTEMA', 0, 0, '', assunto,
       '📧 E-mail devolução enviado para: ' + destinatarios.join(', ') + infoAnexos);
