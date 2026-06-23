@@ -1962,7 +1962,7 @@ function _garantirAbaTransferencias(ss) {
   ];
   // Colunas 21-29: controle da transferência
   var cabCtrl = [
-    'Aba Origem','Transportadora','Agendamento','Status Transf.',
+    'Aba Origem','Nº Pedido','Agendamento','Status Transf.',
     'Resp. Transf.','Cadastrado em','Data Baixa','Comprovante','Obs Cancelamento'
   ];
   var header = cabOrig.concat(cabCtrl);
@@ -2001,7 +2001,7 @@ function salvarProgramacaoDevolucao(params) {
   if (params.dataAgendamento) {
     try { dataAgend = new Date(params.dataAgendamento); if (isNaN(dataAgend.getTime())) dataAgend = null; } catch(_){}
   }
-  var transportadora = String(params.transportadora || '').trim();
+  var transportadora = String(params.numeroPedido || params.transportadora || '').trim();
 
   var ss = getSS();
   var ws = ss.getSheetByName(params.aba);
@@ -2304,7 +2304,7 @@ function obterTransferencias(filtros) {
       var nf  = String(l[IDX_NF]  || '').trim();
       if (!nf) return null;
       var abaOrigem      = String(l[TRANSF_COL_ABA_ORIGEM     - 1] || '').trim();
-      var transportadora = String(l[TRANSF_COL_TRANSPORTADORA  - 1] || '').trim();
+      var numeroPedido   = String(l[TRANSF_COL_TRANSPORTADORA  - 1] || '').trim();
       var dataAgend      = l[TRANSF_COL_DATA_AGEND    - 1];
       var stTransf       = String(l[TRANSF_COL_STATUS          - 1] || '').trim();
       var respTransf     = String(l[TRANSF_COL_RESP             - 1] || '').trim();
@@ -2329,7 +2329,7 @@ function obterTransferencias(filtros) {
         freteTipo:      String(l[IDX_FRETE_TIPO]   || '').trim(),
         freteValor:     parseFloat(l[IDX_FRETE_VALOR] || 0) || 0,
         abaOrigem:      abaOrigem,
-        transportadora: transportadora,
+        numeroPedido:   numeroPedido,
         dataAgend:      dataAgend instanceof Date ? Utilities.formatDate(dataAgend, tz, 'dd/MM/yyyy') : String(dataAgend || ''),
         diasAteFrete:   diasAteFrete,
         stTransf:       stTransf,
@@ -2635,6 +2635,51 @@ function salvarAnexoAdicionalNF(params) {
   } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
+/**
+ * Retorna todos os arquivos (fotos + documentos) da pasta Drive associada a uma NF.
+ * Inclui o anexo principal (COL_ANEXO) e todos os uploads de avaria na subpasta.
+ * params: { aba, linha, nf }
+ */
+function obterGaleriaFotos(params) {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName(params.aba);
+    if (!ws) return JSON.stringify({ fotos: [] });
+    var l = ws.getRange(Number(params.linha), 1, 1, TOTAL_COLUNAS).getValues()[0];
+    var nf  = String(l[IDX_NF]  || params.nf || '').trim();
+    var nfd = String(l[IDX_NFD] || '').trim();
+    var anexoPrincipal = String(l[IDX_ANEXO] || '').trim();
+    var fotos = [];
+    if (anexoPrincipal) {
+      var idMatch = anexoPrincipal.match(/\/d\/([^\/\?]+)/);
+      var fileId = idMatch ? idMatch[1] : null;
+      fotos.push({
+        nome: 'Anexo da NF (' + (nfd||nf) + ')',
+        url:  anexoPrincipal,
+        id:   fileId || '',
+        tipo: 'principal'
+      });
+    }
+    try {
+      var pasta = _garantirPastaNF(params.aba, nf);
+      if (pasta) {
+        var iter = pasta.getFiles();
+        while (iter.hasNext()) {
+          var f = iter.next();
+          fotos.push({
+            nome: f.getName(),
+            url:  f.getUrl(),
+            id:   f.getId(),
+            mime: f.getMimeType(),
+            tipo: 'avaria'
+          });
+        }
+      }
+    } catch(_) {}
+    return JSON.stringify({ fotos: fotos });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
 function uploadFotoAvaria(params) {
   try {
     var pasta = _garantirPastaNF(params.aba || 'Avaria', params.nf || 'NF');
@@ -2768,10 +2813,13 @@ function obterDadosDashboard() {
           else if (st === 'Devolvido') { counts.Devolvido++; valores.Devolvido += val; }
           else if (st === 'Venda')     { counts.Venda++;     valores.Venda     += val; }
           if (forn) {
-            if (!porFornecedor[forn]) porFornecedor[forn] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0};
+            if (!porFornecedor[forn]) porFornecedor[forn] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0,vlPendente:0,vlDevolvido:0,vlVenda:0,vlTransf:0};
             if (st === 'Pendente' || st === 'Devolvido' || st === 'Venda') porFornecedor[forn][st]++;
             if (st === 'Pendente' && dias > 30) porFornecedor[forn].atrasos++;
             porFornecedor[forn].vlTot += val;
+            if      (st === 'Pendente')  porFornecedor[forn].vlPendente  += val;
+            else if (st === 'Devolvido') porFornecedor[forn].vlDevolvido += val;
+            else if (st === 'Venda')     porFornecedor[forn].vlVenda     += val;
           }
         });
     });
@@ -2828,14 +2876,18 @@ function obterDadosDashboard() {
           if (stTr !== 'Em Transferência') return;
           var fTr = String(l[IDX_FORN] || '').trim();
           if (!fTr) return;
-          if (!porFornecedor[fTr]) porFornecedor[fTr] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0};
+          if (!porFornecedor[fTr]) porFornecedor[fTr] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0,vlPendente:0,vlDevolvido:0,vlVenda:0,vlTransf:0};
+          var valTr = parseFloat(l[IDX_VL_TOT] || 0) || 0;
           porFornecedor[fTr].EmTransferencia++;
+          porFornecedor[fTr].vlTransf  += valTr;
+          porFornecedor[fTr].vlTot     += valTr;
         });
     }
     var fornArr = Object.keys(porFornecedor).map(function(k) {
       var f = porFornecedor[k];
       return { forn:k, Pendente:f.Pendente, EmTransferencia:f.EmTransferencia,
                Devolvido:f.Devolvido, Venda:f.Venda, atrasos:f.atrasos, vlTot:f.vlTot,
+               vlPendente:f.vlPendente, vlDevolvido:f.vlDevolvido, vlVenda:f.vlVenda, vlTransf:f.vlTransf,
                total: f.Pendente + f.EmTransferencia + f.Devolvido + f.Venda };
     }).sort(function(a, b) { return b.total - a.total; });
 
@@ -3548,6 +3600,49 @@ function excluirLancamento(params) {
 }
 
 
+// ════════════════════════════════════════════════════════════
+//   CONFIRMAÇÃO DE RECEBIMENTO PELO FORNECEDOR
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Registra confirmação de recebimento pelo fornecedor.
+ * Acrescenta tag "[Receb.Forn: DD/MM/AAAA - email]" ao campo OBS da linha.
+ * params: { aba, linha, nf }
+ */
+function confirmarRecebimentoFornecedor(params) {
+  if (!params || !params.aba || !params.linha)
+    return JSON.stringify({ erro: 'Dados incompletos.' });
+  var ss = getSS();
+  var ws = ss.getSheetByName(params.aba);
+  if (!ws) return JSON.stringify({ erro: 'Aba "' + params.aba + '" não encontrada.' });
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(6000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+  try {
+    var linha = Number(params.linha);
+    var rowData = ws.getRange(linha, 1, 1, TOTAL_COLUNAS).getValues()[0];
+    var status = String(rowData[IDX_STATUS] || '').trim();
+    if (status !== 'Devolvido')
+      return JSON.stringify({ erro: 'Apenas itens com status "Devolvido" podem ter recebimento confirmado (status atual: "' + status + '").' });
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    var tz  = Session.getScriptTimeZone();
+    var agora = new Date();
+    var tag = '[Receb.Forn: ' + Utilities.formatDate(agora, tz, 'dd/MM/yyyy') + ' — ' + usuario + ']';
+    var obsAtual = String(rowData[IDX_OBS] || '').trim();
+    if (obsAtual.indexOf('[Receb.Forn:') !== -1)
+      return JSON.stringify({ erro: 'Recebimento já confirmado anteriormente.' });
+    var obsNova = obsAtual ? obsAtual + ' | ' + tag : tag;
+    ws.getRange(linha, COL_OBS).setValue(obsNova);
+    var nf  = String(rowData[IDX_NF]  || '').trim();
+    var nfd = String(rowData[IDX_NFD] || '').trim();
+    var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+    registrarLog(ss, params.aba, linha, COL_OBS, obsAtual, obsNova,
+      '🏭 Recebimento confirmado pelo fornecedor — ' + nfLabel + ' — ' + usuario);
+    return JSON.stringify({ ok: '✅ Recebimento confirmado!\n' + nfLabel + '\n' + tag });
+  } finally {
+    trava.releaseLock();
+  }
+}
+
 
 // ════════════════════════════════════════════════════════════
 //   DESFAZER CONCLUSÃO (REABERTURA)
@@ -4079,7 +4174,7 @@ function previewEmailDevolucao(params) {
     });
     var htmlBody = _montarHtmlEmail(assunto, new Date().toLocaleDateString('pt-BR'), forn || '—', linhas, 0, obs);
     var assinHtml = _obterHtmlAssinaturaById(params.assinaturaFileId || '');
-    if (assinHtml) htmlBody = htmlBody.replace('</body>', assinHtml + '</body>');
+    if (assinHtml) htmlBody += assinHtml;
     return JSON.stringify({ html: htmlBody });
   } catch(e) { return JSON.stringify({ html: '<p style="color:red">Erro: '+e+'</p>' }); }
 }
@@ -4227,10 +4322,15 @@ function enviarEmailDevolucao(params) {
     avisoSemAnexo + '<p style="margin:20px 0 0;font-size:12px;color:#888">'
   );
 
-  // Assinatura de foto do Drive (selecionada manualmente pelo usuário)
-  var assinaturaHtml = _obterHtmlAssinaturaById(params.assinaturaFileId || '');
-  if (assinaturaHtml) {
-    htmlFinal = htmlFinal.replace('</body>', assinaturaHtml + '</body>');
+  // Assinatura via CID inline image — data: URI é bloqueado pelo Gmail
+  var assinaturaBlob = null;
+  if (params.assinaturaFileId) {
+    try {
+      assinaturaBlob = DriveApp.getFileById(params.assinaturaFileId.trim()).getBlob();
+      htmlFinal += '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
+        + '<img src="cid:assinatura_img" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
+        + '</div>';
+    } catch(_) {}
   }
 
   try {
@@ -4243,6 +4343,7 @@ function enviarEmailDevolucao(params) {
       htmlBody: htmlFinal
     };
     if (todosBlobs.length) mailOpts.attachments = todosBlobs;
+    if (assinaturaBlob)    mailOpts.inlineImages = { assinatura_img: assinaturaBlob };
     if (_ccExtra)  mailOpts.cc  = _ccExtra;
     if (_bccExtra) mailOpts.bcc = _bccExtra;
     MailApp.sendEmail(mailOpts);
@@ -5821,7 +5922,7 @@ function salvarConfigAprovacao(ativo, aprovadores) {
 function submeterParaAprovacao(dadosLancamento) {
   var ativo = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACAO_ATIVA) === '1';
   if (!ativo) {
-    return _gravarLancamento(dadosLancamento); // aprovação desligada — salva direto
+    return salvarLancamentoForm(dadosLancamento); // aprovação desligada — salva direto
   }
   try {
     var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
@@ -6007,9 +6108,10 @@ function _obterHtmlAssinatura() {
 function _obterHtmlAssinaturaById(fileId) {
   if (!fileId) return '';
   try {
-    var url = 'https://drive.google.com/uc?export=view&id=' + fileId.trim();
+    var blob = DriveApp.getFileById(fileId.trim()).getBlob();
+    var dataUrl = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
     return '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
-      + '<img src="' + url + '" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
+      + '<img src="' + dataUrl + '" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
       + '</div>';
   } catch(_) { return ''; }
 }
@@ -6022,6 +6124,17 @@ function obterListaAssinaturasPublico() {
     var lista = Object.keys(map).map(function(nome) { return { nome: nome, fileId: map[nome] }; });
     return JSON.stringify({ lista: lista });
   } catch(_) { return JSON.stringify({ lista: [] }); }
+}
+
+function obterAssinaturaBase64(fileId) {
+  if (!fileId) return '';
+  try {
+    var file = DriveApp.getFileById(fileId.trim());
+    var blob = file.getBlob();
+    var base64 = Utilities.base64Encode(blob.getBytes());
+    var mime = blob.getContentType() || 'image/png';
+    return 'data:' + mime + ';base64,' + base64;
+  } catch(e) { return ''; }
 }
 
 function obterPermissoesModulos() {

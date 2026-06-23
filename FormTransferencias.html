@@ -23,6 +23,17 @@
       --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
       --ease:cubic-bezier(.4,0,.2,1)
     }
+    body.dark{--bg:#0F172A;--surface:#1E293B;--border:#334155;--border-def:#475569;
+      --text:#F1F5F9;--text-body:#CBD5E1;--text-muted:#94A3B8;--text-faint:#64748B;
+      --navy-50:#1E3A5F;}
+    body.dark input,body.dark select,body.dark textarea{background:#0F172A!important;color:#F1F5F9;border-color:#475569}
+    body.dark .filts{background:#1E293B;border-bottom-color:#334155}
+    body.dark thead th{background:#152040}
+    body.dark tbody tr:nth-child(even) td{background:#1A2744}
+    body.dark tbody tr:hover td{background:#1E3A5F!important}
+    body.dark td{border-bottom-color:#334155}
+    body.dark .mb{background:#1E293B;border:1px solid #334155}
+    body.dark .blkbar{background:#1E3A5F}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);font-size:13px;background:var(--bg);color:var(--text);
          display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -123,7 +134,7 @@
     <option value="Concluída">Concluída</option>
     <option value="Cancelada">Cancelada</option>
   </select>
-  <input type="text" id="fbusca" placeholder="Buscar NF, fornecedor, transportadora..." oninput="filtrar()" style="min-width:200px">
+  <input type="text" id="fbusca" placeholder="Buscar NF, fornecedor, nº pedido..." oninput="filtrar()" style="min-width:200px">
   <button class="bsm bprim" onclick="carregar()">&#8635; Atualizar</button>
   <button class="bsm bgray" onclick="document.getElementById('fst').value='Em Transferência';document.getElementById('fbusca').value='';filtrar()">Limpar</button>
   <span style="margin-left:auto;font-size:11px;color:#9CA3AF" id="uatt"></span>
@@ -144,7 +155,7 @@
         <th><input type="checkbox" id="chkAll" onchange="toggleTodos(this.checked)"></th>
         <th>NF / NFD</th>
         <th>Fornecedor</th>
-        <th>Transportadora</th>
+        <th>Nº Pedido</th>
         <th>Aba Origem</th>
         <th>Frete</th>
         <th>Agendamento</th>
@@ -245,7 +256,7 @@ function filtrar() {
   _filt = _itens.filter(function(it) {
     if (fs && it.stTransf !== fs) return false;
     if (fb) {
-      var h = ((it.nf||'')+(it.nfd||'')+(it.forn||'')+(it.transportadora||'')+(it.abaOrigem||'')).toLowerCase();
+      var h = ((it.nf||'')+(it.nfd||'')+(it.forn||'')+(it.numeroPedido||'')+(it.abaOrigem||'')).toLowerCase();
       if (h.indexOf(fb) === -1) return false;
     }
     return true;
@@ -299,7 +310,7 @@ function renderTabela() {
       + '<td><input type="checkbox"' + (!ativo ? ' disabled' : '') + (ativo ? ' onchange="toggleItem(' + i + ',this)"' : '') + '></td>'
       + '<td><b style="color:var(--navy);font-size:11px">' + esc(it.nf) + '</b><div style="font-size:10px;color:var(--text-sm)">' + esc(it.nfd) + '</div></td>'
       + '<td>' + esc(it.forn) + '</td>'
-      + '<td style="color:var(--cyan);font-weight:600">' + esc(it.transportadora || '—') + '</td>'
+      + '<td style="color:var(--cyan);font-weight:600">' + esc(it.numeroPedido || '—') + '</td>'
       + '<td style="font-size:11px;color:var(--text-sm)">' + esc(it.abaOrigem) + '</td>'
       + '<td style="font-size:11px">' + esc(it.freteTipo) + '<br><span style="color:var(--text-sm)">' + fvStr + '</span></td>'
       + '<td>' + esc(it.dataAgend||'—') + ' ' + diasTag + '</td>'
@@ -334,7 +345,7 @@ function abrirBaixa(i) {
   _linhaBaixa = _filt[i].linha;
   document.getElementById('mBaixaTitulo').textContent = '✅ Confirmar Baixa — NF ' + _filt[i].nf;
   document.getElementById('mBaixaDesc').textContent = 'Fornecedor: ' + _filt[i].forn
-    + ((_filt[i].transportadora) ? ' · Transp.: ' + _filt[i].transportadora : '');
+    + ((_filt[i].numeroPedido) ? ' · Pedido: ' + _filt[i].numeroPedido : '');
   document.getElementById('bObs').value = '';
   document.getElementById('bArq').value = '';
   document.getElementById('mBaixaMsg').className = 'mmsg';
@@ -504,6 +515,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 carregar();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
 </html>

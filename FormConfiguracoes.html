@@ -19,6 +19,13 @@
       --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
       --ease:cubic-bezier(.4,0,.2,1)
     }
+    body.dark{--bg:#0F172A;--surface:#1E293B;--border:#334155;--border-def:#475569;
+      --text:#F1F5F9;--text-body:#CBD5E1;--text-muted:#94A3B8;--navy-50:#1E3A5F;
+      --amber-bg:#1A2744;--green-bg:#0F2918;--red-bg:#2D1515;}
+    body.dark input,body.dark select,body.dark textarea{background:#0F172A!important;color:#F1F5F9;border-color:#475569}
+    body.dark .card,body.dark .secao-card{background:#1E293B;border-color:#334155}
+    body.dark .tab-btn{background:#1E293B;color:#CBD5E1;border-color:#334155}
+    body.dark .tab-btn.ativa{background:#25419A;color:#fff}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
     ::-webkit-scrollbar{width:9px;height:9px}
@@ -145,6 +152,25 @@
     .msg-erro {background:var(--red-bg);color:var(--red);border:1px solid #FECACA}
     .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
     .spinner{display:none;text-align:center;color:var(--text-muted);margin-top:8px;font-size:12px;padding:6px}
+
+    /* === Navegação por abas === */
+    .tab-bar{display:flex;gap:3px;margin-bottom:12px;border-bottom:2px solid var(--border);padding-bottom:0;flex-wrap:wrap}
+    .tab-btn{padding:6px 12px;border:1px solid var(--border);border-bottom:none;
+             border-radius:var(--r-sm) var(--r-sm) 0 0;font-size:11px;font-weight:700;
+             cursor:pointer;color:var(--text-muted);font-family:var(--font);
+             background:var(--surface);transition:all .15s var(--ease)}
+    .tab-btn.ativa{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .tab-btn:hover:not(.ativa){background:var(--navy-50);color:var(--navy);border-color:var(--navy)}
+    .tab-pane{display:none}
+    .tab-pane.ativo{display:block}
+    button.btn-save{padding:7px 14px;border:none;border-radius:var(--r-sm);font-size:12px;
+                   font-weight:700;cursor:pointer;font-family:var(--font);
+                   background:var(--navy);color:#fff;transition:opacity .15s var(--ease)}
+    button.btn-save:hover{opacity:.88}
+    button.btn-acao{padding:6px 12px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+                   font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
+                   background:var(--surface);color:var(--text-body);transition:background .15s}
+    button.btn-acao:hover{background:var(--navy-50);border-color:var(--navy);color:var(--navy)}
   </style>
 </head>
 <body>
@@ -171,18 +197,25 @@
 <div id="screen-sel" class="screen ativo">
   <div class="titulo">⚙️ Configurações do Sistema</div>
   <div class="sel-grid">
-    <div class="sel-card" onclick="irPara('emails')">
+    <div class="sel-card" onclick="irPara('email-hub')">
       <span class="icone">📧</span>
       <div class="txt">
-        <strong>E-mails e Destinatários</strong>
-        <span>Configurar lista geral e destinatários de alerta (CC)</span>
+        <strong>E-mails e Comunicação</strong>
+        <span>Destinatários, CC/BCC por fornecedor, assinaturas e templates</span>
       </div>
     </div>
-    <div class="sel-card" onclick="irPara('cores')">
+    <div class="sel-card" onclick="irPara('visual')">
       <span class="icone">🎨</span>
       <div class="txt">
-        <strong>Cores da Planilha</strong>
-        <span>Personalizar as cores de status (Pendente, Devolvido, Venda, Alerta)</span>
+        <strong>Cores e Personalização Visual</strong>
+        <span>Cores de status, nome do sistema e logo customizáveis</span>
+      </div>
+    </div>
+    <div class="sel-card" onclick="irPara('sistema')">
+      <span class="icone">🔧</span>
+      <div class="txt">
+        <strong>Diagnóstico e Manutenção</strong>
+        <span>Status do sistema, manutenção rápida e configurar/reinstalar</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('fornecedor')">
@@ -190,13 +223,6 @@
       <div class="txt">
         <strong>Adicionar Novo Fornecedor</strong>
         <span>Criar nova aba de fornecedor sem editar o código</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('diagnostico')">
-      <span class="icone">🔧</span>
-      <div class="txt">
-        <strong>Diagnóstico e Status</strong>
-        <span>Ver status do sistema, triggers, contadores e espaço nas abas</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('limpeza')">
@@ -220,20 +246,6 @@
         <span>Definir quem pode entrar nesta tela de Configurações</span>
       </div>
     </div>
-    <div class="sel-card" onclick="irPara('manutencao')">
-      <span class="icone">🔨</span>
-      <div class="txt">
-        <strong>Manutenção Rápida</strong>
-        <span>Reaplica cores, atualiza dashboard e reinstala triggers — sem recriar abas</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('reinstalar')">
-      <span class="icone">🔧</span>
-      <div class="txt">
-        <strong>Configurar / Reinstalar Sistema</strong>
-        <span>Recriar abas, formatação, dashboard e triggers (não apaga dados)</span>
-      </div>
-    </div>
     <div class="sel-card" onclick="irPara('readonly')">
       <span class="icone">🔒</span>
       <div class="txt">
@@ -241,32 +253,11 @@
         <span>Bloquear todas as ações de escrita do sistema (lançar, baixar, editar)</span>
       </div>
     </div>
-    <div class="sel-card" onclick="irPara('templates')">
-      <span class="icone">✉️</span>
-      <div class="txt">
-        <strong>Templates de E-mail por Tipo</strong>
-        <span>Personalizar assunto e corpo do e-mail para cada tipo de devolução</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('ccforn')">
-      <span class="icone">📧</span>
-      <div class="txt">
-        <strong>CC/BCC por Fornecedor</strong>
-        <span>Configurar cópia automática de e-mails por fornecedor</span>
-      </div>
-    </div>
     <div class="sel-card" onclick="irPara('permissoes')">
       <span class="icone">🛡️</span>
       <div class="txt">
         <strong>Permissões por Módulo</strong>
         <span>Restringir quem pode acessar lançamento, e-mail, configurações etc.</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('assinaturas')">
-      <span class="icone">✍️</span>
-      <div class="txt">
-        <strong>Assinaturas de E-mail</strong>
-        <span>Associar foto de assinatura (Drive) a cada usuário remetente</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('retencao')">
@@ -283,13 +274,6 @@
         <span>Salvar snapshots e restaurar configurações anteriores</span>
       </div>
     </div>
-    <div class="sel-card" onclick="irPara('logexport')">
-      <span class="icone">📤</span>
-      <div class="txt">
-        <strong>Log de Exportações</strong>
-        <span>Histórico de exportações realizadas (CSV, PDF)</span>
-      </div>
-    </div>
     <div class="sel-card" onclick="irPara('backup')">
       <span class="icone">🔍</span>
       <div class="txt">
@@ -301,21 +285,7 @@
       <span class="icone">✅</span>
       <div class="txt">
         <strong>Aprovação de Lançamentos</strong>
-        <span>Habilitar fluxo de aprovação para novos lançamentos (com notificação)</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('visuais')">
-      <span class="icone">🎨</span>
-      <div class="txt">
-        <strong>Personalização Visual</strong>
-        <span>Cores por status, logo e nome do sistema customizáveis</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('diagnostico')">
-      <span class="icone">🔧</span>
-      <div class="txt">
-        <strong>Diagnóstico do Sistema</strong>
-        <span>Erros recentes, tamanho da planilha, teste de e-mail</span>
+        <span>Habilitar fluxo de aprovação para novos lançamentos</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('changelog')">
@@ -331,185 +301,299 @@
   </div>
 </div>
 
-<!-- ════════ TELA — MANUTENÇÃO RÁPIDA ════════ -->
-<div id="screen-manutencao" class="screen">
-  <div class="titulo">🔨 Manutenção Rápida do Sistema</div>
-  <p style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:12px">
-    Realiza pequenos ajustes no sistema sem recriar ou apagar nenhuma aba ou dado:
-  </p>
-  <div class="info" style="margin-bottom:14px">
-    ✅ Reaplica as cores de status em todas as abas<br>
-    ✅ Atualiza as métricas do Dashboard<br>
-    ✅ Verifica e reinstala os triggers automáticos<br>
-    ✅ Inclui as abas extras de fornecedores criadas pelo usuário<br>
-    <br>
-    <strong>Nenhuma aba é recriada ou limpa.</strong> Use esta opção para corrigir
-    cores incorretas, contadores desatualizados ou triggers parados — sem risco de
-    perder lançamentos.
-  </div>
-  <button class="btn-principal" id="mn-btn" onclick="executarManutencao()">🔨 Executar Manutenção Rápida</button>
-  <button class="btn-cancel" onclick="voltar()">← Voltar</button>
-  <div class="spinner" id="mn-spin">⏳ Executando manutenção (pode levar alguns segundos)...</div>
-  <div class="msg" id="mn-msg"></div>
-</div>
-
-<!-- ════════ TELA — REINSTALAR ════════ -->
-<div id="screen-reinstalar" class="screen">
-  <div class="titulo">🔧 Configurar / Reinstalar Sistema</div>
-  <p style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:12px">
-    Recria as abas operacionais, o layout/formatação padrão, o Dashboard e os
-    <em>triggers</em> automáticos (onEdit, resumo semanal, verificação de atrasos,
-    reaplicação de cores). <strong>Não apaga lançamentos existentes.</strong>
-    Se for reinstalar por algum problema na planilha, recomenda-se fazer
-    <strong>💾 Backup</strong> antes e <strong>Restaurar</strong> depois.
-  </p>
-  <button class="btn-principal" id="re-btn" onclick="executarReinstalar()">🔧 Configurar / Reinstalar Agora</button>
-  <button class="btn-cancel" onclick="voltar()">← Voltar</button>
-  <div class="spinner" id="re-spin">⏳ Configurando o sistema (pode levar alguns segundos)...</div>
-  <div class="msg" id="re-msg"></div>
-</div>
-
-<!-- ════════ TELA 1 — E-MAILS ════════ -->
-<div id="screen-emails" class="screen">
+<!-- ════════ TELA — E-MAILS E COMUNICAÇÃO (hub) ════════ -->
+<div id="screen-email-hub" class="screen">
   <div class="titulo">
     <button class="back" onclick="voltar()">← Voltar</button>
-    📧 E-mails e Destinatários <span class="badge">CONFIG</span>
+    📧 E-mails e Comunicação <span class="badge">CONFIG</span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="dest" onclick="mudarTab('email-hub','dest',this)">📋 Destinatários</button>
+    <button class="tab-btn" data-tab="ccbcc" onclick="mudarTab('email-hub','ccbcc',this)">📧 CC/BCC</button>
+    <button class="tab-btn" data-tab="assn" onclick="mudarTab('email-hub','assn',this)">✍️ Assinaturas</button>
+    <button class="tab-btn" data-tab="tpl" onclick="mudarTab('email-hub','tpl',this)">✉️ Templates</button>
   </div>
 
-  <!-- Lista geral -->
-  <div class="secao-email">
-    <div class="sec-titulo">📋 Lista geral — relatórios e resumos</div>
-    <div class="info" style="margin-bottom:8px">
-      Estes e-mails recebem <strong>todos</strong> os relatórios gerados (mensal, semanal, diário) e o resumo automático de segunda-feira.
-    </div>
-    <div class="tags-box" id="tags-geral"></div>
-    <div class="linha2">
-      <div class="campo" style="margin-bottom:0">
-        <input type="email" id="inp-geral" placeholder="novo@email.com.br"
-               onkeydown="if(event.key==='Enter') addEmail('geral')">
+  <!-- Aba: Destinatários -->
+  <div id="email-hub-tab-dest" class="tab-pane ativo">
+    <div class="secao-email">
+      <div class="sec-titulo">📋 Lista geral — relatórios e resumos</div>
+      <div class="info" style="margin-bottom:8px">
+        Estes e-mails recebem <strong>todos</strong> os relatórios gerados (mensal, semanal, diário) e o resumo automático de segunda-feira.
       </div>
-      <div><button class="btn-sec" onclick="addEmail('geral')">+ Adicionar</button></div>
-    </div>
-  </div>
-
-  <!-- Alertas de atraso -->
-  <div class="secao-email">
-    <div class="sec-titulo">🔔 Alertas de atraso — enviar para:</div>
-    <div class="opcao-alerta">
-      <label class="opcao-radio">
-        <input type="radio" name="alerta-dest" value="todos" id="r-todos" checked onchange="onAlertaChange()">
-        <div class="txt">
-          <strong>Todos da lista geral</strong>
-          <span>O alerta de atraso vai para todos os e-mails cadastrados acima</span>
-        </div>
-      </label>
-      <label class="opcao-radio">
-        <input type="radio" name="alerta-dest" value="cc" id="r-cc" onchange="onAlertaChange()">
-        <div class="txt">
-          <strong>Somente destinatários CC</strong>
-          <span>O alerta vai apenas para os e-mails abaixo (em CC — um único e-mail enviado)</span>
-        </div>
-      </label>
-    </div>
-
-    <div id="cc-wrapper">
-      <div class="tags-box" id="tags-alerta"></div>
+      <div class="tags-box" id="tags-geral"></div>
       <div class="linha2">
         <div class="campo" style="margin-bottom:0">
-          <input type="email" id="inp-alerta" placeholder="alerta@email.com.br"
-                 onkeydown="if(event.key==='Enter') addEmail('alerta')">
+          <input type="email" id="inp-geral" placeholder="novo@email.com.br"
+                 onkeydown="if(event.key==='Enter') addEmail('geral')">
         </div>
-        <div><button class="btn-sec" onclick="addEmail('alerta')">+ Adicionar</button></div>
+        <div><button class="btn-sec" onclick="addEmail('geral')">+ Adicionar</button></div>
       </div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔔 Alertas de atraso — enviar para:</div>
+      <div class="opcao-alerta">
+        <label class="opcao-radio">
+          <input type="radio" name="alerta-dest" value="todos" id="r-todos" checked onchange="onAlertaChange()">
+          <div class="txt">
+            <strong>Todos da lista geral</strong>
+            <span>O alerta de atraso vai para todos os e-mails cadastrados acima</span>
+          </div>
+        </label>
+        <label class="opcao-radio">
+          <input type="radio" name="alerta-dest" value="cc" id="r-cc" onchange="onAlertaChange()">
+          <div class="txt">
+            <strong>Somente destinatários CC</strong>
+            <span>O alerta vai apenas para os e-mails abaixo (em CC — um único e-mail enviado)</span>
+          </div>
+        </label>
+      </div>
+      <div id="cc-wrapper">
+        <div class="tags-box" id="tags-alerta"></div>
+        <div class="linha2">
+          <div class="campo" style="margin-bottom:0">
+            <input type="email" id="inp-alerta" placeholder="alerta@email.com.br"
+                   onkeydown="if(event.key==='Enter') addEmail('alerta')">
+          </div>
+          <div><button class="btn-sec" onclick="addEmail('alerta')">+ Adicionar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="secao-email" style="border-color:#0891B2;background:#F0FDFF">
+      <div class="sec-titulo" style="color:#0891B2">🚛 Alertas de transferências vencidas — enviar para:</div>
+      <div class="info" style="background:#CFFAFE;border-color:#0891B2;margin-bottom:8px">
+        E-mails que recebem o alerta quando uma transferência agendada passa da data sem baixa.
+        Se deixar vazio, o alerta vai para a <strong>lista geral</strong>.
+      </div>
+      <div class="tags-box" id="tags-transf"></div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0">
+          <input type="email" id="inp-transf" placeholder="transporte@empresa.com.br"
+                 onkeydown="if(event.key==='Enter') addEmail('transf')">
+        </div>
+        <div><button class="btn-sec" onclick="addEmail('transf')">+ Adicionar</button></div>
+      </div>
+    </div>
+    <div class="botoes">
+      <button class="btn-principal" id="em-btn" onclick="salvarEmailConfig()">💾 Salvar Configurações</button>
+      <button class="btn-cancel" onclick="google.script.host.close()">✖ Fechar</button>
+    </div>
+    <div class="spinner" id="em-spin">⏳ Salvando...</div>
+    <div class="msg" id="em-msg"></div>
+  </div>
+
+  <!-- Aba: CC/BCC por Fornecedor -->
+  <div id="email-hub-tab-ccbcc" class="tab-pane">
+    <div class="info" style="margin-bottom:10px">Configure cópia automática de e-mails por fornecedor.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <input type="text" id="ccf-forn" placeholder="Nome do fornecedor"
+        style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+      <input type="text" id="ccf-cc" placeholder="CC (e-mails separados por vírgula)"
+        style="flex:2;min-width:160px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+      <input type="text" id="ccf-bcc" placeholder="BCC"
+        style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+      <button class="btn-acao" onclick="salvarCCForn()">💾 Salvar</button>
+    </div>
+    <div class="msg" id="ccf-msg"></div>
+    <div id="ccf-lista" style="margin-top:8px"></div>
+  </div>
+
+  <!-- Aba: Assinaturas -->
+  <div id="email-hub-tab-assn" class="tab-pane">
+    <div class="info" style="margin-bottom:10px">
+      Cadastre as assinaturas disponíveis para seleção ao enviar e-mail. Use um <strong>nome livre</strong>
+      como identificador (ex: "João Silva", "Diretoria").
+    </div>
+    <div id="assn-lista" style="margin-bottom:12px"></div>
+    <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Adicionar / atualizar assinatura</div>
+      <div style="display:grid;gap:6px">
+        <input id="assn-email" type="text" placeholder="Nome / identificador (ex: João Silva, Setor Logística)"
+          style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+        <input id="assn-fileid" type="text" placeholder="ID do arquivo Drive (ex: 1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap)"
+          style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+        <div id="assn-preview-thumb" style="display:none;margin-top:4px">
+          <img id="assn-thumb-img" src="" alt="Preview"
+            style="max-height:60px;max-width:220px;border:1px solid var(--border);border-radius:4px;object-fit:contain">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-save" onclick="salvarAssinaturaConf()">💾 Salvar</button>
+        <button class="btn-cancel" onclick="previewAssinaturaThumb()">👁 Preview</button>
+        <button class="btn-cancel" onclick="document.getElementById('assn-email').value='';document.getElementById('assn-fileid').value='';document.getElementById('assn-preview-thumb').style.display='none'">✕ Limpar</button>
+      </div>
+      <div class="msg" id="assn-msg"></div>
     </div>
   </div>
 
-  <!-- Alertas de transferências vencidas -->
-  <div class="secao-email" style="border-color:#0891B2;background:#F0FDFF">
-    <div class="sec-titulo" style="color:#0891B2">🚛 Alertas de transferências vencidas — enviar para:</div>
-    <div class="info" style="background:#CFFAFE;border-color:#0891B2;margin-bottom:8px">
-      E-mails que recebem o alerta quando uma transferência agendada passa da data sem baixa.
-      Se deixar vazio, o alerta vai para a <strong>lista geral</strong>.
+  <!-- Aba: Templates de E-mail -->
+  <div id="email-hub-tab-tpl" class="tab-pane">
+    <div class="info" style="margin-bottom:10px">
+      Defina assunto padrão para cada tipo. Use <code>{forn}</code>, <code>{qtd}</code>, <code>{tipo}</code> como variáveis.
     </div>
-    <div class="tags-box" id="tags-transf"></div>
-    <div class="linha2">
-      <div class="campo" style="margin-bottom:0">
-        <input type="email" id="inp-transf" placeholder="transporte@empresa.com.br"
-               onkeydown="if(event.key==='Enter') addEmail('transf')">
-      </div>
-      <div><button class="btn-sec" onclick="addEmail('transf')">+ Adicionar</button></div>
-    </div>
+    <div id="tpl-lista"></div>
+    <div class="msg" id="tpl-msg"></div>
   </div>
-
-  <div class="botoes">
-    <button class="btn-principal" id="em-btn" onclick="salvarEmailConfig()">💾 Salvar Configurações</button>
-    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
-  </div>
-  <div class="spinner" id="em-spin">⏳ Salvando...</div>
-  <div class="msg" id="em-msg"></div>
 </div>
 
-<!-- ════════ TELA 2 — CORES ════════ -->
-<div id="screen-cores" class="screen">
+<!-- ════════ TELA — CORES E PERSONALIZAÇÃO VISUAL (hub) ════════ -->
+<div id="screen-visual" class="screen">
   <div class="titulo">
     <button class="back" onclick="voltar()">← Voltar</button>
-    🎨 Cores da Planilha <span class="badge">CONFIG</span>
+    🎨 Cores e Personalização Visual <span class="badge">CONFIG</span>
   </div>
-  <div class="info">
-    Personalize as cores de fundo das linhas por status. Após salvar, a planilha será atualizada automaticamente.
-  </div>
-
-  <div class="cor-grade">
-    <div class="cor-item">
-      <label>🔵 Pendente</label>
-      <div class="cor-preview">
-        <input type="color" id="cor-pendente" value="#DDEEFF"
-               oninput="document.getElementById('hex-pendente').textContent=this.value.toUpperCase()">
-        <span id="hex-pendente">#DDEEFF</span>
-      </div>
-    </div>
-    <div class="cor-item">
-      <label>🟢 Devolvido</label>
-      <div class="cor-preview">
-        <input type="color" id="cor-devolvido" value="#DDFFDD"
-               oninput="document.getElementById('hex-devolvido').textContent=this.value.toUpperCase()">
-        <span id="hex-devolvido">#DDFFDD</span>
-      </div>
-    </div>
-    <div class="cor-item">
-      <label>🟠 Venda</label>
-      <div class="cor-preview">
-        <input type="color" id="cor-venda" value="#FFE5CC"
-               oninput="document.getElementById('hex-venda').textContent=this.value.toUpperCase()">
-        <span id="hex-venda">#FFE5CC</span>
-      </div>
-    </div>
-    <div class="cor-item">
-      <label>🔴 Alerta (+30 dias)</label>
-      <div class="cor-preview">
-        <input type="color" id="cor-alerta" value="#FFD5D5"
-               oninput="document.getElementById('hex-alerta').textContent=this.value.toUpperCase()">
-        <span id="hex-alerta">#FFD5D5</span>
-      </div>
-    </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="cores" onclick="mudarTab('visual','cores',this)">🎨 Cores da Planilha</button>
+    <button class="tab-btn" data-tab="vis" onclick="mudarTab('visual','vis',this)">✨ Personalização</button>
   </div>
 
-  <div class="campo" style="margin-top:10px">
-    <label>Cor do Cabeçalho</label>
-    <div class="cor-preview">
-      <input type="color" id="cor-header" value="#25419A"
-             oninput="document.getElementById('hex-header').textContent=this.value.toUpperCase()">
-      <span id="hex-header">#25419A</span>
+  <!-- Aba: Cores -->
+  <div id="visual-tab-cores" class="tab-pane ativo">
+    <div class="info">
+      Personalize as cores de fundo das linhas por status. Após salvar, a planilha será atualizada automaticamente.
+    </div>
+    <div class="cor-grade">
+      <div class="cor-item">
+        <label>🔵 Pendente</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-pendente" value="#DDEEFF"
+                 oninput="document.getElementById('hex-pendente').textContent=this.value.toUpperCase()">
+          <span id="hex-pendente">#DDEEFF</span>
+        </div>
+      </div>
+      <div class="cor-item">
+        <label>🟢 Devolvido</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-devolvido" value="#DDFFDD"
+                 oninput="document.getElementById('hex-devolvido').textContent=this.value.toUpperCase()">
+          <span id="hex-devolvido">#DDFFDD</span>
+        </div>
+      </div>
+      <div class="cor-item">
+        <label>🟠 Venda</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-venda" value="#FFE5CC"
+                 oninput="document.getElementById('hex-venda').textContent=this.value.toUpperCase()">
+          <span id="hex-venda">#FFE5CC</span>
+        </div>
+      </div>
+      <div class="cor-item">
+        <label>🔴 Alerta (+30 dias)</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-alerta" value="#FFD5D5"
+                 oninput="document.getElementById('hex-alerta').textContent=this.value.toUpperCase()">
+          <span id="hex-alerta">#FFD5D5</span>
+        </div>
+      </div>
+    </div>
+    <div class="campo" style="margin-top:10px">
+      <label>Cor do Cabeçalho</label>
+      <div class="cor-preview">
+        <input type="color" id="cor-header" value="#25419A"
+               oninput="document.getElementById('hex-header').textContent=this.value.toUpperCase()">
+        <span id="hex-header">#25419A</span>
+      </div>
+    </div>
+    <div class="botoes">
+      <button class="btn-principal" id="c-btn" onclick="salvarCores()">🎨 Salvar e Reaplicar Cores</button>
+      <button class="btn-sec" onclick="restaurarCoresPadrao()">↺ Padrão</button>
+      <button class="btn-cancel" onclick="google.script.host.close()">✖</button>
+    </div>
+    <div class="spinner" id="c-spin">⏳ Reaplicando cores em todas as abas...</div>
+    <div class="msg" id="c-msg"></div>
+  </div>
+
+  <!-- Aba: Personalização Visual -->
+  <div id="visual-tab-vis" class="tab-pane">
+    <div style="display:grid;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;font-weight:700;margin-bottom:4px">Nome do Sistema</div>
+        <input type="text" id="vis-nome" placeholder="Controle de Devoluções"
+          style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;margin-bottom:4px">URL ou ID da Logo (Google Drive)</div>
+        <input type="text" id="vis-logo" placeholder="ID do arquivo Drive ou URL da imagem"
+          style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <div id="vis-logo-preview" style="margin-top:6px"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;margin-bottom:4px">Cores por Status</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Pendente <input type="color" id="vis-cor-pendente" value="#D97706"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Devolvido <input type="color" id="vis-cor-devolvido" value="#059669"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Venda <input type="color" id="vis-cor-venda" value="#2563EB"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Em Frete <input type="color" id="vis-cor-emfrete" value="#7C3AED"></label>
+        </div>
+      </div>
+    </div>
+    <button class="btn-save" onclick="salvarVisuais()" style="width:100%">💾 Salvar</button>
+    <div class="msg" id="vis-msg"></div>
+  </div>
+</div>
+
+<!-- ════════ TELA — SISTEMA E MANUTENÇÃO (hub) ════════ -->
+<div id="screen-sistema" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    🔧 Sistema e Manutenção <span class="badge">SISTEMA</span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="diag" onclick="mudarTab('sistema','diag',this)">🔍 Diagnóstico</button>
+    <button class="tab-btn" data-tab="mnt" onclick="mudarTab('sistema','mnt',this)">🔨 Manutenção</button>
+    <button class="tab-btn" data-tab="inst" onclick="mudarTab('sistema','inst',this)">⚙️ Reinstalar</button>
+  </div>
+
+  <!-- Aba: Diagnóstico -->
+  <div id="sistema-tab-diag" class="tab-pane ativo">
+    <div style="display:grid;gap:8px;margin-bottom:10px">
+      <button class="btn-save" onclick="executarDiagnostico()" style="width:100%">▶ Verificar sistema</button>
+      <div class="spinner" id="diag-spin" style="display:none">⏳ Verificando...</div>
+      <div id="diag-resultado"></div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px">
+        <div style="font-size:11px;font-weight:700;margin-bottom:6px">Teste de envio de e-mail</div>
+        <div style="display:flex;gap:6px">
+          <input type="email" id="diag-email-dest" placeholder="destinatario@email.com"
+            style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+          <button class="btn-save" onclick="testarEmail()" style="white-space:nowrap">📧 Testar</button>
+        </div>
+        <div class="msg" id="diag-email-msg" style="margin-top:6px"></div>
+      </div>
+      <div id="diag-erros-recentes" style="margin-top:6px"></div>
     </div>
   </div>
 
-  <div class="botoes">
-    <button class="btn-principal" id="c-btn" onclick="salvarCores()">🎨 Salvar e Reaplicar Cores</button>
-    <button class="btn-sec" onclick="restaurarCoresPadrao()">↺ Padrão</button>
-    <button class="btn-cancel" onclick="google.script.host.close()">✖</button>
+  <!-- Aba: Manutenção Rápida -->
+  <div id="sistema-tab-mnt" class="tab-pane">
+    <p style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:12px">
+      Realiza pequenos ajustes no sistema sem recriar ou apagar nenhuma aba ou dado:
+    </p>
+    <div class="info" style="margin-bottom:14px">
+      ✅ Reaplica as cores de status em todas as abas<br>
+      ✅ Atualiza as métricas do Dashboard<br>
+      ✅ Verifica e reinstala os triggers automáticos<br>
+      ✅ Inclui as abas extras de fornecedores criadas pelo usuário<br><br>
+      <strong>Nenhuma aba é recriada ou limpa.</strong> Use esta opção para corrigir cores incorretas,
+      contadores desatualizados ou triggers parados — sem risco de perder lançamentos.
+    </div>
+    <button class="btn-principal" id="mn-btn" onclick="executarManutencao()" style="width:100%">🔨 Executar Manutenção Rápida</button>
+    <div class="spinner" id="mn-spin">⏳ Executando manutenção (pode levar alguns segundos)...</div>
+    <div class="msg" id="mn-msg"></div>
   </div>
-  <div class="spinner" id="c-spin">⏳ Reaplicando cores em todas as abas...</div>
-  <div class="msg" id="c-msg"></div>
+
+  <!-- Aba: Reinstalar -->
+  <div id="sistema-tab-inst" class="tab-pane">
+    <p style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:12px">
+      Recria as abas operacionais, o layout/formatação padrão, o Dashboard e os <em>triggers</em> automáticos
+      (onEdit, resumo semanal, verificação de atrasos, reaplicação de cores).
+      <strong>Não apaga lançamentos existentes.</strong>
+      Se for reinstalar por algum problema na planilha, recomenda-se fazer
+      <strong>💾 Backup</strong> antes e <strong>Restaurar</strong> depois.
+    </p>
+    <button class="btn-principal" id="re-btn" onclick="executarReinstalar()" style="width:100%">🔧 Configurar / Reinstalar Agora</button>
+    <div class="spinner" id="re-spin">⏳ Configurando o sistema (pode levar alguns segundos)...</div>
+    <div class="msg" id="re-msg"></div>
+  </div>
 </div>
 
 <!-- ════════ TELA 3 — NOVO FORNECEDOR ════════ -->
@@ -540,48 +624,7 @@
   <div class="msg" id="f-msg"></div>
 </div>
 
-<!-- ════════ TELA 4 — DIAGNÓSTICO ════════ -->
-<div id="screen-diagnostico" class="screen">
-  <div class="titulo">
-    <button class="back" onclick="voltar()">← Voltar</button>
-    🔧 Diagnóstico e Status <span class="badge">SISTEMA</span>
-  </div>
-  <div class="spinner" id="diag-spin">⏳ Carregando diagnóstico...</div>
-  <div class="msg" id="diag-msg"></div>
-  <div id="diag-conteudo" style="display:none">
-    <div class="diag-card">
-      <div class="diag-titulo">Versão e Sistema</div>
-      <div class="diag-linha"><span>Versão</span><span class="diag-val" id="diag-versao">—</span></div>
-      <div class="diag-linha"><span>Último backup</span><span class="diag-val" id="diag-backup">—</span></div>
-    </div>
-    <div class="diag-card">
-      <div class="diag-titulo">Contadores</div>
-      <div class="diag-linha"><span>Itens concluídos</span><span class="diag-val" id="diag-concluidos">—</span></div>
-      <div class="diag-linha"><span>Proteções ativas</span><span class="diag-val" id="diag-protecoes">—</span></div>
-    </div>
-    <div class="diag-card">
-      <div class="diag-titulo">Uso das Abas Operacionais</div>
-      <div class="diag-linha"><span>Britania</span><span class="diag-val" id="diag-brit">—</span></div>
-      <div class="diag-linha"><span>Unilever</span><span class="diag-val" id="diag-unilever">—</span></div>
-      <div class="diag-linha"><span>Fornecedores Variados</span><span class="diag-val" id="diag-variados">—</span></div>
-    </div>
-    <div class="diag-card">
-      <div class="diag-titulo">Triggers Instalados</div>
-      <div id="diag-triggers"></div>
-    </div>
-    <div class="diag-card">
-      <div class="diag-titulo">E-mail</div>
-      <div class="diag-linha"><span>Lista geral</span><span class="diag-val" id="diag-emails-geral">—</span></div>
-      <div class="diag-linha"><span>Alertas</span><span class="diag-val" id="diag-emails-alerta">—</span></div>
-    </div>
-  </div>
-  <div class="botoes" style="margin-top:10px">
-    <button class="btn-sec" onclick="carregarDiagnostico()">↺ Atualizar</button>
-    <button class="btn-cancel" onclick="google.script.host.close()">✖ Fechar</button>
-  </div>
-</div>
-
-<!-- ════════ TELA 5 — LIMPEZA LOG ════════ -->
+<!-- ════════ TELA — LIMPEZA LOG ════════ -->
 <div id="screen-limpeza" class="screen">
   <div class="titulo">
     <button class="back" onclick="voltar()">← Voltar</button>
@@ -752,88 +795,6 @@
   </div>
 </div>
 
-<!-- ════ TELA — ASSINATURAS E-MAIL ════ -->
-<div id="screen-assinaturas" class="screen">
-  <div class="titulo">
-    <button class="back" onclick="voltar()">← Voltar</button>
-    ✍️ Assinaturas de E-mail
-  </div>
-  <div class="info" style="margin-bottom:10px">
-    Cadastre as assinaturas disponíveis para seleção ao enviar e-mail. Use um <strong>nome livre</strong>
-    como identificador (ex: "João Silva", "Diretoria"). No formulário de e-mail, o usuário escolhe qual assinar.
-  </div>
-  <div id="assn-lista" style="margin-bottom:12px"></div>
-  <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px">
-    <div style="font-size:12px;font-weight:600;margin-bottom:8px">Adicionar / atualizar assinatura</div>
-    <div style="display:grid;gap:6px">
-      <input id="assn-email" type="text" placeholder="Nome / identificador (ex: João Silva, Setor Logística)" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
-      <input id="assn-fileid" type="text" placeholder="ID do arquivo Drive (ex: 1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap)" style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
-      <div id="assn-preview-thumb" style="display:none;margin-top:4px">
-        <img id="assn-thumb-img" src="" alt="Preview" style="max-height:60px;max-width:220px;border:1px solid var(--border);border-radius:4px;object-fit:contain">
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="btn-save" onclick="salvarAssinaturaConf()">💾 Salvar</button>
-      <button class="btn-cancel" onclick="previewAssinaturaThumb()">👁 Preview</button>
-      <button class="btn-cancel" onclick="document.getElementById('assn-email').value='';document.getElementById('assn-fileid').value='';document.getElementById('assn-preview-thumb').style.display='none'">✕ Limpar</button>
-    </div>
-    <div class="msg" id="assn-msg"></div>
-  </div>
-  <div class="botoes">
-    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
-  </div>
-</div>
-
-<!-- ════ TELA — VISUAIS ════ -->
-<div id="screen-visuais" class="screen">
-  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🎨 Personalização Visual</div>
-  <div style="display:grid;gap:10px;margin-bottom:10px">
-    <div>
-      <div style="font-size:11px;font-weight:700;margin-bottom:4px">Nome do Sistema</div>
-      <input type="text" id="vis-nome" placeholder="Controle de Devoluções"
-        style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
-    </div>
-    <div>
-      <div style="font-size:11px;font-weight:700;margin-bottom:4px">URL ou ID da Logo (Google Drive)</div>
-      <input type="text" id="vis-logo" placeholder="ID do arquivo Drive ou URL da imagem"
-        style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
-      <div id="vis-logo-preview" style="margin-top:6px"></div>
-    </div>
-    <div>
-      <div style="font-size:11px;font-weight:700;margin-bottom:4px">Cores por Status</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Pendente <input type="color" id="cor-pendente" value="#D97706"></label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Devolvido <input type="color" id="cor-devolvido" value="#059669"></label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Venda <input type="color" id="cor-venda" value="#2563EB"></label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px">Em Frete <input type="color" id="cor-emfrete" value="#7C3AED"></label>
-      </div>
-    </div>
-  </div>
-  <button class="btn-save" onclick="salvarVisuais()" style="width:100%">💾 Salvar</button>
-  <div class="msg" id="vis-msg"></div>
-  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
-</div>
-
-<!-- ════ TELA — DIAGNÓSTICO ════ -->
-<div id="screen-diagnostico" class="screen">
-  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🔧 Diagnóstico do Sistema</div>
-  <div style="display:grid;gap:8px;margin-bottom:10px">
-    <button class="btn-save" onclick="executarDiagnostico()" style="width:100%">▶ Verificar sistema</button>
-    <div class="spinner" id="diag-spin" style="display:none">⏳ Verificando...</div>
-    <div id="diag-resultado"></div>
-    <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px">
-      <div style="font-size:11px;font-weight:700;margin-bottom:6px">Teste de envio de e-mail</div>
-      <div style="display:flex;gap:6px">
-        <input type="email" id="diag-email-dest" placeholder="destinatario@email.com"
-          style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
-        <button class="btn-save" onclick="testarEmail()" style="white-space:nowrap">📧 Testar</button>
-      </div>
-      <div class="msg" id="diag-email-msg" style="margin-top:6px"></div>
-    </div>
-    <div id="diag-erros-recentes" style="margin-top:6px"></div>
-  </div>
-  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
-</div>
 
 <!-- ════ TELA — CHANGELOG ════ -->
 <div id="screen-changelog" class="screen">
@@ -906,14 +867,6 @@
   <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
 </div>
 
-<!-- ════ TELA — LOG EXPORTAÇÕES ════ -->
-<div id="screen-logexport" class="screen">
-  <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>📤 Log de Exportações</div>
-  <div class="spinner" id="lexp-spin">⏳ Carregando...</div>
-  <div id="lexp-lista" style="margin-top:8px"></div>
-  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
-</div>
-
 <!-- ════ TELA — BACKUP ════ -->
 <div id="screen-backup" class="screen">
   <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🔍 Integridade do Backup</div>
@@ -923,43 +876,6 @@
   <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
 </div>
 
-<!-- ════ TELA — TEMPLATES E-MAIL ════ -->
-<div id="screen-templates" class="screen">
-  <div class="titulo">
-    <button class="back" onclick="voltar()">← Voltar</button>
-    ✉️ Templates de E-mail por Tipo
-  </div>
-  <div class="info" style="margin-bottom:10px">
-    Defina assunto padrão para cada tipo. Use <code>{forn}</code>, <code>{qtd}</code>, <code>{tipo}</code> como variáveis.
-  </div>
-  <div id="tpl-lista"></div>
-  <div class="msg" id="tpl-msg"></div>
-  <div class="botoes">
-    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
-  </div>
-</div>
-
-<!-- ════ TELA — CC/BCC POR FORNECEDOR ════ -->
-<div id="screen-ccforn" class="screen">
-  <div class="titulo">
-    <button class="back" onclick="voltar()">← Voltar</button>
-    📧 CC/BCC por Fornecedor
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-    <input type="text" id="ccf-forn" placeholder="Nome do fornecedor"
-      style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
-    <input type="text" id="ccf-cc"   placeholder="CC (e-mails separados por vírgula)"
-      style="flex:2;min-width:160px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
-    <input type="text" id="ccf-bcc"  placeholder="BCC"
-      style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
-    <button class="btn-acao" onclick="salvarCCForn()">💾 Salvar</button>
-  </div>
-  <div class="msg" id="ccf-msg"></div>
-  <div id="ccf-lista" style="margin-top:8px"></div>
-  <div class="botoes" style="margin-top:10px">
-    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
-  </div>
-</div>
 
 <script>
 // ── Estado ────────────────────────────────────────────────────
@@ -980,35 +896,48 @@ function irPara(tela) {
   document.getElementById('screen-sel').classList.remove('ativo');
   document.getElementById('screen-' + tela).classList.add('ativo');
   telaAtual = tela;
-  if (tela === 'emails')      carregarEmailConfig();
-  if (tela === 'cores')       carregarCoresSalvas();
-  if (tela === 'diagnostico') carregarDiagnostico();
-  if (tela === 'templates')    carregarTemplates();
-  if (tela === 'ccforn')       carregarCCForn();
-  if (tela === 'permissoes')   carregarPermissoes();
-  if (tela === 'assinaturas')  carregarAssinaturas();
-  if (tela === 'retencao')     carregarRetencao();
-  if (tela === 'versioning')   carregarSnapshots();
-  if (tela === 'logexport')    carregarLogExportacoes();
-  if (tela === 'backup')     {}
-  if (tela === 'aprovacao')   carregarConfigAprovacao();
-  if (tela === 'visuais')     carregarVisuais();
-  if (tela === 'diagnostico') carregarDiagnostico();
-  if (tela === 'changelog')   carregarChangelog();
-  if (tela === 'drive')       resetDrive();
-  if (tela === 'acesso')      carregarAdminsConfig();
-  if (tela === 'readonly')    carregarModoRO();
+  if (tela === 'email-hub')  mudarTab('email-hub','dest');
+  if (tela === 'visual')     mudarTab('visual','cores');
+  if (tela === 'sistema')    mudarTab('sistema','diag');
+  if (tela === 'permissoes') carregarPermissoes();
+  if (tela === 'retencao')   carregarRetencao();
+  if (tela === 'versioning') carregarSnapshots();
+  if (tela === 'aprovacao')  carregarConfigAprovacao();
+  if (tela === 'changelog')  carregarChangelog();
+  if (tela === 'drive')      resetDrive();
+  if (tela === 'acesso')     carregarAdminsConfig();
+  if (tela === 'readonly')   carregarModoRO();
+}
+
+function mudarTab(hub, tabId, btn) {
+  document.querySelectorAll('#screen-' + hub + ' .tab-btn').forEach(function(b){ b.classList.remove('ativa'); });
+  document.querySelectorAll('#screen-' + hub + ' .tab-pane').forEach(function(p){ p.classList.remove('ativo'); });
+  var pane = document.getElementById(hub + '-tab-' + tabId);
+  if (pane) pane.classList.add('ativo');
+  if (btn) {
+    btn.classList.add('ativa');
+  } else {
+    var found = document.querySelector('#screen-' + hub + ' .tab-btn[data-tab="' + tabId + '"]');
+    if (found) found.classList.add('ativa');
+  }
+  var loaders = {
+    'email-hub': { dest: carregarEmailConfig, ccbcc: carregarCCForn, assn: carregarAssinaturas, tpl: carregarTemplates },
+    'sistema':   { diag: executarDiagnostico },
+    'visual':    { cores: carregarCoresSalvas, vis: carregarVisuais }
+  };
+  var fn = loaders[hub] && loaders[hub][tabId];
+  if (fn) fn();
 }
 
 function voltar() {
   document.getElementById('screen-' + telaAtual).classList.remove('ativo');
   document.getElementById('screen-sel').classList.add('ativo');
   telaAtual = 'sel';
-  // Limpa mensagens
-  ['em','c','f','lg','dr','diag','ac','re','mn'].forEach(function(p) {
+  ['em','c','f','lg','dr','diag','ac','re','mn','tpl','ccf','assn','vis','ro','perm','aprv','ret','ver','bk','chl'].forEach(function(p) {
     var el = document.getElementById(p+'-msg');
     if (el) el.style.display = 'none';
   });
+  var dm = document.getElementById('diag-email-msg'); if (dm) dm.style.display = 'none';
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1212,59 +1141,7 @@ function criarFornecedor() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  TELA 4 — DIAGNÓSTICO
-// ════════════════════════════════════════════════════════════
-
-function carregarDiagnostico() {
-  document.getElementById('diag-spin').style.display = 'block';
-  document.getElementById('diag-conteudo').style.display = 'none';
-  google.script.run
-    .withSuccessHandler(function(resp) {
-      document.getElementById('diag-spin').style.display = 'none';
-      var r = JSON.parse(resp);
-      if (r.erro) { showMsg('diag','erro','❌ '+r.erro); return; }
-      preencherDiagnostico(r);
-    })
-    .withFailureHandler(function(e) {
-      document.getElementById('diag-spin').style.display = 'none';
-      showMsg('diag','erro','❌ '+e.message);
-    })
-    .obterDiagnostico();
-}
-
-function preencherDiagnostico(r) {
-  setText('diag-versao',      r.versao        || '—');
-  setText('diag-backup',      r.ultimoBackup  || '—');
-  setText('diag-concluidos',  String(r.contConcluidos || 0));
-  setText('diag-protecoes',   (r.contProtecoes || 0) + ' / 380');
-
-  (r.abas || []).forEach(function(a) {
-    var ids = { 'Britania':'diag-brit','Unilever':'diag-unilever','Fornecedores Variados':'diag-variados' };
-    var el  = document.getElementById(ids[a.nome] || '');
-    if (!el) return;
-    var pct = Math.round(a.usado / 200 * 100);
-    var cls = pct >= 90 ? 'diag-erro' : pct >= 70 ? 'diag-warn' : 'diag-ok';
-    el.innerHTML = '<span class="' + cls + '">' + a.usado + '/200 (' + pct + '%)</span>';
-  });
-
-  var trig = document.getElementById('diag-triggers');
-  trig.innerHTML = (r.triggers && r.triggers.length)
-    ? r.triggers.map(function(t) {
-        return '<div class="diag-linha"><span>' + esc(t.func) + '</span>' +
-               '<span class="diag-ok diag-val">' + esc(t.tipo) + '</span></div>';
-      }).join('')
-    : '<div class="diag-linha"><span class="diag-erro">Nenhum trigger instalado</span></div>';
-
-  setText('diag-emails-geral',  (r.totalEmailsGeral  || 0) + ' e-mail(s)');
-  setText('diag-emails-alerta', r.alertaDest === 'cc'
-    ? 'CC — ' + (r.totalEmailsAlerta || 0) + ' e-mail(s)'
-    : 'Todos da lista geral');
-
-  document.getElementById('diag-conteudo').style.display = 'block';
-}
-
-// ════════════════════════════════════════════════════════════
-//  TELA 5 — LIMPEZA LOG
+//  TELA — LIMPEZA LOG
 // ════════════════════════════════════════════════════════════
 
 function executarLimpezaLog() {
@@ -1711,30 +1588,31 @@ function carregarVisuais() {
   google.script.run.withSuccessHandler(function(r) {
     try {
       var p = JSON.parse(r);
-      document.getElementById('vis-nome').value  = p.nomeSistema || '';
-      document.getElementById('vis-logo').value  = p.logoUrl     || '';
+      document.getElementById('vis-nome').value = p.nomeSistema || '';
+      document.getElementById('vis-logo').value = p.logoUrl     || '';
       var c = p.cores || {};
-      if (c.Pendente)  document.getElementById('cor-pendente').value  = c.Pendente;
-      if (c.Devolvido) document.getElementById('cor-devolvido').value = c.Devolvido;
-      if (c.Venda)     document.getElementById('cor-venda').value     = c.Venda;
-      if (c['Em Frete']) document.getElementById('cor-emfrete').value  = c['Em Frete'];
+      if (c.Pendente)    document.getElementById('vis-cor-pendente').value  = c.Pendente;
+      if (c.Devolvido)   document.getElementById('vis-cor-devolvido').value = c.Devolvido;
+      if (c.Venda)       document.getElementById('vis-cor-venda').value     = c.Venda;
+      if (c['Em Frete']) document.getElementById('vis-cor-emfrete').value   = c['Em Frete'];
       if (p.logoUrl) document.getElementById('vis-logo-preview').innerHTML =
         '<img src="https://drive.google.com/thumbnail?id='+p.logoUrl+'&sz=w120" style="max-height:40px" onerror="this.style.display=\'none\'">';
     } catch(_){}
   }).obterConfigVisuais();
 }
 function salvarVisuais() {
-  var cores = { Pendente: document.getElementById('cor-pendente').value,
-    Devolvido: document.getElementById('cor-devolvido').value,
-    Venda: document.getElementById('cor-venda').value,
-    'Em Frete': document.getElementById('cor-emfrete').value };
+  var cores = {
+    Pendente:    document.getElementById('vis-cor-pendente').value,
+    Devolvido:   document.getElementById('vis-cor-devolvido').value,
+    Venda:       document.getElementById('vis-cor-venda').value,
+    'Em Frete':  document.getElementById('vis-cor-emfrete').value
+  };
   google.script.run.withSuccessHandler(function(r) {
-    try { var p=JSON.parse(r); mostrarMsg('vis-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+    try { var p=JSON.parse(r); showMsg('vis-msg',p.ok?'ok':'erro',p.ok||p.erro); } catch(_){}
   }).salvarConfigVisuais(cores, document.getElementById('vis-logo').value.trim(), document.getElementById('vis-nome').value.trim());
 }
 
 // ── Diagnóstico ───────────────────────────────────────────
-function carregarDiagnostico() { executarDiagnostico(); }
 function executarDiagnostico() {
   document.getElementById('diag-spin').style.display='block';
   document.getElementById('diag-resultado').innerHTML='';
@@ -1887,22 +1765,6 @@ function restaurarSnapshot(i) {
   }).restaurarSnapshotConfiguracao(i);
 }
 
-// ── Log de Exportações ────────────────────────────────────
-function carregarLogExportacoes() {
-  var spin=document.getElementById('lexp-spin'); var lista=document.getElementById('lexp-lista');
-  spin.style.display='block'; lista.innerHTML='';
-  google.script.run.withSuccessHandler(function(r) {
-    spin.style.display='none';
-    try {
-      var log=JSON.parse(r);
-      if (!log.length) { lista.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhuma exportação registrada.</div>'; return; }
-      lista.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Data</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Tipo</th><th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border)">Qtd</th></tr></thead><tbody>'
-      + log.map(function(l,i){ return '<tr style="'+(i%2===0?'background:#F9FAFB':'')+'"><td style="padding:4px 8px">'+esc(new Date(l.ts).toLocaleString('pt-BR'))+'</td><td style="padding:4px 8px">'+esc(l.usuario)+'</td><td style="padding:4px 8px">'+esc(l.tipo)+'</td><td style="padding:4px 8px;text-align:right">'+esc(String(l.qtd||'—'))+'</td></tr>'; }).join('')
-      +'</tbody></table>';
-    } catch(_){}
-  }).obterLogExportacoes();
-}
-
 // ── Integridade do Backup ─────────────────────────────────
 function verificarBackup() {
   var spin=document.getElementById('bk-spin'); var res=document.getElementById('bk-resultado');
@@ -1920,7 +1782,8 @@ function verificarBackup() {
   }).verificarIntegridadeBackup();
 }
 
-function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+var mostrarMsg = showMsg;
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
 </html>

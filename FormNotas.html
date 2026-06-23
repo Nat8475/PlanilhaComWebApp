@@ -540,6 +540,11 @@ try {
           <div class="msg-inline" id="det-msg"></div>
           <button class="btn-sm btn-teal" style="width:100%;padding:8px;margin-top:4px"
             onclick="salvarEdicao()">💾 Salvar Alterações</button>
+          <button class="btn-sm" id="btn-forn-receb"
+            onclick="confirmarRecebFornecedor()"
+            style="width:100%;padding:8px;margin-top:6px;background:#059669;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-family:var(--font);display:none">
+            🏭 Confirmar Recebimento pelo Fornecedor</button>
+          <div id="forn-receb-msg" style="font-size:11px;margin-top:4px;display:none"></div>
         </div>
         <!-- Coluna 2: Histórico -->
         <div>
@@ -560,7 +565,12 @@ try {
             style="width:100%;margin-top:4px;padding:5px;font-size:11px">💾 Salvar comentário</button>
           <div id="coment-lista" style="margin-top:6px;max-height:100px;overflow-y:auto"></div>
 
-          <div class="section-lbl" style="margin-top:12px">📸 Fotos de Avaria</div>
+          <div class="section-lbl" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between">
+            <span>📸 Fotos de Avaria</span>
+            <button class="btn-sm" onclick="abrirGaleria()"
+              style="font-size:10px;padding:2px 8px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:var(--font)">
+              🖼️ Ver Galeria</button>
+          </div>
           <input type="file" id="avaria-file" accept="image/*" multiple
             style="font-size:11px;margin-bottom:4px;width:100%" onchange="previewAvariaFoto(this)">
           <div id="avaria-thumbs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
@@ -580,6 +590,21 @@ try {
           <div id="lista-respostas-forn" style="margin-top:6px;max-height:120px;overflow-y:auto"></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL GALERIA DE FOTOS ═══════════ -->
+<div class="overlay" id="modal-galeria" onclick="if(event.target===this)fecharModal('modal-galeria')">
+  <div class="modal-box" style="width:700px;max-width:98vw">
+    <div class="modal-hdr">
+      <h3 id="gal-titulo">🖼️ Galeria de Fotos</h3>
+      <button class="modal-close" onclick="fecharModal('modal-galeria')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="gal-loading" style="text-align:center;color:#9CA3AF;padding:24px;font-size:12px">⏳ Carregando arquivos...</div>
+      <div id="gal-empty" style="display:none;text-align:center;color:#9CA3AF;padding:24px;font-size:12px">Nenhum arquivo encontrado para esta NF.</div>
+      <div id="gal-grid" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:4px 0"></div>
     </div>
   </div>
 </div>
@@ -1366,6 +1391,16 @@ function abrirDetalhe(idx) {
     document.getElementById('det-msg').textContent = '🔒 NF arquivada (' + it.status + ') — edição bloqueada.';
     document.getElementById('det-msg').className = 'msg-inline msg-warn';
     document.getElementById('det-msg').style.display = 'block';
+  }
+  // Botão confirmar recebimento: só para status Devolvido
+  var btnFornReceb = document.getElementById('btn-forn-receb');
+  var msgFornReceb = document.getElementById('forn-receb-msg');
+  if (btnFornReceb) {
+    var jaConfirmado = (it.obs || '').indexOf('[Receb.Forn:') !== -1;
+    btnFornReceb.style.display = it.status === 'Devolvido' ? 'block' : 'none';
+    btnFornReceb.disabled = jaConfirmado;
+    btnFornReceb.textContent = jaConfirmado ? '✅ Recebimento já confirmado' : '🏭 Confirmar Recebimento pelo Fornecedor';
+    if (msgFornReceb) msgFornReceb.style.display = 'none';
   }
   document.getElementById('modal-detalhe').style.display = 'flex';
   carregarComentarios(it);
@@ -2227,6 +2262,86 @@ function _applyDensity(val) {
 // ── Atalhos de teclado — painel de ajuda ──────────────────
 function abrirAjudaAtalhos() {
   document.getElementById('modal-atalhos').style.display = 'flex';
+}
+
+// ── Galeria de fotos por NF ────────────────────────────────
+function abrirGaleria() {
+  if (!_detItem) return;
+  document.getElementById('gal-titulo').textContent = '🖼️ Galeria — NF ' + _detItem.nf + (_detItem.nfd ? ' / NFD ' + _detItem.nfd : '');
+  document.getElementById('gal-loading').style.display = 'block';
+  document.getElementById('gal-empty').style.display = 'none';
+  var grid = document.getElementById('gal-grid');
+  grid.style.display = 'none';
+  grid.innerHTML = '';
+  document.getElementById('modal-galeria').style.display = 'flex';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('gal-loading').style.display = 'none';
+      try {
+        var r = JSON.parse(resp);
+        var fotos = r.fotos || [];
+        if (!fotos.length) { document.getElementById('gal-empty').style.display = 'block'; return; }
+        grid.style.display = 'grid';
+        grid.innerHTML = fotos.map(function(f) {
+          var isImg = f.mime && f.mime.indexOf('image') !== -1;
+          var thumbUrl = f.id ? 'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w300' : '';
+          var imgTag = (isImg || f.tipo === 'principal') && thumbUrl
+            ? '<img src="' + thumbUrl + '" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0;display:block" onerror="this.style.display=\'none\'">'
+            : '<div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:28px">📄</div>';
+          return '<a href="' + esc(f.url) + '" target="_blank" style="text-decoration:none">'
+            + '<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface);cursor:pointer;transition:box-shadow .15s" '
+            +      'onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.15)\'" onmouseout="this.style.boxShadow=\'\'">'
+            + imgTag
+            + '<div style="padding:6px 8px">'
+            + '<div style="font-size:10px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(f.nome) + '">' + esc(f.nome) + '</div>'
+            + '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">' + (f.tipo === 'principal' ? '📌 Anexo NF' : '📷 Avaria') + '</div>'
+            + '</div></div></a>';
+        }).join('');
+      } catch(e) { document.getElementById('gal-empty').textContent = '❌ Erro: ' + e.message; document.getElementById('gal-empty').style.display = 'block'; }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('gal-loading').style.display = 'none';
+      document.getElementById('gal-empty').textContent = '❌ Erro: ' + e.message;
+      document.getElementById('gal-empty').style.display = 'block';
+    })
+    .obterGaleriaFotos({ aba: _detItem.aba, linha: _detItem.linha, nf: _detItem.nf });
+}
+
+// ── Confirmação de recebimento pelo fornecedor ─────────────
+function confirmarRecebFornecedor() {
+  if (!_detItem) return;
+  var btn = document.getElementById('btn-forn-receb');
+  var msg = document.getElementById('forn-receb-msg');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Confirmando...'; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          if (btn) { btn.textContent = '✅ Recebimento já confirmado'; }
+          if (msg) { msg.textContent = r.ok; msg.style.display = 'block'; msg.style.color = '#059669'; }
+          // Atualiza obs localmente
+          if (_detItem) {
+            var obsEl = document.getElementById('d-obs');
+            if (obsEl && obsEl.value.indexOf('[Receb.Forn:') === -1) {
+              obsEl.value = obsEl.value ? obsEl.value + ' | ' + r.ok.split('\n').pop() : r.ok.split('\n').pop();
+            }
+          }
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = '🏭 Confirmar Recebimento pelo Fornecedor'; }
+          if (msg) { msg.textContent = '❌ ' + (r.erro || 'Erro.'); msg.style.display = 'block'; msg.style.color = '#DC2626'; }
+        }
+      } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '🏭 Confirmar Recebimento pelo Fornecedor'; }
+        if (msg) { msg.textContent = '❌ ' + e.message; msg.style.display = 'block'; msg.style.color = '#DC2626'; }
+      }
+    })
+    .withFailureHandler(function(e) {
+      if (btn) { btn.disabled = false; btn.textContent = '🏭 Confirmar Recebimento pelo Fornecedor'; }
+      if (msg) { msg.textContent = '❌ ' + e.message; msg.style.display = 'block'; msg.style.color = '#DC2626'; }
+    })
+    .confirmarRecebimentoFornecedor({ aba: _detItem.aba, linha: _detItem.linha, nf: _detItem.nf });
 }
 
 // ── Dark mode ──────────────────────────────────────────────

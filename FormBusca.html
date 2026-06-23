@@ -65,6 +65,14 @@
     .b-at {background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
     .b-hi {background:#F5F3FF;color:#7C3AED;border:1px solid #DDD6FE}
     .val  {text-align:right;font-family:var(--mono)}
+    body.dark{--bg:#0F172A;--surface:#1E293B;--border:#334155;--border-def:#475569;
+      --text:#F1F5F9;--text-body:#CBD5E1;--text-muted:#94A3B8;--text-faint:#64748B;}
+    body.dark input[type=text]{background:#0F172A!important;color:#F1F5F9;border-color:#475569}
+    body.dark .scroll{background:#1E293B;border-color:#334155}
+    body.dark thead th{background:#152040}
+    body.dark tbody tr:hover td{background:#1E3A5F!important}
+    body.dark td{border-bottom-color:#334155}
+    body.dark .b-p{background:#1E3A5F;color:#93C5FD}
   </style>
 </head>
 <body>
@@ -211,6 +219,7 @@ function esc(s) {
 }
 
 document.getElementById('termo').focus();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
 </html>

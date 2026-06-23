@@ -19,6 +19,13 @@
       --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
       --ease:cubic-bezier(.4,0,.2,1)
     }
+    body.dark{--bg:#0F172A;--surface:#1E293B;--border:#334155;--border-def:#475569;
+      --text:#F1F5F9;--text-body:#CBD5E1;--text-muted:#94A3B8;--navy-50:#1E3A5F;
+      --amber-bg:#1A2744;--green-bg:#0F2918;--red-bg:#2D1515;}
+    body.dark input,body.dark select,body.dark textarea{background:#0F172A!important;color:#F1F5F9;border-color:#475569}
+    body.dark .card-nf,body.dark .assinatura-card{background:#1E293B;border-color:#334155}
+    body.dark .info{background:#1E3A5F;border-left-color:#60A5FA;color:#CBD5E1}
+    body.dark .modal-box{background:#1E293B;border:1px solid #334155}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
     ::-webkit-scrollbar{width:9px;height:9px}
@@ -309,13 +316,27 @@ function onMudarAssinatura() {
   var fileId = sel.value;
   var thumb  = document.getElementById('assn-thumb-preview');
   var img    = document.getElementById('assn-thumb-img-email');
-  if (fileId) {
-    img.src = 'https://drive.google.com/uc?export=view&id=' + fileId;
-    thumb.style.display = 'block';
-  } else {
+  if (!fileId) {
     thumb.style.display = 'none';
     img.src = '';
+    return;
   }
+  img.src = '';
+  img.alt = 'Carregando…';
+  thumb.style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(dataUrl) {
+      if (dataUrl) {
+        img.src = dataUrl;
+        img.alt = 'Assinatura';
+      } else {
+        img.alt = 'Não foi possível carregar';
+      }
+    })
+    .withFailureHandler(function() {
+      img.alt = 'Erro ao carregar imagem';
+    })
+    .obterAssinaturaBase64(fileId);
 }
 // ── Comunicado — toggle ──────────────────────────────────────
 function toggleComunicado() {
@@ -599,6 +620,7 @@ function esc(s) {
 }
 
 document.getElementById('nfds').focus();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
 </html>

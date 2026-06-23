@@ -16,6 +16,14 @@
       --text:#111827;--text-body:#374151;--text-muted:#6B7280;
       --navy-50:#EEF2FF;--r:8px;--r-sm:6px;--ease:cubic-bezier(.4,0,.2,1)
     }
+    body.dark{--bg:#0F172A;--surface:#1E293B;--border:#334155;--border-def:#475569;
+      --text:#F1F5F9;--text-body:#CBD5E1;--text-muted:#94A3B8;--navy-50:#1E3A5F;}
+    body.dark textarea,body.dark input{background:#0F172A!important;color:#F1F5F9;border-color:#475569}
+    body.dark .info{background:#1E3A5F;border-left-color:#60A5FA;color:#CBD5E1}
+    body.dark table{background:#1E293B}
+    body.dark th{background:#152040;color:#CBD5E1}
+    body.dark td{border-bottom-color:#334155}
+    body.dark tr:nth-child(even) td{background:#1A2744}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);font-size:13px;background:var(--bg);padding:16px}
     ::-webkit-scrollbar{width:9px;height:9px}
@@ -172,6 +180,7 @@ function mostrar(tipo, texto) {
   el.textContent = texto;
   el.style.display = 'block';
 }
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
 </html>

@@ -173,6 +173,13 @@
         <span>Visualize e restaure itens excluídos recentemente</span>
       </div>
     </div>
+    <div class="sel-card" onclick="irPara('logexport')">
+      <span class="icone">📤</span>
+      <div class="txt">
+        <strong>Log de Exportações</strong>
+        <span>Histórico de exportações realizadas (CSV, PDF)</span>
+      </div>
+    </div>
   </div>
   <div class="botoes-baixo">
     <button class="btn-cancel" style="flex:1" onclick="google.script.host.close()">✖ Fechar</button>
@@ -384,6 +391,19 @@
   <div id="lx-lista"></div>
 </div>
 
+<!-- ════════ TELA 8 — LOG EXPORTAÇÕES ════════ -->
+<div id="screen-logexport" class="screen">
+  <div class="titulo">
+    <button class="back" onclick="voltar()">← Voltar</button>
+    📤 Log de Exportações
+  </div>
+  <div class="spinner" id="lexp-spin">⏳ Carregando...</div>
+  <div id="lexp-lista" style="margin-top:8px"></div>
+  <div class="botoes-baixo">
+    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  </div>
+</div>
+
 <script>
 var telaAtual = 'sel';
 var _emTodos = [];
@@ -402,6 +422,7 @@ function irPara(tela) {
   if (tela === 'scorecard')   carregarScorecard();
   if (tela === 'comparativo') {}
   if (tela === 'lixeira')      carregarLixeira();
+  if (tela === 'logexport')   carregarLogExportacoes();
 }
 
 function voltar() {
@@ -898,6 +919,33 @@ function renderComparativo(data) {
 function esc(s) {
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// ── Log de Exportações ────────────────────────────────────
+function carregarLogExportacoes() {
+  var spin = document.getElementById('lexp-spin');
+  var lista = document.getElementById('lexp-lista');
+  spin.style.display = 'block'; lista.innerHTML = '';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display = 'none';
+    try {
+      var log = JSON.parse(r);
+      if (!log.length) { lista.innerHTML = '<div style="font-size:11px;color:#9CA3AF">Nenhuma exportação registrada.</div>'; return; }
+      lista.innerHTML = '<div class="scroll"><table><thead><tr>'
+        + '<th>Data</th><th>Usuário</th><th>Tipo</th><th style="text-align:right">Qtd</th>'
+        + '</tr></thead><tbody>'
+        + log.map(function(l, i) {
+            return '<tr><td>' + esc(new Date(l.ts).toLocaleString('pt-BR')) + '</td>'
+              + '<td>' + esc(l.usuario) + '</td><td>' + esc(l.tipo) + '</td>'
+              + '<td style="text-align:right">' + esc(String(l.qtd || '—')) + '</td></tr>';
+          }).join('')
+        + '</tbody></table></div>';
+    } catch(_) {}
+  }).withFailureHandler(function(e) {
+    spin.style.display = 'none';
+    lista.innerHTML = '<div style="color:red;font-size:11px">Erro: ' + esc(e.message) + '</div>';
+  }).obterLogExportacoes();
+}
+
 (function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
