@@ -201,6 +201,15 @@
   </div>
 
   <div class="secao">📋 DADOS DA NOTA</div>
+  <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <button type="button" onclick="document.getElementById('u-xml-file').click()"
+      style="background:#F0FDF4;border:1px solid #86EFAC;color:#166534;border-radius:4px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">
+      📄 Importar XML NF-e
+    </button>
+    <input type="file" id="u-xml-file" accept=".xml,text/xml,application/xml"
+      style="display:none" onchange="importarXmlNfe(this)">
+    <span id="u-xml-status" style="font-size:11px;color:#6B7280"></span>
+  </div>
   <div class="linha2">
     <div class="campo">
       <label>NFD <span style="font-weight:normal;color:#888">(opcional)</span></label>
@@ -360,6 +369,83 @@ function voltar() {
   document.getElementById('screen-' + telaAtual).classList.remove('ativo');
   document.getElementById('screen-sel').classList.add('ativo');
   telaAtual = 'sel';
+}
+
+// ── Importar XML NF-e ────────────────────────────────────────
+function importarXmlNfe(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var status = document.getElementById('u-xml-status');
+  status.textContent = '⏳ Lendo XML...';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(e.target.result, 'text/xml');
+      var g = function(tag) {
+        var el = doc.getElementsByTagNameNS('*', tag)[0] || doc.getElementsByTagName(tag)[0];
+        return el ? el.textContent.trim() : '';
+      };
+
+      var nNF   = g('nNF');
+      var xNome = g('xNome');   // emitente
+      var dhEmi = g('dhEmi') || g('dEmi'); // data emissão
+
+      // Produto: pode ter múltiplos <det>. Usa o primeiro ou concatena descrições
+      var dets = doc.getElementsByTagNameNS ? Array.prototype.slice.call(doc.getElementsByTagName('det')) : [];
+      var xProds = [], qtdTotal = 0, vlTotal = 0;
+      dets.forEach(function(det) {
+        var xp = (det.getElementsByTagName('xProd')[0] || {}).textContent || '';
+        var qc = parseFloat((det.getElementsByTagName('qCom')[0] || {}).textContent || 0);
+        var vu = parseFloat((det.getElementsByTagName('vUnCom')[0] || {}).textContent || 0);
+        var vp = parseFloat((det.getElementsByTagName('vProd')[0] || {}).textContent || 0);
+        if (xp) xProds.push(xp);
+        qtdTotal += qc;
+        vlTotal  += vp || (qc * vu);
+      });
+
+      // Totaliza pela tag vNF se disponível
+      var vNF = parseFloat(g('vNF')) || vlTotal;
+
+      var camposPreenchidos = [];
+
+      if (nNF) {
+        document.getElementById('u-nf').value = nNF;
+        camposPreenchidos.push('NF');
+      }
+      if (xProds.length) {
+        document.getElementById('u-desc').value = xProds.slice(0,3).join(' / ');
+        camposPreenchidos.push('Descrição');
+      }
+      if (qtdTotal > 0) {
+        document.getElementById('u-qtd').value = Math.round(qtdTotal);
+        camposPreenchidos.push('Qtd');
+      }
+      if (vNF > 0) {
+        var vlUnit = qtdTotal > 0 ? (vNF / qtdTotal) : vNF;
+        document.getElementById('u-valor').value = vlUnit.toFixed(2).replace('.',',');
+        camposPreenchidos.push('Valor');
+      }
+      if (xNome) {
+        var abaEl = document.getElementById('u-aba');
+        var abaVal = abaEl.value;
+        if (abaVal === 'Fornecedores Variados') {
+          document.getElementById('u-fornecedor').value = xNome.toUpperCase();
+          camposPreenchidos.push('Fornecedor');
+        }
+      }
+
+      status.style.color = '#166534';
+      status.textContent = camposPreenchidos.length
+        ? '✅ Preenchido: ' + camposPreenchidos.join(', ')
+        : '⚠️ XML lido, mas nenhum campo reconhecido.';
+    } catch(err) {
+      status.style.color = '#DC2626';
+      status.textContent = '❌ Erro ao ler XML: ' + err.message;
+    }
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 // ── ABA change ───────────────────────────────────────────────

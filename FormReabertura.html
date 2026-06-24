@@ -87,9 +87,14 @@
   Clique em <strong>Buscar</strong> para visualizar antes de confirmar.
 </div>
 
-<div style="margin-bottom:10px">
+<div style="margin-bottom:8px">
   <label>Números das NFs</label>
   <textarea id="nfs" rows="4" placeholder="Ex:&#10;123456&#10;789012&#10;ou: 123456, 789012"></textarea>
+</div>
+
+<div style="margin-bottom:10px">
+  <label>Motivo da reabertura <span style="font-weight:normal;color:#888">(opcional)</span></label>
+  <textarea id="motivo" rows="2" placeholder="Ex: Cliente retornou mercadoria, erro de lançamento…"></textarea>
 </div>
 
 <div class="botoes">
@@ -171,7 +176,7 @@ function confirmar() {
       document.getElementById('btnConfirmar').disabled = false;
       mostrar('erro','❌ ' + e.message);
     })
-    .executarReaberturaPorItens(itensEncontrados);
+    .executarReaberturaPorItens(itensEncontrados, document.getElementById('motivo').value.trim());
 }
 
 function mostrar(tipo, texto) {

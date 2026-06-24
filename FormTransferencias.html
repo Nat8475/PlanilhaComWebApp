@@ -110,7 +110,7 @@
     .spn{display:none;padding:12px;text-align:center;font-size:12px;color:var(--text-muted)}
     .toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:var(--r-sm);
            font-size:12px;z-index:200;display:none;max-width:380px;line-height:1.5;color:#fff}
-    .tst-ok{background:#065F46}.tst-err{background:#991B1B}
+    .tst-ok{background:#065F46}.tst-err{background:#991B1B}.tst-warn{background:#B45309}.tst-info{background:#1D4ED8}
     .acoes-td{display:flex;gap:4px;flex-wrap:nowrap}
     .bact{padding:3px 8px;border:none;border-radius:var(--r-sm);font-size:11px;
           font-weight:700;cursor:pointer;font-family:var(--font);transition:opacity .15s}
@@ -299,7 +299,7 @@ function renderTabela() {
       ? '<span class="bdg bconc">Concluída</span>'
       : '<span class="bdg bcanc">Cancelada</span>';
     var fvStr = it.freteValor > 0 ? 'R$ ' + it.freteValor.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—';
-    var acoes = ativo
+    var acoes = (ativo && !_modoRO)
       ? '<div class="acoes-td">'
         + '<button class="bact bgreen" onclick="abrirBaixa(' + i + ')">&#9989; Baixa</button>'
         + '<button class="bact bcyan" style="background:var(--cyan-bg);color:var(--cyan)" onclick="abrirReagendar(' + i + ')">&#128197;</button>'
@@ -504,6 +504,7 @@ function abrirCancelar(i) {
 }
 
 function abrirCancelarLote() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
   _linhaCancel = null; // sinaliza lote
   var sel = _filt.filter(function(_,i){ return _sel[i]; });
   document.getElementById('mCancelTitulo').textContent = '❌ Cancelar ' + sel.length + ' Transferência(s)';
@@ -660,8 +661,29 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') fecharModais();
 });
 
+// ── Modo somente-leitura ──────────────────────────────────────
+var _modoRO = false;
+
+function aplicarModoROTransf(ativo) {
+  _modoRO = ativo;
+  if (!ativo) return;
+  var banner = document.createElement('div');
+  banner.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;'
+    +'padding:8px 14px;margin-bottom:8px;font-size:12px;color:#92400E;display:flex;'
+    +'align-items:center;gap:8px;flex-shrink:0';
+  banner.innerHTML = '<span>🔒</span><span><strong>Modo somente-leitura ativo.</strong> Apenas visualização e filtragem permitidas.</span>';
+  document.body.insertBefore(banner, document.body.firstElementChild);
+  var btnLote = document.querySelector('[onclick="abrirCancelarLote()"]');
+  if (btnLote) { btnLote.disabled = true; btnLote.title = 'Bloqueado: modo somente-leitura'; }
+}
+
 carregar();
 (function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+try {
+  google.script.run
+    .withSuccessHandler(function(r){ try { var p=JSON.parse(r); if(p.somenteLeitura) aplicarModoROTransf(true); } catch(_){} })
+    .verificarAcessoModulo('transferencias');
+} catch(_){}
 </script>
 </body>
 </html>

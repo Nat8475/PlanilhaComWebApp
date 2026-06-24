@@ -94,7 +94,9 @@ var _KEY_CORES            = 'cdv_cores';
 var _KEY_READONLY         = 'cdv_modo_somente_leitura';
 var _KEY_EMAIL_TEMPLATES  = 'cdv_email_templates';   // JSON: { avaria: {assunto, corpo}, vencimento: {...}, ... }
 var _KEY_CC_FORN          = 'cdv_cc_fornecedores';   // JSON: { "Ambev": { cc: "...", bcc: "..." }, ... }
+var _KEY_CC_ALERTA        = 'cdv_cc_alerta';          // JSON: { "atraso": {cc,bcc}, "semanal": {cc,bcc}, "pendencias": {cc,bcc}, "mensal": {cc,bcc}, "transferencia": {cc,bcc} }
 var _KEY_PERMISSOES       = 'cdv_permissoes_modulos'; // JSON: { "notas": ["email1","email2"], "lancamento": [...] }
+var _KEY_PERMISSOES_RO    = 'cdv_permissoes_ro_modulos'; // JSON: { "notas": true, "transferencias": true }
 var _KEY_ASSINATURAS      = 'cdv_assinaturas';        // JSON: { "email@": "driveFileId", ... }
 var _KEY_EMAILS_AGENDADOS = 'cdv_emails_agendados';   // JSON: [{ id, params, dataEnvio, usuario }]
 var _KEY_CONFIG_HISTORICO = 'cdv_config_historico';   // JSON: [{ ts, usuario, snapshot }] (últimos 5)
@@ -3741,12 +3743,15 @@ function buscarNFsConcluidas(txtNfsRaw) {
  * [P30] Versão otimizada de executarReabertura chamada pelo FormReabertura.
  * Recebe o array itens (com linha+aba pré-resolvidos pelo buscarNFsConcluidas).
  */
-function executarReaberturaPorItens(itens) {
+function executarReaberturaPorItens(itens, motivo) {
   if (!itens || !itens.length) return JSON.stringify({ erro: 'Nenhum item para reabrir.' });
 
-  var ss       = getSS();
+  var ss        = getSS();
   var reabertos = [];
   var porAba    = {};
+  var usuario   = Session.getActiveUser().getEmail() || 'desconhecido';
+  var agora     = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  var rastro    = '\n[Reaberta em ' + agora + ' por ' + usuario + (motivo ? ' | Motivo: ' + motivo : '') + ']';
 
   itens.forEach(function(it) {
     if (!porAba[it.aba]) porAba[it.aba] = [];
@@ -3770,11 +3775,12 @@ function executarReaberturaPorItens(itens) {
 
     loteAba.forEach(function(it) {
       if (protMap[it.linha]) { protMap[it.linha].remove(); _decrementarProtecoes(1); }
-      ws.getRange(it.linha, COL_STATUS, 1, 5).setValues([['Pendente', true, false, false, '']]);
+      var obsAtual = String(ws.getRange(it.linha, COL_OBS).getValue() || '');
+      ws.getRange(it.linha, COL_STATUS, 1, 5).setValues([['Pendente', true, false, false, obsAtual + rastro]]);
       bgAtual[it.linha - minRow] = Array(TOTAL_COLUNAS).fill(COR_AZUL);
       var nfLabel = it.nfd || it.nf;
-      registrarLog(ss, nomeAba, it.linha, COL_STATUS, nfLabel, 'Pendente',
-        '🔓 Reabertura via formulário — NF: ' + nfLabel);
+      var logMsg  = '🔓 Reabertura — Usuário: ' + usuario + (motivo ? ' | Motivo: ' + motivo : '') + ' — NF: ' + nfLabel;
+      registrarLog(ss, nomeAba, it.linha, COL_STATUS, nfLabel, 'Pendente', logMsg);
       reabertos.push((it.nfd ? 'NFD ' + it.nfd + ' / ' : '') + 'NF ' + it.nf + ' (' + nomeAba + ')');
     });
     ws.getRange(minRow, 1, nRows, TOTAL_COLUNAS).setBackgrounds(bgAtual);
@@ -4399,7 +4405,7 @@ function enviarEmailDevolucao(params) {
     try {
       assinaturaBlob = DriveApp.getFileById(params.assinaturaFileId.trim()).getBlob();
       htmlFinal += '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
-        + '<img src="cid:assinatura_img" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
+        + '<img src="cid:assinatura_img" alt="Assinatura" style="max-height:140px;max-width:480px;object-fit:contain">'
         + '</div>';
     } catch(_) {}
   }
@@ -4432,7 +4438,8 @@ function enviarEmailDevolucao(params) {
       forn:          forn,
       totalItens:    itens.length,
       totalValor:    valorTotal,
-      anexos:        todosBlobs.length
+      anexos:        todosBlobs.length,
+      corpo:         htmlFinal
     });
 
     var itensFalta   = itens.filter(function(it) { return it.tipo === 'Falta'; });
@@ -4504,11 +4511,11 @@ function garantirAbaEmailsEnviados(ss) {
   if (!ws) {
     ws = ss.insertSheet('_EmailsEnviados');
     ws.hideSheet();
-    var cab = ['Data/Hora','Assunto','Fornecedor','Destinatários','NFDs/NFs Incluídas','Total Itens','Valor Total (R$)','Arquivos Anexados'];
+    var cab = ['Data/Hora','Assunto','Fornecedor','Destinatários','NFDs/NFs Incluídas','Total Itens','Valor Total (R$)','Arquivos Anexados','Corpo do E-mail'];
     ws.getRange(1, 1, 1, cab.length).setValues([cab])
       .setBackground('#2D5F8A').setFontColor('#FFFFFF').setFontWeight('bold');
     ws.setFrozenRows(1);
-    [160,300,160,260,300,80,140,120].forEach(function(w, i) { ws.setColumnWidth(i + 1, w); });
+    [160,300,160,260,300,80,140,120,500].forEach(function(w, i) { ws.setColumnWidth(i + 1, w); });
   }
   return ws;
 }
@@ -4521,7 +4528,8 @@ function _registrarEmailEnviado(ss, info) {
       agora, info.assunto, info.forn,
       info.destinatarios.join('; '),
       info.nfds.join(', '),
-      info.totalItens, info.totalValor, info.anexos
+      info.totalItens, info.totalValor, info.anexos,
+      info.corpo || ''
     ]);
   } catch (e) {
     console.error('_registrarEmailEnviado: ' + e);
@@ -4536,7 +4544,7 @@ function buscarHistoricoEmails() {
   try {
     var ul = ws.getLastRow();
     if (ul < 2) return JSON.stringify({ registros: [] });
-    var dados = ws.getRange(2, 1, ul - 1, 8).getValues();
+    var dados = ws.getRange(2, 1, ul - 1, 9).getValues();
     var registros = dados
       .filter(function(l) { return l[0]; })
       .map(function(l) {
@@ -4548,7 +4556,8 @@ function buscarHistoricoEmails() {
           nfds:       String(l[4]),
           totalItens: l[5] || 0,
           totalValor: parseFloat(l[6]) || 0,
-          anexos:     l[7] || 0
+          anexos:     l[7] || 0,
+          corpo:      String(l[8] || '')
         };
       })
       .reverse();
@@ -4627,13 +4636,13 @@ function verificarAtrasosEEnviarAlerta() {
   });
 
   var anexos = pdf ? [pdf.blob] : [];
-  enviarEmail(assunto, htmlEmail, anexos);
+  enviarEmail(assunto, htmlEmail, anexos, 'atraso');
   registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '⚠️ Alerta de atraso enviado — ' + dataStr);
   try { SpreadsheetApp.getUi().alert('📧 Alerta enviado! ' + linhas.length + ' item(ns) em atraso.'); } catch (_) {}
   return JSON.stringify({ sucesso: '📧 Alerta enviado! ' + linhas.length + ' item(ns) em atraso.', total: linhas.length });
 }
 
-function enviarEmail(assunto, htmlBody, anexos) {
+function enviarEmail(assunto, htmlBody, anexos, tipoAlerta) {
   try {
     var destinatarios = _getEmailsGeral();
     if (!destinatarios || !destinatarios.length) return;
@@ -4643,10 +4652,46 @@ function enviarEmail(assunto, htmlBody, anexos) {
       htmlBody: htmlBody
     };
     if (anexos && anexos.length) opts.attachments = anexos;
+    if (tipoAlerta) {
+      var ccBcc = _getCCBccAlerta(tipoAlerta);
+      if (ccBcc.cc)  opts.cc  = ccBcc.cc;
+      if (ccBcc.bcc) opts.bcc = ccBcc.bcc;
+    }
     MailApp.sendEmail(opts);
   } catch (e) {
     console.error('enviarEmail: ' + e);
   }
+}
+
+function _getCCBccAlerta(tipo) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_ALERTA);
+    if (!raw) return { cc: '', bcc: '' };
+    var map = JSON.parse(raw);
+    var cfg = map[tipo] || {};
+    return { cc: cfg.cc || '', bcc: cfg.bcc || '' };
+  } catch(_) { return { cc: '', bcc: '' }; }
+}
+
+function obterCCAlerta() {
+  _usuarioEhAdmin(true);
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_ALERTA) || '{}';
+  try { return JSON.stringify({ ccAlerta: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ ccAlerta: {} }); }
+}
+
+function salvarCCAlerta(tipo, cc, bcc) {
+  _usuarioEhAdmin(true);
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_ALERTA) || '{}';
+  var mapa;
+  try { mapa = JSON.parse(raw); } catch(_) { mapa = {}; }
+  if (!cc && !bcc) {
+    delete mapa[tipo];
+  } else {
+    mapa[tipo] = { cc: cc.trim(), bcc: bcc.trim() };
+  }
+  PropertiesService.getScriptProperties().setProperty(_KEY_CC_ALERTA, JSON.stringify(mapa));
+  return JSON.stringify({ sucesso: '✅ CC/BCC para "' + tipo + '" salvo.' });
 }
 
 
@@ -4802,7 +4847,7 @@ function gerarRelatorioMensal(params) {
   if (enviarEmailFlag) {
     var htmlEmail = _montarHtmlRelatorio({ icone: '📊', titulo: 'Relatório Mensal de Devoluções', subtitulo: periodo,
       intro: 'Segue em anexo o relatório mensal referente a <strong>' + periodo + '</strong>.', kpis: _kpisEmail(acc) });
-    enviarEmail('📊 Relatório Mensal de Devoluções — ' + periodo, htmlEmail, [pdf.blob]);
+    enviarEmail('📊 Relatório Mensal de Devoluções — ' + periodo, htmlEmail, [pdf.blob], 'mensal');
     registrarLog(ss, 'SISTEMA', 0, 0, '', periodo, '📊 Relatório mensal gerado e enviado — ' + periodo);
   } else {
     registrarLog(ss, 'SISTEMA', 0, 0, '', periodo, '📊 Relatório mensal gerado — ' + periodo);
@@ -4871,7 +4916,7 @@ function gerarRelatorioSemanal(params) {
   if (enviarEmailFlag) {
     var htmlEmail = _montarHtmlRelatorio({ icone: '📊', titulo: 'Relatório Semanal de Devoluções', subtitulo: periodoLabel,
       intro: 'Segue em anexo o relatório semanal referente a <strong>' + periodoLabel + '</strong>.', kpis: _kpisEmail(acc) });
-    enviarEmail('📊 Relatório Semanal de Devoluções — ' + periodoLabel, htmlEmail, [pdf.blob]);
+    enviarEmail('📊 Relatório Semanal de Devoluções — ' + periodoLabel, htmlEmail, [pdf.blob], 'semanal');
     registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📊 Relatório semanal gerado e enviado — ' + periodoLabel);
   } else {
     registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📊 Relatório semanal gerado — ' + periodoLabel);
@@ -4921,7 +4966,7 @@ function gerarRelatorioDiario(params) {
   if (enviarEmailFlag) {
     var htmlEmail = _montarHtmlRelatorio({ icone: '📋', titulo: 'Relatório Diário de Devoluções', subtitulo: periodoLabel,
       intro: 'Segue em anexo o relatório diário referente a <strong>' + periodoLabel + '</strong>.', kpis: _kpisEmail(acc) });
-    enviarEmail('📋 Relatório Diário de Devoluções — ' + periodoLabel, htmlEmail, [pdf.blob]);
+    enviarEmail('📋 Relatório Diário de Devoluções — ' + periodoLabel, htmlEmail, [pdf.blob], 'diario');
     registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📋 Relatório diário gerado e enviado — ' + periodoLabel);
   } else {
     registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📋 Relatório diário gerado — ' + periodoLabel);
@@ -5329,7 +5374,7 @@ function gerarRelatorioPendentes(params) {
             valor: 'R$ ' + _fmtVal(acc.vP), sub: 'a receber/resolver' }
         ]
       });
-      enviarEmail('⏳ Relatório de Pendências — ' + dataStr, htmlEmail, [pdf.blob]);
+      enviarEmail('⏳ Relatório de Pendências — ' + dataStr, htmlEmail, [pdf.blob], 'pendencias');
     } catch (eMail) {
       console.error('gerarRelatorioPendentes — e-mail: ' + eMail);
     }
@@ -5486,7 +5531,8 @@ function gerarRelatorioPorFornecedor(params) {
         '🏭 Relatório por Fornecedor — ' +
         (fornFiltro === 'TODOS' ? 'Todos' : fornFiltro) + ' — ' + periodoLabel,
         htmlEmail,
-        [pdf.blob]
+        [pdf.blob],
+        'fornecedor'
       );
       registrarLog(ss, 'SISTEMA', 0, 0, '', fornFiltro,
         '🏭 Relatório por fornecedor gerado e enviado — ' + fornFiltro + ' — ' + periodoLabel);
@@ -6182,7 +6228,7 @@ function _obterHtmlAssinaturaById(fileId) {
     var blob = DriveApp.getFileById(fileId.trim()).getBlob();
     var dataUrl = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
     return '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
-      + '<img src="' + dataUrl + '" alt="Assinatura" style="max-height:80px;max-width:320px;object-fit:contain">'
+      + '<img src="' + dataUrl + '" alt="Assinatura" style="max-height:140px;max-width:480px;object-fit:contain">'
       + '</div>';
   } catch(_) { return ''; }
 }
@@ -6229,12 +6275,35 @@ function salvarPermissoesModulo(modulo, emails) {
 
 function verificarAcessoModulo(modulo) {
   try {
-    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES) || '{}';
+    var props = PropertiesService.getScriptProperties();
+    var raw  = props.getProperty(_KEY_PERMISSOES)    || '{}';
+    var rawRO = props.getProperty(_KEY_PERMISSOES_RO) || '{}';
     var perm = JSON.parse(raw);
-    if (!perm[modulo] || !perm[modulo].length) return JSON.stringify({ acesso: true });
+    var permRO = JSON.parse(rawRO);
+    var ehAdmin = _usuarioEhAdmin();
+    var somenteLeitura = !!permRO[modulo] && !ehAdmin;
+    if (!perm[modulo] || !perm[modulo].length) return JSON.stringify({ acesso: true, somenteLeitura: somenteLeitura });
     var usuario = (Session.getActiveUser().getEmail() || '').toLowerCase();
-    return JSON.stringify({ acesso: perm[modulo].indexOf(usuario) !== -1 || _usuarioEhAdmin() });
-  } catch(_) { return JSON.stringify({ acesso: true }); }
+    return JSON.stringify({ acesso: perm[modulo].indexOf(usuario) !== -1 || ehAdmin, somenteLeitura: somenteLeitura });
+  } catch(_) { return JSON.stringify({ acesso: true, somenteLeitura: false }); }
+}
+
+function obterPermissoesROModulos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES_RO) || '{}';
+  try { return JSON.stringify({ permissoes: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ permissoes: {} }); }
+}
+
+function salvarPermissaoROModulo(modulo, ativo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES_RO) || '{}';
+    var perm = JSON.parse(raw);
+    if (ativo) { perm[modulo] = true; } else { delete perm[modulo]; }
+    PropertiesService.getScriptProperties().setProperty(_KEY_PERMISSOES_RO, JSON.stringify(perm));
+    return JSON.stringify({ ok: '✅ Somente-leitura ' + (ativo ? 'ativado' : 'desativado') + ' para: ' + modulo });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
 // ── Templates de e-mail por tipo ───────────────────────────
@@ -6473,6 +6542,9 @@ function verificarTransferenciasVencidas() {
 
     var mailOpts = { name: 'Controle de Devoluções · Transben', htmlBody: corpo };
     if (dest.cc) mailOpts.cc = dest.cc;
+    var _ccAlertaTransf = _getCCBccAlerta('transferencia');
+    if (_ccAlertaTransf.cc)  { mailOpts.cc  = [mailOpts.cc, _ccAlertaTransf.cc].filter(Boolean).join(','); }
+    if (_ccAlertaTransf.bcc) { mailOpts.bcc = _ccAlertaTransf.bcc; }
 
     GmailApp.sendEmail(dest.to,
       '⚠️ ' + vencidas.length + ' Transferência(s) Vencida(s) — Controle de Devoluções',

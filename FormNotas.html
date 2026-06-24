@@ -294,6 +294,7 @@
     .msg-inline{padding:8px 10px;border-radius:4px;font-size:12px;margin-top:8px;display:none}
     .msg-ok{background:#ECFDF5;color:#047857;border:1px solid #A7F3D0}
     .msg-err{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+    .msg-warn{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
     /* column picker */
     .col-pick-wrap{position:relative;display:inline-block}
     .col-dropdown{position:absolute;right:0;top:calc(100% + 4px);background:#fff;
@@ -728,16 +729,31 @@ try {
   </div>
 </div>
 
+<!-- Modal Visualizador PDF Inline -->
+<div class="overlay" id="modal-pdf-inline" onclick="if(event.target===this)fecharModal('modal-pdf-inline')" style="display:none">
+  <div class="modal-box" style="width:min(1020px,96vw);max-height:92vh;display:flex;flex-direction:column">
+    <div class="modal-hdr">
+      <h3 id="modal-pdf-titulo">📄 Visualizador</h3>
+      <div style="display:flex;gap:6px">
+        <button onclick="imprimirPdfInline()" style="background:#25419A;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:700">🖨️ Imprimir</button>
+        <button class="modal-close" onclick="fecharModal('modal-pdf-inline')">✕</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow:hidden">
+      <iframe id="iframe-pdf-inline" style="width:100%;height:72vh;border:none"></iframe>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Etiqueta -->
 <div class="overlay" id="modal-etiqueta" onclick="if(event.target===this)fecharModal('modal-etiqueta')" style="display:none">
-  <div class="modal-box" style="width:400px;max-width:96vw">
+  <div class="modal-box" style="width:420px;max-width:96vw">
     <div class="modal-hdr">
-      <h3>🏷️ Etiqueta de Caixa</h3>
+      <h3>🏷️ Etiqueta de Caixa (100×100 mm)</h3>
       <button class="modal-close" onclick="fecharModal('modal-etiqueta')">✕</button>
     </div>
     <div class="modal-body" style="padding:12px 16px">
-      <div id="etiqueta-preview" style="border:2px solid #1E3A5F;border-radius:6px;padding:16px;font-family:monospace;background:#fff;color:#000;line-height:1.6;margin-bottom:12px">
-      </div>
+      <div id="etiqueta-preview" style="display:flex;justify-content:center;margin-bottom:12px"></div>
       <button class="btn-teal" onclick="imprimirEtiqueta()" style="width:100%">🖨️ Imprimir Etiqueta</button>
     </div>
   </div>
@@ -1648,33 +1664,108 @@ function navDetalhe(delta) {
 }
 
 // ── Etiqueta de caixa ──────────────────────────────────────
+function _gerarHtmlEtiqueta(it) {
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w300';
+  var gerado  = new Date().toLocaleString('pt-BR');
+  var nfdRow  = it.nfd && it.nfd !== it.nf
+    ? '<tr><td style="color:#6B7280;font-size:8pt;padding:1mm 0;white-space:nowrap">NFD</td>'
+      +'<td style="font-family:monospace;font-size:10pt;font-weight:700;color:#1E3A5F">'+esc(it.nfd)+'</td></tr>'
+    : '';
+  return '<div style="width:92mm;height:92mm;box-sizing:border-box;border:2px solid #1E3A5F;border-radius:3mm;'
+    +'padding:4mm;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000;'
+    +'display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden">'
+
+    // Cabeçalho com logo
+    +'<div style="display:flex;align-items:center;gap:3mm;border-bottom:1.5px solid #1E3A5F;padding-bottom:2.5mm;margin-bottom:2.5mm">'
+    +'<img src="'+logoUrl+'" alt="Transben" style="height:10mm;object-fit:contain" onerror="this.style.display=\'none\'">'
+    +'<div style="flex:1">'
+    +'<div style="font-size:9.5pt;font-weight:700;color:#1E3A5F;letter-spacing:.5px;text-transform:uppercase">TRANSBEN</div>'
+    +'<div style="font-size:7pt;color:#6B7280;letter-spacing:.3px">CONTROLE DE DEVOLUÇÕES</div>'
+    +'</div>'
+    +'</div>'
+
+    // NF em destaque
+    +'<div style="background:#1E3A5F;color:#fff;border-radius:2mm;padding:2mm 3mm;margin-bottom:2.5mm;text-align:center">'
+    +'<div style="font-size:7.5pt;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-bottom:.5mm">Nota Fiscal</div>'
+    +'<div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:2px;line-height:1">'+esc(it.nf||'—')+'</div>'
+    +'</div>'
+
+    // Campos
+    +'<table style="width:100%;border-collapse:collapse;font-size:8.5pt;flex:1">'
+    +nfdRow
+    +'<tr><td style="color:#6B7280;padding:1mm 0;width:20mm;white-space:nowrap">Fornecedor</td>'
+    +'<td style="font-weight:700;font-size:9pt">'+esc(it.forn||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Tipo</td>'
+    +'<td style="font-weight:600">'+esc(it.tipo||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Motivo</td>'
+    +'<td>'+esc(it.motivo||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Qtd / Data</td>'
+    +'<td><b>'+esc(String(it.qtd||'—'))+'</b> cxs &nbsp;·&nbsp; '+esc(it.data||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Status</td>'
+    +'<td><b style="color:#1E3A5F">'+esc(it.status||'—')+'</b></td></tr>'
+    +'</table>'
+
+    // Rodapé
+    +'<div style="border-top:1px dashed #D1D5DB;padding-top:1.5mm;margin-top:auto;'
+    +'text-align:center;font-size:6.5pt;color:#9CA3AF">'
+    +'Gerado em '+gerado+'</div>'
+    +'</div>';
+}
+
 function abrirEtiqueta() {
   if (!_detItem) return;
-  var it = _detItem;
-  var logo = '[ TRANSBEN ]';
-  document.getElementById('etiqueta-preview').innerHTML =
-    '<div style="text-align:center;font-size:18px;font-weight:bold;letter-spacing:2px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px">'+logo+'</div>'
-    +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
-    +'<tr><td style="color:#555;padding:2px 0;width:80px">NF:</td><td style="font-weight:bold;font-size:14px">'+esc(it.nf)+'</td></tr>'
-    +(it.nfd ? '<tr><td style="color:#555">NFD:</td><td>'+esc(it.nfd)+'</td></tr>' : '')
-    +'<tr><td style="color:#555">Fornecedor:</td><td>'+esc(it.forn||'—')+'</td></tr>'
-    +'<tr><td style="color:#555">Tipo:</td><td>'+esc(it.tipo||'—')+'</td></tr>'
-    +'<tr><td style="color:#555">Motivo:</td><td>'+esc(it.motivo||'—')+'</td></tr>'
-    +'<tr><td style="color:#555">Qtd:</td><td>'+esc(String(it.qtd||'—'))+'</td></tr>'
-    +'<tr><td style="color:#555">Status:</td><td><b>'+esc(it.status||'—')+'</b></td></tr>'
-    +'<tr><td style="color:#555">Data:</td><td>'+esc(it.data||'—')+'</td></tr>'
-    +'</table>'
-    +'<div style="text-align:center;font-size:10px;color:#888;margin-top:8px;border-top:1px dashed #ccc;padding-top:6px">'
-    +'Gerado em '+new Date().toLocaleString('pt-BR')+'</div>';
+  document.getElementById('etiqueta-preview').innerHTML = _gerarHtmlEtiqueta(_detItem);
   document.getElementById('modal-etiqueta').style.display = 'flex';
 }
 
 function imprimirEtiqueta() {
-  var conteudo = document.getElementById('etiqueta-preview').outerHTML;
-  var win = window.open('','_blank','width=420,height=550');
-  win.document.write('<!DOCTYPE html><html><head><title>Etiqueta</title>'
-    +'<style>body{font-family:monospace;padding:20px;margin:0}@media print{body{padding:5mm}}</style>'
-    +'</head><body>'+conteudo+'<script>window.onload=function(){window.print();window.close();}<\/script></body></html>');
+  var it  = _detItem;
+  if (!it) return;
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w300';
+  var gerado  = new Date().toLocaleString('pt-BR');
+  var nfdRow  = it.nfd && it.nfd !== it.nf
+    ? '<tr><td style="color:#6B7280;font-size:8pt;padding:1mm 0;white-space:nowrap">NFD</td>'
+      +'<td style="font-family:monospace;font-size:10pt;font-weight:700;color:#1E3A5F">'+esc(it.nfd)+'</td></tr>'
+    : '';
+  var win = window.open('','_blank','width=430,height=460');
+  if (!win) return;
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiqueta '+esc(it.nf)+'</title>'
+    +'<style>'
+    +'@page{size:100mm 100mm;margin:0}'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{width:100mm;height:100mm;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000;overflow:hidden}'
+    +'.etq{width:100mm;height:100mm;padding:4mm;border:2mm solid #1E3A5F;display:flex;flex-direction:column}'
+    +'.hdr{display:flex;align-items:center;gap:3mm;border-bottom:1.5px solid #1E3A5F;padding-bottom:2.5mm;margin-bottom:2.5mm}'
+    +'.hdr img{height:10mm;object-fit:contain}'
+    +'.hdr-nome{font-size:10pt;font-weight:700;color:#1E3A5F;letter-spacing:.5px;text-transform:uppercase}'
+    +'.hdr-sub{font-size:7pt;color:#6B7280;letter-spacing:.3px}'
+    +'.nf-box{background:#1E3A5F;color:#fff;border-radius:2mm;padding:2mm 3mm;margin-bottom:2.5mm;text-align:center}'
+    +'.nf-lbl{font-size:7.5pt;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-bottom:.5mm}'
+    +'.nf-val{font-family:monospace;font-size:22pt;font-weight:700;letter-spacing:2px;line-height:1}'
+    +'table{width:100%;border-collapse:collapse;font-size:8.5pt;flex:1}'
+    +'td{padding:1mm 0;vertical-align:top}'
+    +'td:first-child{color:#6B7280;width:22mm;white-space:nowrap}'
+    +'td:last-child{font-weight:600}'
+    +'.footer{border-top:1px dashed #D1D5DB;padding-top:1.5mm;margin-top:auto;text-align:center;font-size:6.5pt;color:#9CA3AF}'
+    +'</style></head><body>'
+    +'<div class="etq">'
+    +'<div class="hdr">'
+    +'<img src="'+logoUrl+'" alt="Transben" onerror="this.style.display=\'none\'">'
+    +'<div><div class="hdr-nome">TRANSBEN</div><div class="hdr-sub">CONTROLE DE DEVOLUÇÕES</div></div>'
+    +'</div>'
+    +'<div class="nf-box"><div class="nf-lbl">Nota Fiscal</div><div class="nf-val">'+esc(it.nf||'—')+'</div></div>'
+    +'<table>'
+    +nfdRow
+    +'<tr><td>Fornecedor</td><td style="font-size:9pt">'+esc(it.forn||'—')+'</td></tr>'
+    +'<tr><td>Tipo</td><td>'+esc(it.tipo||'—')+'</td></tr>'
+    +'<tr><td>Motivo</td><td>'+esc(it.motivo||'—')+'</td></tr>'
+    +'<tr><td>Qtd / Data</td><td><b>'+esc(String(it.qtd||'—'))+'</b> cxs &nbsp;·&nbsp; '+esc(it.data||'—')+'</td></tr>'
+    +'<tr><td>Status</td><td style="color:#1E3A5F;font-weight:700">'+esc(it.status||'—')+'</td></tr>'
+    +'</table>'
+    +'<div class="footer">Gerado em '+gerado+'</div>'
+    +'</div>'
+    +'<script>window.onload=function(){window.print();window.close();}<\/script>'
+    +'</body></html>');
   win.document.close();
 }
 
@@ -1722,6 +1813,7 @@ function _detItemModificado() {
 }
 
 function salvarEdicao() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Edição bloqueada.', 'info'); return; }
   if (!_detItem) return;
   var _dtISO   = document.getElementById('d-data').value;
   var _dtParts = _dtISO.split('-');
@@ -1764,6 +1856,22 @@ function salvarEdicao() {
       showMsg('det-msg', e.message, 'err');
     })
     .editarNF({ aba: _detItem.aba, linha: _detItem.linha, campos: campos });
+}
+
+// ── Visualizador PDF Inline ────────────────────────────────
+var _pdfInlineHtml = '';
+function abrirPdfInline(titulo, html) {
+  _pdfInlineHtml = html;
+  document.getElementById('modal-pdf-titulo').textContent = titulo;
+  document.getElementById('iframe-pdf-inline').srcdoc = html;
+  document.getElementById('modal-pdf-inline').style.display = 'flex';
+}
+function imprimirPdfInline() {
+  var iframe = document.getElementById('iframe-pdf-inline');
+  try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(_) {
+    var w = window.open('','_blank','width=960,height=720');
+    if (w) { w.document.write(_pdfInlineHtml); w.document.close(); setTimeout(function(){ w.print(); }, 500); }
+  }
 }
 
 // ── PDF Export ─────────────────────────────────────────────
@@ -1826,12 +1934,8 @@ function exportarPDF() {
     +'<span>'+itens.length+' nota(s) exportada(s)</span></div>'
     +'</body></html>';
 
-  var w = window.open('','_blank','width=960,height=720');
-  if (!w) { toast('⚠️ Popup bloqueado. Permita popups para este site.','info'); return; }
-  w.document.write(html);
-  w.document.close();
-  setTimeout(function(){ w.focus(); w.print(); }, 900);
-  toast('📄 PDF aberto ('+itens.length+' notas).','ok');
+  abrirPdfInline('📄 Relatório de Devoluções (' + itens.length + ' notas)', html);
+  toast('📄 Relatório aberto.','ok');
 }
 
 // ── Doc. Carga ─────────────────────────────────────────────
@@ -1924,12 +2028,8 @@ function gerarDocCarga(itensForcados) {
     +'<div class="footer">Transben · Sistema de Controle de Devoluções · '+now+'</div>'
     +'</body></html>';
 
-  var w = window.open('','_blank','width=1000,height=760');
-  if (!w) { toast('⚠️ Popup bloqueado. Permita popups para este site.','info'); return; }
-  w.document.write(html);
-  w.document.close();
-  setTimeout(function(){ w.focus(); w.print(); }, 900);
-  toast('📄 Documentação de carga gerada ('+itens.length+' NFD(s)).','ok');
+  abrirPdfInline('📄 Doc. Carga — ' + Object.keys(forns)[0] + ' (' + itens.length + ' NFD(s))', html);
+  toast('📄 Documentação de carga gerada.','ok');
 }
 
 // ── CSV Export ─────────────────────────────────────────────
@@ -2487,6 +2587,7 @@ function abrirGaleria() {
 
 // ── Confirmação de recebimento pelo fornecedor ─────────────
 function confirmarRecebFornecedor() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
   if (!_detItem) return;
   var btn = document.getElementById('btn-forn-receb');
   var msg = document.getElementById('forn-receb-msg');
@@ -2654,6 +2755,9 @@ function aplicarModoRO(ativo) {
   document.querySelectorAll('.bulk-act, #btn-baixa, #btn-venda, #btn-frete, #btn-email').forEach(function(b){
     b.disabled = true; b.title = 'Bloqueado: modo somente-leitura';
   });
+  document.querySelectorAll('[onclick="salvarEdicao()"], #btn-forn-receb').forEach(function(b){
+    b.disabled = true; b.title = 'Bloqueado: modo somente-leitura';
+  });
 }
 
 // ── Init ───────────────────────────────────────────────────
@@ -2681,6 +2785,9 @@ try {
   google.script.run
     .withSuccessHandler(function(r){ try { aplicarModoRO(JSON.parse(r).ativo); } catch(_){} })
     .obterModoSomenteLeitura();
+  google.script.run
+    .withSuccessHandler(function(r){ try { var p=JSON.parse(r); if(p.somenteLeitura) aplicarModoRO(true); } catch(_){} })
+    .verificarAcessoModulo('notas');
 } catch(_){}
 </script>
 </body>
