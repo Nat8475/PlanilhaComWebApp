@@ -15,6 +15,7 @@ Redesenhar o layout de `FormExportarPDF.html` e `FormVenda.html` para um fluxo w
 
 - `FormExportarPDF.html` — redesign completo
 - `FormVenda.html` — redesign completo
+- `FormProgramarFrete.html` — redesign completo
 - `Código.gs` — nova função `buscarPreviewNFs(nfsStr)`
 
 ---
@@ -159,6 +160,54 @@ Todas as animações respeitam `@media (prefers-reduced-motion: reduce)` — já
 - **`_preview` data:** a variável que armazena os itens do step 2 é reutilizada no FormVenda para `gerarDocVenda()`, eliminando a segunda chamada ao backend
 - **Sem mudança de assinatura das funções existentes:** `executarExportarPDF` e `executarBaixaVenda` recebem a mesma string de NFs de antes
 - **Scroll no iframe:** o container de steps usa `min-height` dinâmico calculado com `getBoundingClientRect` para evitar colapso durante transição
+
+---
+
+---
+
+## FormProgramarFrete — Wizard de 3 Steps (variação)
+
+### Diferenças em relação ao ExportarPDF / Venda
+
+| Aspecto | ExportarPDF / Venda | ProgramarFrete |
+|---|---|---|
+| Input step 1 | Textarea multi-NF + chips | Campo de busca único (NF ou NFD) |
+| Avanço step 1→2 | Botão "Buscar Prévia" | Automático após retorno da busca |
+| Step 2 | Tabela de prévia (somente leitura) | Dados da NF + formulário de frete |
+| Backend step 2 | `buscarPreviewNFs` (nova) | `buscarNFParaProgramar` (já existe) |
+| Backend step 3 | `executarExportarPDF` / `executarBaixaVenda` | `salvarProgramacaoDevolucao` (já existe) |
+| Cor primária | Navy / Amber | Navy |
+| Nova função GAS? | Sim (buscarPreviewNFs) | Não |
+
+### Fluxo de estado
+
+```
+step 1 → [🔍 Buscar] → google.script.run.buscarNFParaProgramar(termo)
+                         ↓ sucesso — avança automaticamente
+step 2 → card com dados (NF, Fornecedor, Descrição, Data, Peso)
+         + aviso se já programado anteriormente
+         + opções de frete (Tabela / Valor+ICMS / Valor / Cortesia)
+         + campo de valor (condicional — visível só se Valor ou Valor+ICMS)
+         + data de agendamento (opcional)
+         + número do pedido (obrigatório)
+         + observações (opcional)
+         → [← Voltar] [💾 Salvar Programação]
+step 3 → SVG check / erro + mensagem + [+ Nova programação → step 1]
+```
+
+### Conteúdo do step 2
+
+Os campos e opções de frete são idênticos ao card atual — sem mudança de lógica. O redesign traz apenas:
+- Slider-in do conteúdo (vem da direita ao avançar do step 1)
+- Estilo visual consistente com os demais forms (mesmos tokens CSS, mesma tipografia)
+- Botão "← Voltar" que volta ao step 1 e limpa o campo de busca
+- Aviso "já programado" mantido (badge âmbar, sem mudança de comportamento)
+
+### Stepper labels
+
+```
+[1] Buscar   [2] Configurar   [3] Resultado
+```
 
 ---
 
