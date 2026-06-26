@@ -608,6 +608,23 @@ body.compact .kpi-v { font-size:26px }
     <button id="btn-dark-idx" onclick="window._toggleDarkIdx()" title="Alternar modo escuro"
       style="background:var(--slate-100);border:1px solid var(--border-sub);color:var(--text-muted);border-radius:var(--r-sm);
              padding:5px 10px;cursor:pointer;font-size:13px;transition:background .15s,color .15s,border-color .15s;font-family:var(--font)">🌙</button>
+    <button id="tb-search-btn" onclick="window._tbSearchOpen()" title="Buscar NF"
+      style="background:var(--slate-100);border:1px solid var(--border-sub);color:var(--text-muted);border-radius:var(--r-sm);
+             padding:5px 10px;cursor:pointer;font-size:15px;transition:background .15s,color .15s,border-color .15s;font-family:var(--font)">⌕</button>
+    <div id="tb-search-wrap" style="display:none;align-items:center;gap:4px">
+      <input id="tb-search-inp" type="text" placeholder="Buscar NF…"
+        style="width:200px;padding:5px 10px;border:1px solid var(--border-sub);
+               border-radius:var(--r-sm);font:13px var(--font);
+               background:var(--input-bg);color:var(--text-str);outline:none"
+        onkeydown="window._tbSearchKey(event)">
+      <button onclick="window._tbSearchClose()" title="Fechar"
+        style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 6px">✕</button>
+    </div>
+    <div id="tb-avatar"
+         style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+                justify-content:center;font:700 12px/1 var(--font);color:#fff;
+                flex-shrink:0;cursor:default;user-select:none;background:#374151"
+         title="">??</div>
   </header>
 
   <!-- content -->
@@ -815,7 +832,6 @@ body.compact .kpi-v { font-size:26px }
     Dashboard     : { t: 'Dashboard',                s: 'Análise por fornecedor e distribuição geral de status' },
     Lancamento    : { t: 'Lançar / Excluir Devolução', s: 'Registre uma NF de devolução individual, em lote, ou exclua um pendente' },
     Notas         : { t: 'Notas Lançadas',            s: 'Todas as devoluções registradas, por fornecedor e status' },
-    Busca         : { t: 'Buscar NF / Fornecedor',   s: 'Pesquise lançamentos ativos e o histórico arquivado' },
     Email         : { t: 'E-mail de Devolução',      s: 'Monte e envie o comunicado de devolução por NFD' },
     Frete         : { t: 'Programar Devolução',      s: 'Defina o frete, agendamento e transportadora da retirada' },
     Transferencias: { t: 'Transferências',            s: 'Acompanhe, baixe, reagende ou cancele as transferências' },
@@ -837,7 +853,6 @@ body.compact .kpi-v { font-size:26px }
     { s: 'Lançamentos', items: [
       { p: 'Lancamento',  i: '+', l: 'Lançar / Excluir' },
       { p: 'Notas',       i: '≡', l: 'Notas Lançadas' },
-      { p: 'Busca',       i: '◯', l: 'Buscar NF / Fornecedor' },
       { p: 'Email',       i: '✉', l: 'E-mail de Devolução' },
     ]},
     { s: 'Operações', items: [
@@ -958,6 +973,11 @@ body.compact .kpi-v { font-size:26px }
     loadPage(p);
   };
 
+  window.cdvBuscar = function(termo) {
+    window._pendingBuscaTermo = termo;
+    window.cdvNav('Busca');
+  };
+
   /* ── show/hide states ── */
   function show(which) {
     var ids = ['idx','pgf','ldg','err'];
@@ -992,7 +1012,7 @@ body.compact .kpi-v { font-size:26px }
     if (_pageCache[p]) {
       var frm = document.getElementById('pgf');
       frm.srcdoc = _pageCache[p];
-      frm.onload = function () { show('pgf'); };
+      frm.onload = function () { show('pgf'); _cdvBuscaAutoSearch(frm, p); };
       show('pgf');
       return;
     }
@@ -1006,7 +1026,7 @@ body.compact .kpi-v { font-size:26px }
             _pageCache[p] = injectPolyfill(d.html);
             var frm = document.getElementById('pgf');
             frm.srcdoc = _pageCache[p];
-            frm.onload = function () { show('pgf'); };
+            frm.onload = function () { show('pgf'); _cdvBuscaAutoSearch(frm, p); };
             /* fallback: mostra após 4s mesmo sem onload */
             setTimeout(function () {
               if (document.getElementById('ldg').style.display !== 'none') show('pgf');
@@ -1034,6 +1054,16 @@ body.compact .kpi-v { font-size:26px }
           ._getPageContent(p);
       } catch(_) {}
     });
+  }
+
+  /* ── auto-search ao carregar FormBusca via busca inline ── */
+  function _cdvBuscaAutoSearch(frm, p) {
+    if (!window._pendingBuscaTermo || p !== 'Busca') return;
+    var t = window._pendingBuscaTermo;
+    window._pendingBuscaTermo = null;
+    setTimeout(function() {
+      try { frm.contentWindow.postMessage({ cdvAutoSearch: t }, '*'); } catch(_) {}
+    }, 120);
   }
 
   function showErr(msg) {
@@ -1255,6 +1285,29 @@ body.compact .kpi-v { font-size:26px }
         .withFailureHandler(function () {})
         .obterBadgeCount();
     } catch (_) {}
+
+    /* avatar — email do usuário logado */
+    try {
+      google.script.run
+        .withSuccessHandler(function(email) {
+          var el = document.getElementById('tb-avatar');
+          if (!el) return;
+          if (!email) { el.textContent = '?'; return; }
+          var cols = ['#1C45D0','#0891B2','#059669','#D97706','#DC2626','#7C3AED','#0E7490','#374151'];
+          var user = String(email).split('@')[0];
+          var parts = user.split(/[._]/);
+          var ini = parts.length >= 2
+            ? (parts[0][0] + parts[1][0]).toUpperCase()
+            : user.substring(0, 2).toUpperCase() || '?';
+          var h = 5381;
+          for (var i = 0; i < email.length; i++) { h = ((h << 5) + h) + email.charCodeAt(i); h = h & h; }
+          el.style.background = cols[Math.abs(h) % cols.length];
+          el.textContent = ini;
+          el.title = email;
+        })
+        .withFailureHandler(function() {})
+        .getEmailUsuario();
+    } catch(_) {}
   }
 
   /* ── proxy RPC e navegação de iframes srcdoc → parent ── */
@@ -1289,6 +1342,28 @@ body.compact .kpi-v { font-size:26px }
 
   document.addEventListener('DOMContentLoaded', function() { init(); _initNotasRapidas(); carregarConquistas(); setTimeout(_prefetchPages, 3000); });
 })();
+
+// ── Busca inline no topbar ─────────────────────────────
+window._pendingBuscaTermo = null;
+window._tbSearchOpen = function() {
+  document.getElementById('tb-search-btn').style.display = 'none';
+  document.getElementById('tb-search-wrap').style.display = 'flex';
+  document.getElementById('tb-search-inp').focus();
+};
+window._tbSearchClose = function() {
+  document.getElementById('tb-search-wrap').style.display = 'none';
+  document.getElementById('tb-search-btn').style.display = '';
+  document.getElementById('tb-search-inp').value = '';
+};
+window._tbSearchKey = function(e) {
+  if (e.key === 'Escape') { window._tbSearchClose(); return; }
+  if (e.key === 'Enter') {
+    var termo = document.getElementById('tb-search-inp').value.trim();
+    if (!termo) return;
+    window._tbSearchClose();
+    window.cdvBuscar(termo);
+  }
+};
 
 // ── Hotkeys de navegação global ────────────────────────────
 document.addEventListener('keydown', function(e) {
