@@ -939,9 +939,59 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
     </div>
   </div>
 
-  <!-- Aba: Cargos (HTML preenchido em Task 4) -->
+  <!-- Aba: Cargos -->
   <div id="acesso-hub-tab-cargos" class="tab-pane">
-    <div id="cargos-content">⏳ Carregando...</div>
+    <!-- Form de criação / edição -->
+    <div class="secao-email" id="cargo-form-wrap">
+      <div class="sec-titulo" id="cargo-form-titulo">➕ Novo Cargo</div>
+      <div class="campo">
+        <label>Nome do cargo</label>
+        <input type="text" id="cargo-nome" placeholder="Ex: Auditor, Operador, Visualizador">
+        <input type="hidden" id="cargo-edit-id" value="">
+      </div>
+      <div class="campo">
+        <label>Módulos permitidos</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="notas"> Notas Lançadas
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="lancamento"> Lançamento
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="email"> E-mail de Devolução
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="frete"> Programar Frete
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="configuracoes"> Configurações
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="auditoria"> Auditoria
+          </label>
+        </div>
+      </div>
+      <div class="campo">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer">
+          <input type="checkbox" id="cargo-ro"> <strong>Somente leitura</strong>
+          <span style="font-size:11px;color:var(--text-muted)">(pode ver, não pode criar/editar/enviar)</span>
+        </label>
+      </div>
+      <div class="botoes">
+        <button class="btn-principal" id="cargo-btn-salvar" onclick="_salvarCargo()">✅ Criar Cargo</button>
+        <button class="btn-cancel" id="cargo-btn-cancel" style="display:none" onclick="_cancelarEdicaoCargo()">✖ Cancelar</button>
+      </div>
+      <div class="msg" id="cargo-msg"></div>
+    </div>
+
+    <!-- Lista de cargos -->
+    <div id="cargos-lista" style="margin-top:4px"></div>
+
+    <!-- Aviso padrão -->
+    <div class="info" style="margin-top:12px">
+      💡 Usuários sem cargo atribuído operam como <strong>Visualizador</strong> — acesso a todos os módulos, somente leitura.
+    </div>
   </div>
 
   <!-- Aba: Usuários (HTML preenchido em Task 5) -->
@@ -2120,6 +2170,106 @@ function _testarWebhook() {
 }
 
 (function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+
+// ════ CARGOS ══════════════════════════════════════════════════
+var _cargosLocal = [];
+var _MOD_LABELS  = { notas:'Notas', lancamento:'Lançamento', email:'E-mail', frete:'Frete', configuracoes:'Config', auditoria:'Auditoria' };
+
+function _carregarCargos() {
+  document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--text-muted);font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) { document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+esc(r.erro)+'</div>'; return; }
+      _cargosLocal = r.cargos || [];
+      _renderCargos();
+    })
+    .withFailureHandler(function(e) { document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+e.message+'</div>'; })
+    .obterCargos();
+}
+
+function _renderCargos() {
+  var el = document.getElementById('cargos-lista');
+  if (!_cargosLocal.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum cargo criado ainda.</div>';
+    return;
+  }
+  el.innerHTML = _cargosLocal.map(function(c) {
+    var badges = c.modulos.map(function(m) {
+      return '<span style="background:var(--navy-50);color:var(--navy);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">'+esc(_MOD_LABELS[m]||m)+'</span>';
+    }).join(' ');
+    var roIcon = c.somenteLeitura ? ' <span style="font-size:11px;color:var(--text-muted)">🔒 RO</span>' : '';
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<strong style="font-size:13px;color:var(--text);flex:1;min-width:80px">'+esc(c.nome)+roIcon+'</strong>'
+      + '<div style="display:flex;gap:4px;flex-wrap:wrap;flex:2">'+badges+'</div>'
+      + '<div style="display:flex;gap:4px;flex-shrink:0">'
+      + '<button class="btn-acao" onclick="_iniciarEdicaoCargo(\''+esc(c.id)+'\')">✏️ Editar</button>'
+      + '<button class="btn-acao" style="color:var(--red);border-color:var(--red)" onclick="_excluirCargo(\''+esc(c.id)+'\',\''+esc(c.nome)+'\')">🗑️ Excluir</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _salvarCargo() {
+  var nome = (document.getElementById('cargo-nome').value || '').trim();
+  var id   = document.getElementById('cargo-edit-id').value || '';
+  var mods = [];
+  var modChecks = document.querySelectorAll('.cargo-mod:checked');
+  for (var i = 0; i < modChecks.length; i++) { mods.push(modChecks[i].value); }
+  var ro   = document.getElementById('cargo-ro').checked;
+  if (!nome) { showMsg('cargo','erro','❌ Informe o nome do cargo.'); return; }
+  document.getElementById('cargo-btn-salvar').disabled = true;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      document.getElementById('cargo-btn-salvar').disabled = false;
+      showMsg('cargo', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) { _limparFormCargo(); _carregarCargos(); }
+    })
+    .withFailureHandler(function(e) { document.getElementById('cargo-btn-salvar').disabled = false; showMsg('cargo','erro','❌ '+e.message); })
+    .salvarCargo(id, nome, mods, ro);
+}
+
+function _iniciarEdicaoCargo(id) {
+  var cargo = null;
+  for (var i = 0; i < _cargosLocal.length; i++) { if (_cargosLocal[i].id === id) { cargo = _cargosLocal[i]; break; } }
+  if (!cargo) return;
+  document.getElementById('cargo-nome').value    = cargo.nome;
+  document.getElementById('cargo-edit-id').value = cargo.id;
+  document.getElementById('cargo-ro').checked    = !!cargo.somenteLeitura;
+  Array.prototype.slice.call(document.querySelectorAll('.cargo-mod')).forEach(function(cb){ cb.checked = cargo.modulos.indexOf(cb.value) !== -1; });
+  document.getElementById('cargo-form-titulo').textContent = '✏️ Editar Cargo';
+  document.getElementById('cargo-btn-salvar').textContent  = '💾 Salvar Alterações';
+  document.getElementById('cargo-btn-cancel').style.display = '';
+  document.getElementById('cargo-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function _cancelarEdicaoCargo() {
+  _limparFormCargo();
+}
+
+function _limparFormCargo() {
+  document.getElementById('cargo-nome').value    = '';
+  document.getElementById('cargo-edit-id').value = '';
+  document.getElementById('cargo-ro').checked    = false;
+  Array.prototype.slice.call(document.querySelectorAll('.cargo-mod')).forEach(function(cb){ cb.checked = false; });
+  document.getElementById('cargo-form-titulo').textContent  = '➕ Novo Cargo';
+  document.getElementById('cargo-btn-salvar').textContent   = '✅ Criar Cargo';
+  document.getElementById('cargo-btn-cancel').style.display = 'none';
+  document.getElementById('cargo-msg').style.display        = 'none';
+}
+
+function _excluirCargo(id, nome) {
+  if (!confirm('Excluir o cargo "' + nome + '"?\n\nCertifique-se de que não há usuários vinculados a ele.')) return;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('cargo', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) _carregarCargos();
+    })
+    .withFailureHandler(function(e) { showMsg('cargo','erro','❌ '+e.message); })
+    .excluirCargo(id);
+}
 </script>
 </body>
 </html>
