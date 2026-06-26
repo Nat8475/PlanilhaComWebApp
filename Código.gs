@@ -6744,7 +6744,9 @@ function obterPermissoesUsuario(email) {
     var emailNorm = String(email || Session.getActiveUser().getEmail() || '').trim().toLowerCase();
 
     // 1. Admin tem acesso total
-    if (_usuarioEhAdmin()) {
+    var donoEmail = _emailDonoPlanilha();
+    var adminsList = _obterEmailsAdmin();
+    if (emailNorm === donoEmail || adminsList.indexOf(emailNorm) !== -1) {
       return JSON.stringify({ admin: true, modulos: _TODOS_MODULOS, somenteLeitura: false });
     }
 
