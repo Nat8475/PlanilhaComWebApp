@@ -6189,6 +6189,12 @@ function ping() {
   return JSON.stringify({ ok: true, ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail() });
 }
 
+function getEmailUsuario() {
+  try {
+    return Session.getActiveUser().getEmail() || '';
+  } catch(_) { return ''; }
+}
+
 function testarEnvioEmail(emailDestino) {
   if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
   try {
