@@ -90,6 +90,8 @@ var _KEY_EMAILS_ALERTA    = 'cdv_emails_alerta';
 var _KEY_ALERTA_DEST      = 'cdv_alerta_dest';   // 'todos' | 'cc'
 var _KEY_EMAILS_TRANSF    = 'cdv_emails_transf'; // destinatários alertas de transferência vencida
 var _KEY_ADMINS_CONFIG    = 'cdv_admins_config'; // e-mails extras autorizados nas Configurações
+var _KEY_CARGOS           = 'cdv_cargos';    // JSON: CargoItem[]
+var _KEY_USUARIOS         = 'cdv_usuarios';  // JSON: UsuarioItem[]
 var _KEY_CORES            = 'cdv_cores';
 var _KEY_READONLY         = 'cdv_modo_somente_leitura';
 var _KEY_EMAIL_TEMPLATES  = 'cdv_email_templates';   // JSON: { avaria: {assunto, corpo}, vencimento: {...}, ... }
@@ -6646,6 +6648,91 @@ function salvarAdminsConfig(params) {
   } catch (e) {
     return JSON.stringify({ erro: e.toString() });
   }
+}
+
+// ─── CARGOS ──────────────────────────────────────────────────
+
+function obterCargos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CARGOS) || '[]';
+  return JSON.stringify({ cargos: JSON.parse(raw) });
+}
+
+function salvarCargo(id, nome, modulos, somenteLeitura) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var lista = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+    var novoId = id || Date.now().toString(36);
+    var cargo  = {
+      id: novoId,
+      nome: String(nome || '').trim(),
+      modulos: Array.isArray(modulos) ? modulos : [],
+      somenteLeitura: !!somenteLeitura
+    };
+    if (!cargo.nome) return JSON.stringify({ erro: '❌ Nome do cargo é obrigatório.' });
+    var idx = lista.map(function(c){ return c.id; }).indexOf(novoId);
+    if (idx >= 0) { lista[idx] = cargo; } else { lista.push(cargo); }
+    props.setProperty(_KEY_CARGOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Cargo salvo.', id: novoId });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function excluirCargo(id) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props    = PropertiesService.getScriptProperties();
+    var usuarios = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    var em_uso   = usuarios.filter(function(u){ return u.cargoId === id; });
+    if (em_uso.length) {
+      return JSON.stringify({ erro: '⚠️ Cargo em uso por ' + em_uso.length + ' usuário(s). Remova os vínculos antes de excluir.' });
+    }
+    var lista = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+    lista = lista.filter(function(c){ return c.id !== id; });
+    props.setProperty(_KEY_CARGOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Cargo excluído.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ─── USUÁRIOS ─────────────────────────────────────────────────
+
+function obterUsuariosCargos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_USUARIOS) || '[]';
+  return JSON.stringify({ usuarios: JSON.parse(raw) });
+}
+
+function salvarUsuarioCargo(email, cargoId) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var emailNorm = String(email || '').trim().toLowerCase();
+    if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+      return JSON.stringify({ erro: '❌ E-mail inválido.' });
+    }
+    var props = PropertiesService.getScriptProperties();
+    // Verificar se cargoId existe
+    var cargos = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+    if (!cargos.some(function(c){ return c.id === cargoId; })) {
+      return JSON.stringify({ erro: '❌ Cargo não encontrado.' });
+    }
+    var lista = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    var idx = lista.map(function(u){ return u.email; }).indexOf(emailNorm);
+    if (idx >= 0) { lista[idx].cargoId = cargoId; } else { lista.push({ email: emailNorm, cargoId: cargoId }); }
+    props.setProperty(_KEY_USUARIOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Usuário vinculado.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function removerUsuarioCargo(email) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var emailNorm = String(email || '').trim().toLowerCase();
+    var props = PropertiesService.getScriptProperties();
+    var lista = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    lista = lista.filter(function(u){ return u.email !== emailNorm; });
+    props.setProperty(_KEY_USUARIOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Vínculo removido.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
 // ─── E-MAILS ─────────────────────────────────────────────────
