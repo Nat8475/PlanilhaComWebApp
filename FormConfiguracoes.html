@@ -994,9 +994,32 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
     </div>
   </div>
 
-  <!-- Aba: Usuários (HTML preenchido em Task 5) -->
+  <!-- Aba: Usuários -->
   <div id="acesso-hub-tab-usuarios" class="tab-pane">
-    <div id="usuarios-content">⏳ Carregando...</div>
+    <div class="secao-email">
+      <div class="sec-titulo">👤 Vincular Usuário a Cargo</div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0;flex:2">
+          <input type="email" id="usr-email" placeholder="usuario@empresa.com.br"
+                 onkeydown="if(event.key==='Enter') _adicionarUsuario()">
+        </div>
+        <div class="campo" style="margin-bottom:0;flex:1">
+          <select id="usr-cargo-sel" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);font-size:12px;background:var(--input-bg);color:var(--text)">
+            <option value="">— Selecionar cargo —</option>
+          </select>
+        </div>
+        <div style="flex-shrink:0;padding-top:1px">
+          <button class="btn-sec" onclick="_adicionarUsuario()">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="msg" id="usr-msg" style="margin-top:8px"></div>
+    </div>
+
+    <div id="usuarios-lista" style="margin-top:4px"></div>
+
+    <div class="info" style="margin-top:12px">
+      💡 Usuários não listados aqui operam como <strong>Visualizador</strong> (somente leitura) por padrão.
+    </div>
   </div>
 </div>
 
@@ -2269,6 +2292,95 @@ function _excluirCargo(id, nome) {
     })
     .withFailureHandler(function(e) { showMsg('cargo','erro','❌ '+e.message); })
     .excluirCargo(id);
+}
+
+// ════ USUÁRIOS ═════════════════════════════════════════════════
+var _usuariosLocal = [];
+var _CARGO_COLORS  = ['#DBEAFE','#DCFCE7','#FEF9C3','#FAE8FF','#FFEDD5','#CFFAFE','#FFE4E6','#F1F5F9'];
+var _CARGO_TEXT_COLORS = ['#1E40AF','#166534','#854D0E','#6B21A8','#9A3412','#0E7490','#9F1239','#334155'];
+
+function _carregarUsuarios() {
+  document.getElementById('usuarios-lista').innerHTML = '<div style="color:var(--text-muted);font-size:11px">Carregando...</div>';
+  // Carregar cargos para o dropdown (se ainda não carregados)
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (!r.erro) {
+        _cargosLocal = r.cargos || [];
+        _renderCargoDropdown();
+      }
+    })
+    .obterCargos();
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) { document.getElementById('usuarios-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+esc(r.erro)+'</div>'; return; }
+      _usuariosLocal = r.usuarios || [];
+      _renderUsuarios();
+    })
+    .withFailureHandler(function(e) { document.getElementById('usuarios-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+e.message+'</div>'; })
+    .obterUsuariosCargos();
+}
+
+function _renderCargoDropdown() {
+  var sel = document.getElementById('usr-cargo-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Selecionar cargo —</option>'
+    + _cargosLocal.map(function(c) {
+        return '<option value="'+esc(c.id)+'">'+esc(c.nome)+(c.somenteLeitura?' 🔒':'')+'</option>';
+      }).join('');
+}
+
+function _renderUsuarios() {
+  var el = document.getElementById('usuarios-lista');
+  if (!_usuariosLocal.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum usuário vinculado.</div>';
+    return;
+  }
+  el.innerHTML = _usuariosLocal.map(function(u, i) {
+    var cargo = _cargosLocal.filter(function(c){ return c.id === u.cargoId; })[0];
+    var cargoNome = cargo ? cargo.nome : '(cargo removido)';
+    var ci   = _cargosLocal.indexOf(cargo);
+    var colorIdx = ci >= 0 ? ci % _CARGO_COLORS.length : _CARGO_COLORS.length - 1;
+    var badge = '<span style="background:'+_CARGO_COLORS[colorIdx]+';color:'+_CARGO_TEXT_COLORS[colorIdx]+';border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+esc(cargoNome)+'</span>';
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'
+      + '<span style="font-size:12px;color:var(--text);flex:1">'+esc(u.email)+'</span>'
+      + badge
+      + '<button class="btn-acao" style="color:var(--red);border-color:var(--red);flex-shrink:0" onclick="_removerUsuario(\''+esc(u.email)+'\')">🗑️</button>'
+      + '</div>';
+  }).join('');
+}
+
+function _adicionarUsuario() {
+  var email   = (document.getElementById('usr-email').value || '').trim().toLowerCase();
+  var cargoId = document.getElementById('usr-cargo-sel').value;
+  if (!email) { showMsg('usr','erro','❌ Informe o e-mail.'); return; }
+  if (!cargoId) { showMsg('usr','erro','❌ Selecione um cargo.'); return; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('usr', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) {
+        document.getElementById('usr-email').value = '';
+        document.getElementById('usr-cargo-sel').value = '';
+        _carregarUsuarios();
+      }
+    })
+    .withFailureHandler(function(e) { showMsg('usr','erro','❌ '+e.message); })
+    .salvarUsuarioCargo(email, cargoId);
+}
+
+function _removerUsuario(email) {
+  if (!confirm('Remover vínculo de "' + email + '"?\nEle passará a operar como Visualizador.')) return;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('usr', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) _carregarUsuarios();
+    })
+    .withFailureHandler(function(e) { showMsg('usr','erro','❌ '+e.message); })
+    .removerUsuarioCargo(email);
 }
 </script>
 </body>
