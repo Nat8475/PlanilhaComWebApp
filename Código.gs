@@ -2730,7 +2730,10 @@ function uploadFotoAvaria(params) {
   try {
     var pasta = _garantirPastaNF(params.aba || 'Avaria', params.nf || 'NF');
     var dados = Utilities.base64Decode(params.base64);
-    var blob  = Utilities.newBlob(dados, params.mimeType || 'image/jpeg', params.nome || 'avaria.jpg');
+    var nomeArq = (params.nome || 'avaria.jpg');
+    // Prefixo FOTO_ garante que o filtro do enviarEmailDevolucao inclua estas fotos
+    if (nomeArq.indexOf('FOTO_') !== 0) nomeArq = 'FOTO_' + nomeArq;
+    var blob  = Utilities.newBlob(dados, params.mimeType || 'image/jpeg', nomeArq);
     var file  = (pasta || DriveApp.getRootFolder()).createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return JSON.stringify({ url: file.getUrl(), id: file.getId() });
