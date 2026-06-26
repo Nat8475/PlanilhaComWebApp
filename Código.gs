@@ -1895,6 +1895,53 @@ function buscarNFParaProgramar(termo) {
 }
 
 /**
+ * Busca NFs/NFDs Pendentes para prévia — sem alterar dados.
+ * Retorna { itens: [{nfd,nf,forn,tipo,motivo,qtd,vlTot,data}] } ou { erro }.
+ */
+function buscarPreviewNFs(txtNfsRaw) {
+  var nfsDigitadas = String(txtNfsRaw || '').split(/[\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF válida identificada.' });
+
+  var ss    = getSS();
+  var tz    = ss.getSpreadsheetTimeZone();
+  var itens = [];
+  var naoLocalizadas = nfsDigitadas.slice();
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    dados.forEach(function(l) {
+      var nfd = String(l[IDX_NFD] || '').trim();
+      var nf  = String(l[IDX_NF]  || '').trim();
+      var st  = String(l[IDX_STATUS] || '').trim();
+      var bat = _baterTermos(nfsDigitadas, nfd, nf);
+      if (!bat.bate || st !== 'Pendente') return;
+
+      var dt = l[IDX_DATA];
+      itens.push({
+        nfd:    nfd,
+        nf:     nf,
+        forn:   String(l[IDX_FORN]   || '').trim(),
+        tipo:   String(l[IDX_TIPO]   || '').trim(),
+        motivo: String(l[IDX_MOTIVO] || '').trim(),
+        qtd:    parseFloat(l[IDX_QTD]    || 0) || 0,
+        vlTot:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
+        data:   dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : ''
+      });
+      var idx = naoLocalizadas.indexOf(bat.termoBateu);
+      if (idx > -1) naoLocalizadas.splice(idx, 1);
+    });
+  });
+
+  if (!itens.length) return JSON.stringify({ erro: "Nenhuma NF com status 'Pendente' localizada." });
+  return JSON.stringify({ itens: itens, naoLocalizadas: naoLocalizadas });
+}
+
+/**
  * Salva o tipo e o valor de frete de um item Pendente.
  * params: { aba, linha, freteTipo, freteValor }
  */
