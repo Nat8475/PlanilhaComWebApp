@@ -100,6 +100,7 @@ var _KEY_PERMISSOES_RO    = 'cdv_permissoes_ro_modulos'; // JSON: { "notas": tru
 var _KEY_ASSINATURAS      = 'cdv_assinaturas';        // JSON: { "email@": "driveFileId", ... }
 var _KEY_EMAILS_AGENDADOS = 'cdv_emails_agendados';   // JSON: [{ id, params, dataEnvio, usuario }]
 var _KEY_CONFIG_HISTORICO = 'cdv_config_historico';   // JSON: [{ ts, usuario, snapshot }] (últimos 5)
+var _KEY_WEBHOOK_CONF     = 'cdv_webhook_conf';        // JSON: { ativo, tipo, telegram:{token,chatIds[]}, whatsapp:{url,ctoken,phones[]} }
 
 // ── Dashboard: sentinela e células de filtro ─────────────────
 var DASH_SENTINEL_CELL    = 'K1';
@@ -257,7 +258,10 @@ function getSS() {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (ss) return ss;
   } catch (_) {}
-  return SpreadsheetApp.openById(SPREADSHEET_ID);
+  // Permite sobrescrever o ID via PropertiesService ('SPREADSHEET_ID'), sem alterar o código
+  var id = '';
+  try { id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || ''; } catch(_) {}
+  return SpreadsheetApp.openById(id || SPREADSHEET_ID);
 }
 
 
@@ -311,9 +315,11 @@ function _decrementarProtecoes(qtd) {
   props.setProperty(_PROP_KEY_PROTECOES, String(n));
 }
 
-/** Reseta todos os contadores e caches (usado em configurarPlanilha). */
+/** Reseta apenas os contadores de cache (usado em configurarPlanilha). */
 function _resetarContadores() {
-  PropertiesService.getScriptProperties().deleteAllProperties();
+  var props = PropertiesService.getScriptProperties();
+  props.deleteProperty(_PROP_KEY_CONCLUIDOS);
+  props.deleteProperty(_PROP_KEY_PROTECOES);
   try { CacheService.getScriptCache().removeAll([_CACHE_KEY_DASH, _CACHE_KEY_CORES, _CACHE_KEY_SENTINEL]); } catch(_) {}
 }
 
@@ -2551,6 +2557,24 @@ function verificarSaudeSistema() {
       if (status === 'ok') status = 'warn';
     }
 
+    // Ocupação das abas (alerta quando ≥ 80% de MAX_LINHAS_ABA)
+    var abasAlerta = [];
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      var usadas = Math.max(0, ul - LINHA_DADOS + 1);
+      var pct = Math.round((usadas / MAX_LINHAS_ABA) * 100);
+      if (pct >= 80) abasAlerta.push(nome + ' ' + pct + '%');
+    });
+    if (abasAlerta.length > 0) {
+      checks.push({ label: 'Capacidade das abas', ok: false,
+                    valor: abasAlerta.join(', ') + ' — faça arquivamento' });
+      if (status === 'ok') status = 'warn';
+    } else {
+      checks.push({ label: 'Capacidade das abas', ok: true, valor: '< 80%' });
+    }
+
     // Status geral
     if (checks.some(function(c){ return !c.ok; })) status = 'warn';
 
@@ -2806,8 +2830,91 @@ function obterScorecardFornecedores(filtroStatus) {
   } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
+/**
+ * [P57] SLA por fornecedor — tempo médio (dias) entre entrada e resolução (Devolvido/Venda).
+ * Cruza as datas de entrada das abas operacionais com os eventos do _Log.
+ */
+function obterSLAFornecedores() {
+  try {
+    var ss  = getSS();
+    var tz  = Session.getScriptTimeZone();
+    // Monta mapa { aba: { rowNum: { dt, forn } } }
+    var entryMap = {};
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      entryMap[nome] = {};
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(r, i) {
+          var nf   = String(r[IDX_NF]  || '').trim();
+          var forn = String(r[IDX_FORN] || '').trim();
+          var dt   = r[IDX_DATA];
+          if (nf && forn && dt instanceof Date) {
+            entryMap[nome][LINHA_DADOS + i] = { dt: dt, forn: forn };
+          }
+        });
+    });
+    // Lê _Log: colunas [0]=Data/Hora [2]=Aba [3]=Linha [6]=Novo Valor
+    var wsLog = ss.getSheetByName('_Log');
+    var sla = {}; // { forn: { totalDias, count } }
+    if (wsLog && wsLog.getLastRow() >= 2) {
+      wsLog.getRange(2, 1, wsLog.getLastRow() - 1, 8).getValues()
+        .forEach(function(r) {
+          var dtRes   = r[0];
+          var aba     = String(r[2] || '').trim();
+          var rowNum  = parseInt(r[3]) || 0;
+          var novoVal = String(r[6] || '').trim();
+          if (novoVal !== 'Devolvido' && novoVal !== 'Venda') return;
+          if (!(dtRes instanceof Date) || !rowNum) return;
+          var entry = entryMap[aba] && entryMap[aba][rowNum];
+          if (!entry) return;
+          var dias = Math.max(0, Math.round((dtRes - entry.dt) / 864e5));
+          if (!sla[entry.forn]) sla[entry.forn] = { totalDias: 0, count: 0 };
+          sla[entry.forn].totalDias += dias;
+          sla[entry.forn].count++;
+        });
+    }
+    var lista = Object.keys(sla).map(function(f) {
+      var e = sla[f];
+      return { forn: f, mediaDias: Math.round(e.totalDias / e.count), totalResolvidos: e.count };
+    }).sort(function(a, b) { return a.mediaDias - b.mediaDias; });
+    return JSON.stringify({ sla: lista });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * [P58] Exporta trilha de auditoria do _Log como CSV (retorna string para o cliente fazer download).
+ */
+function exportarLogAuditoriaCSV(limite) {
+  try {
+    var ss    = getSS();
+    var wsLog = ss.getSheetByName('_Log');
+    if (!wsLog || wsLog.getLastRow() < 2) return JSON.stringify({ erro: 'Log de auditoria vazio.' });
+    var n   = Math.min(parseInt(limite, 10) || 1000, 5000);
+    var ul  = wsLog.getLastRow();
+    var ini = Math.max(2, ul - n + 1);
+    var rows = wsLog.getRange(ini, 1, ul - ini + 1, 8).getValues();
+    var tz  = Session.getScriptTimeZone();
+    var cabecalho = 'Data/Hora;Usuário;Aba;Linha;Coluna;Valor Anterior;Novo Valor;Ação';
+    var linhas = rows.map(function(r) {
+      return r.map(function(c) {
+        var s = c instanceof Date
+          ? Utilities.formatDate(c, tz, 'dd/MM/yyyy HH:mm:ss')
+          : String(c == null ? '' : c).replace(/"/g, '""');
+        return /[;\n"']/.test(s) ? '"' + s + '"' : s;
+      }).join(';');
+    });
+    var csv = '﻿' + cabecalho + '\r\n' + linhas.join('\r\n');
+    return JSON.stringify({ csv: csv, total: rows.length });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
 function obterDadosDashboard() {
   try {
+    var cache = CacheService.getScriptCache();
+    try { var hit = cache.get('cdv_dash_payload'); if (hit) return hit; } catch(_) {}
     var ss  = getSS();
     var tz  = Session.getScriptTimeZone();
     var hoje = new Date();
@@ -2846,20 +2953,21 @@ function obterDadosDashboard() {
         });
     });
 
-    // Contagem de Em Transferência + transferências vencidas
+    // Contagem de Em Transferência + transferências vencidas (leitura única reutilizada abaixo)
     var transfVencidas = 0;
+    var transfRows = [];
     var wsTrD = ss.getSheetByName(ABA_TRANSFERENCIAS);
     if (wsTrD && wsTrD.getLastRow() >= 2) {
-      wsTrD.getRange(2, 1, wsTrD.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
-        .forEach(function(l) {
-          var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
-          if (stTr !== 'Em Transferência') return;
-          var val  = parseFloat(l[IDX_VL_TOT] || 0) || 0;
-          counts.EmTransferencia++;
-          valores.EmTransferencia += val;
-          var agend = l[TRANSF_COL_DATA_AGEND - 1];
-          if (agend instanceof Date && agend < hoje) transfVencidas++;
-        });
+      transfRows = wsTrD.getRange(2, 1, wsTrD.getLastRow() - 1, TRANSF_TOTAL_COL).getValues();
+      transfRows.forEach(function(l) {
+        var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+        if (stTr !== 'Em Transferência') return;
+        var val  = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+        counts.EmTransferencia++;
+        valores.EmTransferencia += val;
+        var agend = l[TRANSF_COL_DATA_AGEND - 1];
+        if (agend instanceof Date && agend < hoje) transfVencidas++;
+      });
     }
 
     // Últimas 10 notas lançadas (mais recentes por data de entrada)
@@ -2882,29 +2990,27 @@ function obterDadosDashboard() {
             status: String(l[IDX_STATUS]||'').trim(),
             vlTot:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
             data:   l[IDX_DATA] instanceof Date ? Utilities.formatDate(l[IDX_DATA], tz, 'dd/MM/yyyy') : '',
+            _dt:    l[IDX_DATA] instanceof Date ? l[IDX_DATA].getTime() : 0,
             aba:    nome
           });
         });
     });
-    recentes.sort(function(a, b) { return b.data > a.data ? 1 : -1; });
+    recentes.sort(function(a, b) { return b._dt - a._dt; });
     recentes = recentes.slice(0, 10);
+    recentes.forEach(function(r) { delete r._dt; });
 
-    // Adiciona EmTransferência ao porFornecedor
-    var wsTrD2 = ss.getSheetByName(ABA_TRANSFERENCIAS);
-    if (wsTrD2 && wsTrD2.getLastRow() >= 2) {
-      wsTrD2.getRange(2, 1, wsTrD2.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
-        .forEach(function(l) {
-          var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
-          if (stTr !== 'Em Transferência') return;
-          var fTr = String(l[IDX_FORN] || '').trim();
-          if (!fTr) return;
-          if (!porFornecedor[fTr]) porFornecedor[fTr] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0,vlPendente:0,vlDevolvido:0,vlVenda:0,vlTransf:0};
-          var valTr = parseFloat(l[IDX_VL_TOT] || 0) || 0;
-          porFornecedor[fTr].EmTransferencia++;
-          porFornecedor[fTr].vlTransf  += valTr;
-          porFornecedor[fTr].vlTot     += valTr;
-        });
-    }
+    // Adiciona EmTransferência ao porFornecedor (reutiliza transfRows, sem segunda leitura)
+    transfRows.forEach(function(l) {
+      var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+      if (stTr !== 'Em Transferência') return;
+      var fTr = String(l[IDX_FORN] || '').trim();
+      if (!fTr) return;
+      if (!porFornecedor[fTr]) porFornecedor[fTr] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0,vlPendente:0,vlDevolvido:0,vlVenda:0,vlTransf:0};
+      var valTr = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+      porFornecedor[fTr].EmTransferencia++;
+      porFornecedor[fTr].vlTransf  += valTr;
+      porFornecedor[fTr].vlTot     += valTr;
+    });
     var fornArr = Object.keys(porFornecedor).map(function(k) {
       var f = porFornecedor[k];
       return { forn:k, Pendente:f.Pendente, EmTransferencia:f.EmTransferencia,
@@ -2913,7 +3019,7 @@ function obterDadosDashboard() {
                total: f.Pendente + f.EmTransferencia + f.Devolvido + f.Venda };
     }).sort(function(a, b) { return b.total - a.total; });
 
-    return JSON.stringify({
+    var payload = JSON.stringify({
       counts:          counts,
       valores:         valores,
       atrasos30:       atrasos30,
@@ -2921,6 +3027,8 @@ function obterDadosDashboard() {
       recentes:        recentes,
       porFornecedor:   fornArr
     });
+    try { cache.put('cdv_dash_payload', payload, 45); } catch(_) {}
+    return payload;
   } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
@@ -3340,6 +3448,7 @@ function _gravarLancamento(ss, ws, dados, ulPre, nfsPre) {
       urlAnexo = arquivo.getUrl();
     } catch (eAnexo) {
       console.error('Erro ao salvar anexo: ' + eAnexo);
+      registrarErroSistema('_gravarLancamento.anexo', eAnexo.message || eAnexo.toString());
     }
   }
   // Fotos extras (múltiplas — salvas na mesma pasta com prefixo FOTO_)
@@ -3350,7 +3459,7 @@ function _gravarLancamento(ss, ws, dados, ulPre, nfsPre) {
         var fb = Utilities.newBlob(Utilities.base64Decode(foto.base64), foto.mime, foto.nome);
         var arq = destPastaFotos.createFile(fb);
         arq.setName('FOTO_' + (idx + 1) + '_NF_' + dados.nf + '_' + foto.nome);
-      } catch (eFoto) { console.error('Erro ao salvar foto ' + foto.nome + ': ' + eFoto); }
+      } catch (eFoto) { console.error('Erro ao salvar foto ' + foto.nome + ': ' + eFoto); registrarErroSistema('_gravarLancamento.foto', eFoto.message || eFoto.toString()); }
     });
   }
 
@@ -3428,6 +3537,7 @@ function salvarLoteLancamentos(itens) {
       return arquivo.getUrl();
     } catch (e) {
       console.error('Erro ao salvar anexo NF ' + it.nf + ': ' + e);
+      registrarErroSistema('salvarLoteLancamentos.anexo', e.message || e.toString());
       return '';
     }
   });
@@ -4371,6 +4481,7 @@ function enviarEmailDevolucao(params) {
         }
       } catch (eBlob) {
         console.warn('Não foi possível anexar arquivo da NFD ' + it.nfd + ': ' + eBlob);
+        registrarErroSistema('enviarEmailDevolucao.anexo', eBlob.message || eBlob.toString());
       }
     }
     // Fotos extras (FOTO_*) salvas na pasta da NF
@@ -4386,7 +4497,7 @@ function enviarEmailDevolucao(params) {
           }
         }
       }
-    } catch (eFoto) { console.warn('Erro ao buscar fotos NFD ' + it.nfd + ': ' + eFoto); }
+    } catch (eFoto) { console.warn('Erro ao buscar fotos NFD ' + it.nfd + ': ' + eFoto); registrarErroSistema('enviarEmailDevolucao.fotos', eFoto.message || eFoto.toString()); }
     if (!temAnexo) semAnexo.push(it.nfd);
   });
 
@@ -4466,6 +4577,7 @@ function enviarEmailDevolucao(params) {
                destinatarios.join('\n') + infoArquivadas
     });
   } catch (e) {
+    registrarErroSistema('enviarEmailDevolucao', e.message || e.toString());
     return JSON.stringify({ erro: '❌ Erro ao enviar: ' + e.toString() });
   }
 }
@@ -4533,6 +4645,7 @@ function _registrarEmailEnviado(ss, info) {
     ]);
   } catch (e) {
     console.error('_registrarEmailEnviado: ' + e);
+    registrarErroSistema('_registrarEmailEnviado', e.message || e.toString());
   }
 }
 
@@ -4637,9 +4750,123 @@ function verificarAtrasosEEnviarAlerta() {
 
   var anexos = pdf ? [pdf.blob] : [];
   enviarEmail(assunto, htmlEmail, anexos, 'atraso');
+  _enviarAlertaWebhook('⚠️ ' + linhas.length + ' devolução(ões) em atraso crítico (+30 dias) — ' + dataStr
+    + '\nTotal: R$ ' + _fmtVal(valTotal)
+    + '\nAcesse o sistema para detalhes.');
   registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '⚠️ Alerta de atraso enviado — ' + dataStr);
   try { SpreadsheetApp.getUi().alert('📧 Alerta enviado! ' + linhas.length + ' item(ns) em atraso.'); } catch (_) {}
   return JSON.stringify({ sucesso: '📧 Alerta enviado! ' + linhas.length + ' item(ns) em atraso.', total: linhas.length });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   WEBHOOK — ALERTAS WHATSAPP / TELEGRAM
+// ════════════════════════════════════════════════════════════
+
+function obterConfWebhook() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+    return JSON.stringify({ conf: JSON.parse(raw) });
+  } catch(e) { return JSON.stringify({ conf: {} }); }
+}
+
+function salvarConfWebhook(conf) {
+  try {
+    if (!conf || typeof conf !== 'object') return JSON.stringify({ erro: 'Configuração inválida.' });
+    var payload = {
+      ativo: !!conf.ativo,
+      tipo:  String(conf.tipo || 'telegram'),
+      telegram: {
+        token:   String((conf.telegram && conf.telegram.token)  || ''),
+        chatIds: (conf.telegram && Array.isArray(conf.telegram.chatIds)) ? conf.telegram.chatIds : []
+      },
+      whatsapp: {
+        url:     String((conf.whatsapp && conf.whatsapp.url)    || ''),
+        ctoken:  String((conf.whatsapp && conf.whatsapp.ctoken) || ''),
+        phones:  (conf.whatsapp && Array.isArray(conf.whatsapp.phones)) ? conf.whatsapp.phones : []
+      }
+    };
+    PropertiesService.getScriptProperties().setProperty(_KEY_WEBHOOK_CONF, JSON.stringify(payload));
+    return JSON.stringify({ ok: '✅ Configuração de webhook salva.' });
+  } catch(e) {
+    registrarErroSistema('salvarConfWebhook', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function testarWebhookAlerta(conf) {
+  try {
+    var msg = '🔔 Teste do sistema de alertas — Devoluções Transben\n'
+            + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+    var erros = _dispararWebhook(conf, msg);
+    if (erros.length) return JSON.stringify({ erro: '⚠️ Alguns envios falharam: ' + erros.join(' | ') });
+    return JSON.stringify({ ok: '✅ Mensagem de teste enviada com sucesso.' });
+  } catch(e) {
+    registrarErroSistema('testarWebhookAlerta', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/* Lê conf salva e dispara alerta — chamado internamente após enviarEmail de atraso */
+function _enviarAlertaWebhook(msg) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+    var conf = JSON.parse(raw);
+    if (!conf || !conf.ativo) return;
+    var erros = _dispararWebhook(conf, msg);
+    if (erros.length) registrarErroSistema('_enviarAlertaWebhook', erros.join(' | '));
+  } catch(e) { registrarErroSistema('_enviarAlertaWebhook', e.message || e.toString()); }
+}
+
+/* Envia para todos os destinatários do canal configurado. Retorna lista de erros. */
+function _dispararWebhook(conf, msg) {
+  var erros = [];
+  if (!conf || !conf.ativo) return erros;
+  var tipo = conf.tipo || 'telegram';
+
+  if (tipo === 'telegram') {
+    var tg = conf.telegram || {};
+    var token = (tg.token || '').trim();
+    var chats = tg.chatIds || [];
+    if (!token || !chats.length) { erros.push('Telegram: token ou chatIds não configurados'); return erros; }
+    chats.forEach(function(chatId) {
+      try {
+        var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+          method: 'post',
+          contentType: 'application/json',
+          payload: JSON.stringify({ chat_id: String(chatId), text: msg }),
+          muteHttpExceptions: true
+        });
+        var body = JSON.parse(resp.getContentText());
+        if (!body.ok) erros.push('Telegram chatId ' + chatId + ': ' + (body.description || 'erro'));
+      } catch(e) { erros.push('Telegram chatId ' + chatId + ': ' + e.message); }
+    });
+
+  } else if (tipo === 'whatsapp') {
+    var wa = conf.whatsapp || {};
+    var url    = (wa.url    || '').trim().replace(/\/$/, '');
+    var ctoken = (wa.ctoken || '').trim();
+    var phones = wa.phones  || [];
+    if (!url || !phones.length) { erros.push('WhatsApp: URL ou telefones não configurados'); return erros; }
+    var hdrs = { 'Content-Type': 'application/json' };
+    if (ctoken) hdrs['Client-Token'] = ctoken;
+    phones.forEach(function(phone) {
+      try {
+        var resp = UrlFetchApp.fetch(url + '/send-text', {
+          method: 'post',
+          headers: hdrs,
+          payload: JSON.stringify({ phone: String(phone), message: msg }),
+          muteHttpExceptions: true
+        });
+        var code = resp.getResponseCode();
+        if (code < 200 || code >= 300) {
+          erros.push('WhatsApp phone ' + phone + ': HTTP ' + code);
+        }
+      } catch(e) { erros.push('WhatsApp phone ' + phone + ': ' + e.message); }
+    });
+  }
+
+  return erros;
 }
 
 function enviarEmail(assunto, htmlBody, anexos, tipoAlerta) {
@@ -5256,6 +5483,7 @@ function _gerarRelatorioPDF(ss, params) {
 
   } catch(e) {
     console.error('_gerarRelatorioPDF: ' + e);
+    registrarErroSistema('_gerarRelatorioPDF', e.message || e.toString());
     try { if (ssTemp) DriveApp.getFileById(ssTemp.getId()).setTrashed(true); } catch(_) {}
     return null;
   }
@@ -5377,6 +5605,7 @@ function gerarRelatorioPendentes(params) {
       enviarEmail('⏳ Relatório de Pendências — ' + dataStr, htmlEmail, [pdf.blob], 'pendencias');
     } catch (eMail) {
       console.error('gerarRelatorioPendentes — e-mail: ' + eMail);
+      registrarErroSistema('gerarRelatorioPendentes.email', eMail.message || eMail.toString());
     }
   }
 
@@ -7002,7 +7231,12 @@ function _getPageContent(page) {
     });
   }
   try {
+    var pgCache = CacheService.getScriptCache();
+    var pgKey   = 'pg_html_' + pagina;
+    var cachedHtml = pgCache.get(pgKey);
+    if (cachedHtml) return JSON.stringify({ html: cachedHtml, page: page });
     var html = HtmlService.createHtmlOutputFromFile(pagina).getContent();
+    try { pgCache.put(pgKey, html, 21600); } catch(_) {}
     return JSON.stringify({ html: html, page: page });
   } catch(e) {
     return JSON.stringify({ erro: '❌ ' + e.toString(), page: page });

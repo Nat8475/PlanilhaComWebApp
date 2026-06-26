@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -6,32 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ── Design Tokens v8 ── */
-    :root{
-      --font:'Plus Jakarta Sans',system-ui,sans-serif;
-      --mono:'JetBrains Mono',monospace;
-      --navy:#25419A;--navy-800:#1E3A5F;--brand-red:#C62025;
-      --amber:#D97706;--amber-bg:#FEF3C7;
-      --green:#059669;--green-bg:#ECFDF5;
-      --red:#DC2626;--red-bg:#FEF2F2;
-      --bg:#EFF3F8;--surface:#fff;
-      --border:#E8ECF2;--border-def:#CDD5E0;
-      --text:#0F1829;--text-body:#374151;--text-muted:#64748B;--text-faint:#9CA3AF;
-      --navy-50:#EEF2FF;--slate-100:#F1F4F8;
-      --r:10px;--r-sm:7px;
-      --sh:0 1px 4px rgba(15,24,41,.08),0 1px 2px rgba(15,24,41,.05);
-      --ease:cubic-bezier(.4,0,.2,1)
-    }
-    body.dark{
-      --bg:#0D1526;--surface:#172033;--border:#263350;--border-def:#374D6E;
-      --text:#EFF3FA;--text-body:#CBD5E1;--text-muted:#8FA8C8;--text-faint:#5B7090;
-      --navy-50:#1B2E55;--slate-100:#1B2740;
-      --amber-bg:#2A1D06;--green-bg:#0F2918;--red-bg:#2D1515
-    }
-    body.dark input,body.dark select,body.dark textarea{background:#0D1526!important;color:#EFF3FA;border-color:#374D6E}
-    body.dark .card-nf,body.dark .assinatura-card{background:#172033;border-color:#263350}
-    body.dark .info{background:#1B2E55;border-left-color:#60A5FA;color:#CBD5E1}
-    body.dark .modal-box{background:#172033;border:1px solid #263350}
+    
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
     ::-webkit-scrollbar{width:7px;height:7px}
@@ -39,19 +14,19 @@
 
     /* ── Header ── */
     .titulo{
-      background:linear-gradient(135deg,var(--navy-800) 0%,var(--navy) 100%);
+      background:linear-gradient(135deg,var(--ink) 0%,var(--navy) 100%);
       color:#fff;padding:13px 16px;border-radius:var(--r);
-      font-size:14px;font-weight:700;margin-bottom:16px;
+      font-size:14px;font-weight:800;margin-bottom:16px;
       display:flex;align-items:center;justify-content:center;gap:8px;
-      box-shadow:0 2px 8px rgba(27,46,107,.22)
+      box-shadow:0 3px 12px rgba(14,21,33,.25)
     }
 
     /* ── Section ── */
     .secao{
-      background:linear-gradient(90deg,var(--navy-50) 0%,transparent 100%);
+      background:var(--navy-50);
       border-left:3px solid var(--navy);padding:7px 12px;
-      border-radius:0 var(--r-sm) var(--r-sm) 0;margin:14px 0 10px;
-      font-size:11px;font-weight:700;color:var(--navy);letter-spacing:.4px;text-transform:uppercase
+      border-radius:0 var(--r-sm) var(--r-sm) 0;margin:16px 0 10px;
+      font-size:10.5px;font-weight:700;color:var(--navy);letter-spacing:.08em;text-transform:uppercase
     }
 
     /* ── Form ── */
@@ -60,10 +35,10 @@
     input[type=text],textarea{
       width:100%;padding:9px 11px;border:1.5px solid var(--border-def);
       border-radius:var(--r-sm);font-size:13px;font-family:var(--font);
-      background:var(--surface);color:var(--text);
-      transition:border-color .15s,box-shadow .15s
+      background:var(--input-bg);color:var(--text);
+      transition:border-color .15s,box-shadow .15s,background .15s
     }
-    input:focus,textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.13)}
+    input:focus,textarea:focus{outline:none;border-color:var(--navy);background:var(--surface);box-shadow:0 0 0 3px rgba(31,64,128,.12)}
     .linha2{display:flex;gap:8px}
     .linha2 .campo{flex:1}
 
@@ -139,6 +114,85 @@
     .com-item .tam{color:var(--text-faint);font-size:10px;flex-shrink:0}
     .com-item .rm{background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;font-weight:700;flex:none;padding:0 2px}
   </style>
+  <style id="cdv-v10">
+:root{--font:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--ink:#06101E;--brand-amber:#E8A020;--slate-100:#ECF1FA;--sh:0 2px 8px rgba(6,14,30,.08),0 1px 3px rgba(6,14,30,.05);--sh-md:0 6px 22px rgba(6,14,30,.10),0 2px 6px rgba(6,14,30,.06);--ease:cubic-bezier(.4,0,.2,1);--navy:#1C45D0;--navy-800:#1535A5;--navy-d:#142DB8;--teal:#0891B2;--red:#DC2626;--green:#16A34A;--amber:#D97706;--bg:#ECF1FA;--surface:#FFFFFF;--input-bg:#F4F7FE;--border:#DDE6F4;--border-def:#BACADE;--text:#07162A;--text-body:#29394F;--text-muted:#53708C;--text-faint:#8AA3BF;--text-sm:var(--text-muted);--navy-50:#EDF3FF;--r:12px;--r-sm:9px;--green-bg:#EDFCF2;--red-bg:#FFF1F1;--amber-bg:#FFF7E0;--brand-red:#DC2626}
+body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--border-def:#1D3154;--text:#E6EDF9;--text-body:#95AFCC;--text-muted:#567090;--text-faint:#2E4562;--navy-50:#112036;--green-bg:#022C1A;--red-bg:#2D0A0A;--amber-bg:#1F1100}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+body{background:var(--bg);color:var(--text);font-family:var(--font);transition:background .22s,color .22s}
+thead tr{background:linear-gradient(135deg,#06101E 0%,var(--navy) 100%)}
+thead th{color:#fff;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--navy-50)}
+input,select,textarea{background:var(--input-bg);border-radius:var(--r-sm);transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(28,69,208,.12);outline:none}
+button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .12s,opacity .12s}
+.msg-ok,.msg-erro,.msg-aviso,#msg{animation:fadeIn .2s both;border-radius:var(--r-sm)}
+.spinner{color:var(--navy)}
+/* ── Email form specific ── */
+.titulo{border-radius:var(--r);box-shadow:0 6px 24px rgba(28,69,208,.18);animation:fadeUp .2s both}
+.secao{background:var(--navy-50);border-left:3px solid var(--navy);border-radius:0 var(--r-sm) var(--r-sm) 0;animation:fadeIn .2s both}
+.campo{animation:fadeUp .25s both}
+.campo:nth-child(1){animation-delay:.04s}
+.campo:nth-child(2){animation-delay:.08s}
+.campo:nth-child(3){animation-delay:.12s}
+.emails-base{background:var(--green-bg);border:1px solid #A7F3D0;border-radius:var(--r-sm);animation:fadeIn .25s both}
+.comunicado-box{border-radius:var(--r);border-color:#FCD34D;animation:fadeUp .3s both}
+.prev-header{background:linear-gradient(135deg,#1535A5,var(--navy))}
+#preview{animation:fadeUp .25s both;border-radius:var(--r);overflow:hidden}
+.com-item{animation:fadeUp .18s both;transition:border-color .15s,box-shadow .15s}
+.com-item:hover{border-color:var(--navy);box-shadow:0 0 0 2px rgba(28,69,208,.1)}
+#btnPreview{background:linear-gradient(135deg,#1535A5,var(--navy));transition:transform .12s,box-shadow .12s,opacity .15s}
+#btnPreview:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(28,69,208,.4);opacity:1}
+#btnCancelar{background:transparent;border:1.5px solid var(--border-def);color:var(--text-muted);transition:border-color .15s,color .15s,background .15s}
+#btnCancelar:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-50)}
+#btnEnviar{transition:transform .12s,box-shadow .12s,opacity .15s}
+#btnEnviar:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(5,150,105,.35);opacity:1}
+#btn-confirmar-envio{border-radius:var(--r-sm);transition:transform .12s,opacity .15s}
+#btn-confirmar-envio:hover{transform:translateY(-1px)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--navy)}
+thead th{background:transparent}
+.info{border-radius:var(--r);border-left-width:3px;color:var(--text-body);
+  line-height:1.6;animation:fadeIn .2s both;padding:10px 14px}
+.secao{background:linear-gradient(90deg,var(--navy-50),transparent);
+  border-left:3px solid var(--navy);border-radius:0 var(--r) var(--r) 0;
+  color:var(--navy);font-weight:800;letter-spacing:.08em}
+.drop-com{border-radius:var(--r-sm);border:2px dashed rgba(28,69,208,.25);
+  transition:background .15s,border-color .15s,transform .12s}
+.drop-com:hover{border-color:var(--navy);background:var(--navy-50);transform:scale(1.01)}
+.drop-com.has-files{background:var(--green-bg);border-color:rgba(22,163,74,.4);border-style:solid}
+.comunicado-box{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r)}
+.total-row td{background:var(--navy-50)!important;color:var(--navy);font-weight:700}
+/* ── New functional layout ── */
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 12px}
+.fg2-main{display:flex;flex-direction:column;gap:5px}
+.fg2-side{display:flex;flex-direction:column;gap:0}
+.fl-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--navy);padding-bottom:4px}
+.com-strip{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:8px}
+.com-chk-lbl{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text-body)}
+.com-chk-lbl input[type=checkbox]{width:15px;height:15px;accent-color:var(--navy);flex-shrink:0;cursor:pointer}
+.opt-sect{border:1.5px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;overflow:hidden;animation:fadeIn .2s both}
+.opt-sect>summary{padding:9px 14px;font-size:12px;font-weight:700;color:var(--text-body);cursor:pointer;
+  display:flex;align-items:center;gap:6px;list-style:none;background:var(--surface);
+  transition:background .12s,color .12s;user-select:none}
+.opt-sect>summary::-webkit-details-marker{display:none}
+.opt-sect[open]>summary{background:var(--navy-50);border-bottom:1px solid var(--border);color:var(--navy)}
+.opt-sect>summary::after{content:'›';margin-left:auto;font-size:16px;color:var(--text-faint);
+  transition:transform .2s;line-height:1}
+.opt-sect[open]>summary::after{transform:rotate(90deg);color:var(--navy)}
+.opt-tag{background:var(--navy-50);color:var(--navy);font-size:9px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:4px}
+.opt-body{padding:10px 14px;background:var(--surface)}
+.opt-body .campo{margin-bottom:8px}
+.stick-btns{position:sticky;bottom:0;background:var(--bg);
+  border-top:1.5px solid var(--border);padding:10px 0 4px;margin-top:8px;z-index:10}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
 </head>
 <body>
 <div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
@@ -161,83 +215,83 @@
 
 <div class="titulo">📨 Enviar E-mail de Devolução</div>
 
-<div class="secao">📋 NFDs</div>
-<div class="campo">
-  <label>Números das NFDs</label>
-  <textarea id="nfds" rows="3" placeholder="Ex:&#10;NFD001&#10;NFD002&#10;ou: NFD001, NFD002"></textarea>
+<!-- Primary 2-column grid: NFDs + Destinatários -->
+<div class="fg2">
+  <div class="fg2-main">
+    <div class="fl-lbl">📋 NFDs</div>
+    <textarea id="nfds" rows="6" style="width:100%;flex:1" placeholder="Ex:&#10;NFD001&#10;NFD002&#10;ou: NFD001, NFD002"></textarea>
+  </div>
+  <div class="fg2-side">
+    <div class="fl-lbl">📧 Destinatários</div>
+    <div id="emailsBase" class="emails-base"><strong>E-mails padrão:</strong> <em>exibidos após buscar</em></div>
+    <label style="font-size:11px;font-weight:700;color:var(--text-body);display:block;margin:8px 0 3px">E-mails extras <span style="font-weight:normal;color:var(--text-faint)">(opcional)</span></label>
+    <input type="text" id="emailsExtras" style="width:100%" placeholder="ex@email.com; outro@email.com">
+  </div>
 </div>
 
-<div class="secao">📧 DESTINATÁRIOS</div>
-<div id="emailsBase" class="emails-base">
-  <strong>E-mails padrão (sempre incluídos):</strong> <em>serão exibidos após buscar as NFDs</em>
-</div>
-<div class="campo">
-  <label>E-mails adicionais <span style="font-weight:normal;color:#888">(opcional)</span></label>
-  <input type="text" id="emailsExtras" placeholder="ex@email.com; outro@email.com">
-</div>
-
-<div class="secao">📋 COMUNICADO DE RETORNO</div>
-<div class="comunicado-box">
-  <label class="comunicado-toggle">
+<!-- Comunicado: toggle strip (sem caixa amarela) -->
+<div class="com-strip">
+  <label class="com-chk-lbl">
     <input type="checkbox" id="chk-comunicado" onchange="toggleComunicado()">
-    <span>Incluir comunicado de retorno como anexo neste e-mail</span>
+    <span>📎 Incluir comunicado de retorno como anexo</span>
   </label>
-
-  <div id="comunicado-fields">
-    <!-- Input oculto (sem multiple — abre uma vez por vez, pode ser acionado várias vezes) -->
+  <div id="comunicado-fields" style="display:none;margin-top:10px">
     <input type="file" id="file-comunicado" accept=".pdf,.jpg,.jpeg,.png"
            style="display:none" onchange="onFileComunicado(this)">
-
-    <!-- Drop zone — sempre visível para adicionar mais -->
     <div class="drop-com" id="drop-com"
          onclick="document.getElementById('file-comunicado').click()"
          ondragover="event.preventDefault();this.classList.add('over')"
          ondragleave="this.classList.remove('over')"
          ondrop="onDropComunicado(event)">
-      📎 Clique ou arraste para adicionar arquivo(s) ao comunicado<br>
+      📎 Clique ou arraste para adicionar arquivo(s)<br>
       <span style="font-size:10px;opacity:.7">(PDF, JPG ou PNG — máx. 8 MB por arquivo)</span>
     </div>
-
-    <!-- Lista de arquivos adicionados -->
     <div class="com-lista" id="com-lista"></div>
-
-    <div class="campo" style="margin-top:8px;margin-bottom:0">
-      <label>Observação sobre o comunicado <span style="font-weight:normal;color:#888">(opcional — aparece no corpo do e-mail)</span></label>
-      <input type="text" id="obs-comunicado"
-             placeholder="Ex: Em anexo segue comunicado de retorno referente à NF 123456">
+    <div style="margin-top:8px">
+      <label style="font-size:11px;font-weight:700;color:var(--text-body);display:block;margin-bottom:3px">Observação <span style="font-weight:normal;color:var(--text-faint)">(opcional)</span></label>
+      <input type="text" id="obs-comunicado" style="width:100%"
+             placeholder="Ex: Em anexo segue comunicado referente à NF 123456">
     </div>
   </div>
 </div>
 
-<div class="secao">✏️ COMPLEMENTO</div>
-<div class="campo">
-  <label>Assunto do e-mail <span style="font-weight:normal;color:#888">(gerado automaticamente, pode editar)</span></label>
-  <input type="text" id="assunto" placeholder="Gerado após buscar as NFDs...">
-</div>
-<div class="campo">
-  <label>Observações <span style="font-weight:normal;color:#888">(opcional)</span></label>
-  <textarea id="obs" rows="2" placeholder="Observações adicionais que aparecerão no e-mail..."></textarea>
-</div>
-
-<div class="secao">✍️ ASSINATURA</div>
-<div class="campo">
-  <label>Assinatura do remetente <span style="font-weight:normal;color:#888">(selecione ou deixe sem assinatura)</span></label>
-  <div style="display:flex;gap:8px;align-items:flex-start">
-    <select id="sel-assinatura" onchange="onMudarAssinatura()"
-      style="flex:1;padding:7px 9px;border:1px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--surface)">
-      <option value="">— Sem assinatura —</option>
-    </select>
-    <button onclick="carregarAssinaturas()" title="Recarregar lista"
-      style="background:none;border:1px solid var(--border-def);border-radius:var(--r-sm);padding:7px 10px;cursor:pointer;font-size:13px;color:var(--text-muted)">↺</button>
+<!-- Assunto e observações (colapsável) -->
+<details class="opt-sect">
+  <summary>✏️ Assunto e observações</summary>
+  <div class="opt-body">
+    <div class="campo">
+      <label>Assunto <span style="font-weight:normal;color:var(--text-faint)">(gerado automaticamente)</span></label>
+      <input type="text" id="assunto" placeholder="Gerado após buscar as NFDs...">
+    </div>
+    <div class="campo" style="margin-bottom:0">
+      <label>Observações <span style="font-weight:normal;color:var(--text-faint)">(opcional)</span></label>
+      <textarea id="obs" rows="2" placeholder="Observações adicionais que aparecerão no e-mail..."></textarea>
+    </div>
   </div>
-  <div id="assn-thumb-preview" style="display:none;margin-top:8px">
-    <img id="assn-thumb-img-email" src="" alt="Assinatura"
-      style="max-height:70px;max-width:280px;border:1px solid var(--border-def);border-radius:4px;object-fit:contain;padding:4px">
-    <div style="font-size:10px;color:var(--text-muted);margin-top:3px">Preview da assinatura que será inserida no e-mail</div>
-  </div>
-</div>
+</details>
 
-<div class="botoes">
+<!-- Assinatura (colapsável) -->
+<details class="opt-sect">
+  <summary>✍️ Assinatura <span class="opt-tag">opcional</span></summary>
+  <div class="opt-body">
+    <div style="display:flex;gap:8px;align-items:flex-start">
+      <select id="sel-assinatura" onchange="onMudarAssinatura()"
+        style="flex:1;padding:7px 9px;border:1px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;font-family:inherit;background:var(--surface)">
+        <option value="">— Sem assinatura —</option>
+      </select>
+      <button onclick="carregarAssinaturas()" title="Recarregar lista"
+        style="background:none;border:1px solid var(--border-def);border-radius:var(--r-sm);padding:7px 10px;cursor:pointer;font-size:13px;color:var(--text-muted)">↺</button>
+    </div>
+    <div id="assn-thumb-preview" style="display:none;margin-top:8px">
+      <img id="assn-thumb-img-email" src="" alt="Assinatura"
+        style="max-height:70px;max-width:280px;border:1px solid var(--border-def);border-radius:4px;object-fit:contain;padding:4px">
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px">Preview da assinatura inserida no e-mail</div>
+    </div>
+  </div>
+</details>
+
+<!-- Barra de ação — sticky no rodapé -->
+<div class="botoes stick-btns">
   <button id="btnPreview" onclick="buscarPreview()">🔍 Buscar e Pré-visualizar</button>
   <button id="btnCancelar" onclick="google.script.host.close()">✖ Cancelar</button>
 </div>

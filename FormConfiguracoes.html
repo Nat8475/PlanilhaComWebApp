@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -6,33 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ── Design Tokens v8 ── */
-    :root{
-      --font:'Plus Jakarta Sans',system-ui,sans-serif;
-      --mono:'JetBrains Mono',monospace;
-      --navy:#25419A;--navy-800:#1E3A5F;--brand-red:#C62025;
-      --amber:#D97706;--amber-bg:#FEF3C7;
-      --green:#059669;--green-bg:#ECFDF5;
-      --red:#DC2626;--red-bg:#FEF2F2;
-      --bg:#EFF3F8;--surface:#fff;
-      --border:#E8ECF2;--border-def:#CDD5E0;
-      --text:#0F1829;--text-body:#374151;--text-muted:#64748B;--text-faint:#9CA3AF;
-      --navy-50:#EEF2FF;--slate-100:#F1F4F8;
-      --r:10px;--r-sm:7px;
-      --sh:0 1px 4px rgba(15,24,41,.08),0 1px 2px rgba(15,24,41,.05);
-      --sh-md:0 4px 14px rgba(15,24,41,.09),0 2px 6px rgba(15,24,41,.05);
-      --ease:cubic-bezier(.4,0,.2,1)
-    }
-    body.dark{
-      --bg:#0D1526;--surface:#172033;--border:#263350;--border-def:#374D6E;
-      --text:#EFF3FA;--text-body:#CBD5E1;--text-muted:#8FA8C8;--text-faint:#5B7090;
-      --navy-50:#1B2E55;--slate-100:#1B2740;
-      --amber-bg:#2A1D06;--green-bg:#0F2918;--red-bg:#2D1515
-    }
-    body.dark input,body.dark select,body.dark textarea{background:#0D1526!important;color:#EFF3FA;border-color:#374D6E}
-    body.dark .card,body.dark .secao-card{background:#172033;border-color:#263350}
-    body.dark .tab-btn{background:#172033;color:#CBD5E1;border-color:#263350}
-    body.dark .tab-btn.ativa{background:var(--navy);color:#fff;border-color:var(--navy)}
+    
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
     ::-webkit-scrollbar{width:7px;height:7px}
@@ -40,18 +14,18 @@
 
     /* ── Header ── */
     .titulo{
-      background:linear-gradient(135deg,var(--navy-800) 0%,var(--navy) 100%);
+      background:linear-gradient(135deg,var(--ink) 0%,var(--navy) 100%);
       color:#fff;padding:13px 16px;border-radius:var(--r);
-      font-size:14px;font-weight:700;margin-bottom:16px;
+      font-size:14px;font-weight:800;margin-bottom:16px;
       display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-      box-shadow:0 2px 8px rgba(27,46,107,.22)
+      box-shadow:0 3px 12px rgba(14,21,33,.25)
     }
     .titulo .back{
-      cursor:pointer;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.2);
-      color:#fff;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;
+      cursor:pointer;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);
+      color:rgba(255,255,255,.9);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;
       transition:background .15s;flex-shrink:0
     }
-    .titulo .back:hover{background:rgba(255,255,255,.26)}
+    .titulo .back:hover{background:rgba(255,255,255,.24)}
     .badge{font-size:10px;background:rgba(255,255,255,.2);border-radius:5px;
            padding:2px 9px;font-weight:500;letter-spacing:.3px}
 
@@ -78,11 +52,12 @@
     label{display:block;font-weight:700;color:var(--text-body);margin-bottom:4px;font-size:12px}
     input[type=text],input[type=email],input[type=number],select,textarea{
       width:100%;padding:9px 11px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);
-      font-size:13px;background:var(--surface);font-family:var(--font);color:var(--text);
-      transition:border-color .15s,box-shadow .15s
+      font-size:13px;background:var(--input-bg);font-family:var(--font);color:var(--text);
+      transition:border-color .15s,box-shadow .15s,background .15s
     }
     input:focus,select:focus,textarea:focus{
-      outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.13)}
+      outline:none;border-color:var(--navy);background:var(--surface);
+      box-shadow:0 0 0 3px rgba(31,64,128,.12)}
 
     .info{
       background:var(--navy-50);border-left:4px solid var(--navy);padding:10px 13px;
@@ -119,7 +94,7 @@
                  border:1.5px solid var(--border-def);border-radius:var(--r-sm);
                  padding:9px 12px;cursor:pointer;
                  transition:border-color .15s var(--ease),background .15s var(--ease)}
-    .opcao-radio:hover{border-color:var(--navy);background:var(--navy-50)}
+    .opcao-radio:hover{border-color:var(--brand-amber);background:var(--navy-50)}
     .opcao-radio input[type=radio]{margin-top:2px;accent-color:var(--navy);cursor:pointer}
     .opcao-radio .txt strong{display:block;font-size:12px;color:var(--navy)}
     .opcao-radio .txt span{font-size:11px;color:var(--text-muted)}
@@ -205,6 +180,52 @@
                    font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
                    background:var(--surface);color:var(--text-body);transition:background .15s}
     button.btn-acao:hover{background:var(--navy-50);border-color:var(--navy);color:var(--navy)}
+  </style>
+  <style id="cdv-v10">
+:root{--font:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--ink:#06101E;--brand-amber:#E8A020;--slate-100:#ECF1FA;--sh:0 2px 8px rgba(6,14,30,.08),0 1px 3px rgba(6,14,30,.05);--sh-md:0 6px 22px rgba(6,14,30,.10),0 2px 6px rgba(6,14,30,.06);--ease:cubic-bezier(.4,0,.2,1);--navy:#1C45D0;--navy-800:#1535A5;--navy-d:#142DB8;--teal:#0891B2;--red:#DC2626;--green:#16A34A;--amber:#D97706;--bg:#ECF1FA;--surface:#FFFFFF;--input-bg:#F4F7FE;--border:#DDE6F4;--border-def:#BACADE;--text:#07162A;--text-body:#29394F;--text-muted:#53708C;--text-faint:#8AA3BF;--text-sm:var(--text-muted);--navy-50:#EDF3FF;--r:12px;--r-sm:9px;--green-bg:#EDFCF2;--red-bg:#FFF1F1;--amber-bg:#FFF7E0;--brand-red:#DC2626}
+body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--border-def:#1D3154;--text:#E6EDF9;--text-body:#95AFCC;--text-muted:#567090;--text-faint:#2E4562;--navy-50:#112036;--green-bg:#022C1A;--red-bg:#2D0A0A;--amber-bg:#1F1100}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+body{background:var(--bg);color:var(--text);font-family:var(--font);transition:background .22s,color .22s}
+thead tr{background:linear-gradient(135deg,#06101E 0%,var(--navy) 100%)}
+thead th{color:#fff;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--navy-50)}
+input,select,textarea{background:var(--input-bg);border-radius:var(--r-sm);transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(28,69,208,.12);outline:none}
+button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .12s,opacity .12s}
+.msg-ok,.msg-erro,.msg-aviso,#msg{animation:fadeIn .2s both;border-radius:var(--r-sm)}
+.spinner{color:var(--navy)}
+.tab-btn{transition:color .15s,background .15s,border-color .15s}
+.tab-btn.ativa{color:var(--navy);border-bottom-color:var(--navy)}
+.tab-pane{animation:fadeUp .2s both}
+.sec,.card-sec,.config-bloco{animation:fadeUp .25s both}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--navy)}
+/* ── Sel-card enhanced ── */
+.sel-card{animation:fadeUp .25s both;position:relative;
+  transition:transform .15s,box-shadow .15s,border-color .15s,background .15s}
+.sel-card:nth-child(1){animation-delay:.04s}.sel-card:nth-child(2){animation-delay:.08s}
+.sel-card:nth-child(3){animation-delay:.12s}.sel-card:nth-child(4){animation-delay:.16s}
+.sel-card:nth-child(5){animation-delay:.2s}.sel-card:nth-child(6){animation-delay:.24s}
+.sel-card:nth-child(7){animation-delay:.28s}.sel-card:nth-child(8){animation-delay:.32s}
+.sel-card:nth-child(9){animation-delay:.32s}.sel-card:nth-child(10){animation-delay:.36s}
+.sel-card::after{content:'›';position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  font-size:18px;color:var(--text-faint);transition:color .15s,transform .15s;pointer-events:none}
+.sel-card:hover{border-color:var(--navy);background:var(--navy-50);
+  box-shadow:0 6px 20px rgba(28,69,208,.10);transform:translateY(-2px)}
+.sel-card:hover::after{color:var(--navy);transform:translateY(-50%) translateX(3px)}
+.sel-card .icone{width:44px;height:44px;background:var(--navy-50);border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:20px;transition:background .15s,transform .15s}
+.sel-card:hover .icone{background:rgba(28,69,208,.12);transform:scale(1.06)}
+.sel-card .txt strong{color:var(--text);font-weight:700}
+.info{border-radius:var(--r);border-left-width:3px;color:var(--text-body);
+  line-height:1.6;animation:fadeIn .2s both;padding:10px 14px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   </style>
 </head>
 <body>
@@ -346,6 +367,7 @@
     <button class="tab-btn" data-tab="ccbcc" onclick="mudarTab('email-hub','ccbcc',this)">📧 CC/BCC</button>
     <button class="tab-btn" data-tab="assn" onclick="mudarTab('email-hub','assn',this)">✍️ Assinaturas</button>
     <button class="tab-btn" data-tab="tpl" onclick="mudarTab('email-hub','tpl',this)">✉️ Templates</button>
+    <button class="tab-btn" data-tab="webhook" onclick="mudarTab('email-hub','webhook',this);_carregarWebhook()">📲 WhatsApp/Telegram</button>
   </div>
 
   <!-- Aba: Destinatários -->
@@ -504,6 +526,75 @@
     </div>
     <div id="tpl-lista"></div>
     <div class="msg" id="tpl-msg"></div>
+  </div>
+
+  <!-- Aba: WhatsApp / Telegram -->
+  <div id="email-hub-tab-webhook" class="tab-pane">
+    <div class="info" style="margin-bottom:12px">
+      Envie alertas de atraso também via <strong>WhatsApp</strong> (Z-API) ou <strong>Telegram</strong>.<br>
+      A mensagem é disparada junto com o alerta de e-mail quando há devoluções com mais de 30 dias.
+    </div>
+
+    <!-- toggle ativo -->
+    <div class="sec-linha" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <label class="toggle-lbl" for="wh-ativo" style="font-weight:600;font-size:13px">Alertas ativos</label>
+      <input type="checkbox" id="wh-ativo"
+             style="width:18px;height:18px;accent-color:var(--navy);cursor:pointer">
+    </div>
+
+    <!-- seletor de canal -->
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="campo-label">Canal de envio</label>
+      <select id="wh-tipo" class="campo-inp" onchange="_whToggleUI()"
+              style="max-width:260px">
+        <option value="telegram">Telegram (Bot)</option>
+        <option value="whatsapp">WhatsApp (Z-API)</option>
+      </select>
+    </div>
+
+    <!-- Telegram -->
+    <div id="wh-bloco-telegram">
+      <div class="secao-email" style="margin-bottom:10px">
+        <div class="sec-titulo">🤖 Telegram — Bot</div>
+        <div class="form-group">
+          <label class="campo-label">Bot Token</label>
+          <input type="password" id="wh-tg-token" class="campo-inp" placeholder="1234567890:ABC...">
+          <div class="info" style="margin-top:4px">Obtenha em @BotFather no Telegram.</div>
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label class="campo-label">Chat IDs dos destinatários (um por linha)</label>
+          <textarea id="wh-tg-chats" class="campo-inp" rows="3"
+            placeholder="123456789&#10;-100987654321"></textarea>
+          <div class="info" style="margin-top:4px">IDs de usuários ou grupos. Use @userinfobot para descobrir o ID.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WhatsApp Z-API -->
+    <div id="wh-bloco-whatsapp" style="display:none">
+      <div class="secao-email" style="margin-bottom:10px">
+        <div class="sec-titulo">💬 WhatsApp — Z-API</div>
+        <div class="form-group">
+          <label class="campo-label">URL da instância</label>
+          <input type="text" id="wh-wa-url" class="campo-inp" placeholder="https://api.z-api.io/instances/XXX/token/YYY">
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label class="campo-label">Client-Token (header)</label>
+          <input type="password" id="wh-wa-ctoken" class="campo-inp" placeholder="Client-Token do painel Z-API">
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label class="campo-label">Números dos destinatários (um por linha, com DDI)</label>
+          <textarea id="wh-wa-phones" class="campo-inp" rows="3"
+            placeholder="5511999999999&#10;5521988887777"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn-salvar" onclick="_salvarWebhook()">💾 Salvar</button>
+      <button class="btn-sec" onclick="_testarWebhook()">📤 Testar agora</button>
+    </div>
+    <div class="msg" id="wh-msg" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -1942,6 +2033,84 @@ function mostrarMsg(id, txt, tipo) {
   el.textContent = txt;
   el.style.display = 'block';
 }
+
+// ── WhatsApp / Telegram webhook ───────────────────────────
+function _whToggleUI() {
+  var tipo = document.getElementById('wh-tipo').value;
+  document.getElementById('wh-bloco-telegram').style.display  = tipo === 'telegram'  ? '' : 'none';
+  document.getElementById('wh-bloco-whatsapp').style.display  = tipo === 'whatsapp' ? '' : 'none';
+}
+
+function _carregarWebhook() {
+  var msg = document.getElementById('wh-msg');
+  msg.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) return;
+        var c = r.conf || {};
+        document.getElementById('wh-ativo').checked  = !!c.ativo;
+        document.getElementById('wh-tipo').value     = c.tipo || 'telegram';
+        document.getElementById('wh-tg-token').value = (c.telegram && c.telegram.token)  || '';
+        document.getElementById('wh-tg-chats').value = (c.telegram && c.telegram.chatIds && c.telegram.chatIds.join('\n')) || '';
+        document.getElementById('wh-wa-url').value   = (c.whatsapp && c.whatsapp.url)    || '';
+        document.getElementById('wh-wa-ctoken').value= (c.whatsapp && c.whatsapp.ctoken) || '';
+        document.getElementById('wh-wa-phones').value= (c.whatsapp && c.whatsapp.phones && c.whatsapp.phones.join('\n')) || '';
+        _whToggleUI();
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterConfWebhook();
+}
+
+function _whConf() {
+  var tipo = document.getElementById('wh-tipo').value;
+  return {
+    ativo: document.getElementById('wh-ativo').checked,
+    tipo:  tipo,
+    telegram: {
+      token:   (document.getElementById('wh-tg-token').value || '').trim(),
+      chatIds: (document.getElementById('wh-tg-chats').value || '')
+                 .split('\n').map(function(s){ return s.trim(); }).filter(Boolean)
+    },
+    whatsapp: {
+      url:     (document.getElementById('wh-wa-url').value    || '').trim(),
+      ctoken:  (document.getElementById('wh-wa-ctoken').value || '').trim(),
+      phones:  (document.getElementById('wh-wa-phones').value || '')
+                 .split('\n').map(function(s){ return s.trim(); }).filter(Boolean)
+    }
+  };
+}
+
+function _salvarWebhook() {
+  var msg = document.getElementById('wh-msg');
+  msg.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      mostrarMsg('wh-msg', r.ok || ('❌ ' + (r.erro || 'Erro')), r.ok ? 'ok' : 'erro');
+    })
+    .withFailureHandler(function(e) {
+      mostrarMsg('wh-msg', '❌ Falha: ' + (e.message || e), 'erro');
+    })
+    .salvarConfWebhook(_whConf());
+}
+
+function _testarWebhook() {
+  var msg = document.getElementById('wh-msg');
+  mostrarMsg('wh-msg', '⏳ Enviando mensagem de teste...', 'ok');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      mostrarMsg('wh-msg', r.ok || ('❌ ' + (r.erro || 'Erro')), r.ok ? 'ok' : 'erro');
+    })
+    .withFailureHandler(function(e) {
+      mostrarMsg('wh-msg', '❌ Falha: ' + (e.message || e), 'erro');
+    })
+    .testarWebhookAlerta(_whConf());
+}
+
 (function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
 </script>
 </body>
