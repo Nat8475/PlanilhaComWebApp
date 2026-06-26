@@ -6735,6 +6735,52 @@ function removerUsuarioCargo(email) {
   } catch(e) { return JSON.stringify({ erro: e.toString() }); }
 }
 
+// ─── RESOLUÇÃO DE PERMISSÕES ──────────────────────────────────
+
+var _TODOS_MODULOS = ['notas','lancamento','email','frete','configuracoes','auditoria'];
+
+function obterPermissoesUsuario(email) {
+  try {
+    var emailNorm = String(email || Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+
+    // 1. Admin tem acesso total
+    if (_usuarioEhAdmin()) {
+      return JSON.stringify({ admin: true, modulos: _TODOS_MODULOS, somenteLeitura: false });
+    }
+
+    var props = PropertiesService.getScriptProperties();
+
+    // 2. RO global ativado — todos ficam em leitura, exceto admins (já tratado acima)
+    if (props.getProperty(_KEY_READONLY) === 'true') {
+      return JSON.stringify({ admin: false, modulos: _TODOS_MODULOS, somenteLeitura: true });
+    }
+
+    // 3. Usuário tem cargo vinculado?
+    var usuarios = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    var vinculo  = null;
+    for (var i = 0; i < usuarios.length; i++) {
+      if (usuarios[i].email === emailNorm) { vinculo = usuarios[i]; break; }
+    }
+    if (vinculo) {
+      var cargos = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+      for (var j = 0; j < cargos.length; j++) {
+        if (cargos[j].id === vinculo.cargoId) {
+          return JSON.stringify({
+            admin: false,
+            modulos: cargos[j].modulos || [],
+            somenteLeitura: !!cargos[j].somenteLeitura
+          });
+        }
+      }
+    }
+
+    // 4. Sem cargo — visualizador padrão (todos os módulos, somente leitura)
+    return JSON.stringify({ admin: false, modulos: _TODOS_MODULOS, somenteLeitura: true });
+  } catch(e) {
+    return JSON.stringify({ admin: false, modulos: [], somenteLeitura: true });
+  }
+}
+
 // ─── E-MAILS ─────────────────────────────────────────────────
 
 function obterEmailConfig() {
