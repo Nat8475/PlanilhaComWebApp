@@ -77,6 +77,10 @@
                font-family:var(--font);cursor:pointer;transition:border-color .15s,color .15s,background .15s}
     .btn-ghost:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-50)}
 
+    /* PREVIEW WARN (step 2) */
+    .prev-warn{background:var(--navy-50);border:1px solid var(--navy);border-radius:var(--r-sm);
+               padding:8px 12px;font-size:12px;color:var(--navy);margin-bottom:8px}
+
     /* PREVIEW TABLE (step 2) */
     .preview-hdr{font-size:12px;color:var(--text-muted);margin-bottom:10px}
     .preview-hdr strong{color:var(--text)}
@@ -186,6 +190,7 @@ body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--b
 
   <!-- STEP 2 -->
   <div class="wz-pane" id="pane2">
+    <div class="prev-warn" id="prevWarn" style="display:none"></div>
     <p class="preview-hdr" id="prevHdr"></p>
     <div class="tbl-wrap">
       <table class="preview">
@@ -334,6 +339,13 @@ body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--b
         if (r.erro) { alert(r.erro); return; }
         _preview = r.itens;
         renderPreview(r.itens);
+        var w = document.getElementById('prevWarn');
+        if (r.naoLocalizadas && r.naoLocalizadas.length > 0) {
+          w.textContent = '⚠ Não localizadas (status diferente de Pendente ou não encontradas): ' + r.naoLocalizadas.join(', ');
+          w.style.display = 'block';
+        } else {
+          w.style.display = 'none';
+        }
         goTo(2, true);
       })
       .withFailureHandler(function(e) { setBusyBuscar(false); alert('Erro: ' + e.message); })

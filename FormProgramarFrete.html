@@ -333,6 +333,9 @@ body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--b
         setBusyBuscar(false);
         var r = JSON.parse(resp);
         if (r.erro) { alert(r.erro); return; }
+        if (r.itens.length > 1) {
+          alert('Múltiplos registros encontrados (' + r.itens.length + '). Usando o primeiro: NFD ' + r.itens[0].nfd + '.');
+        }
         preencherStep2(r.itens[0]);
         goTo(2, true);
       })
