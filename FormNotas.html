@@ -290,8 +290,8 @@
     .msg-warn{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
     /* column picker */
     .col-pick-wrap{position:relative;display:inline-block}
-    .col-dropdown{position:absolute;right:0;top:calc(100% + 4px);background:#fff;
-                  border:1px solid #E5E7EB;border-radius:6px;
+    .col-dropdown{position:absolute;right:0;top:calc(100% + 4px);background:var(--surface);
+                  border:1px solid var(--border-def);border-radius:6px;color:var(--text);
                   box-shadow:0 4px 12px rgba(0,0,0,.12);padding:8px 6px;
                   min-width:170px;z-index:200;display:none}
     .col-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;
@@ -437,9 +437,9 @@ try {
     <div class="kpi-val" id="kv-cxs" style="color:var(--cyan)">—</div>
     <div class="kpi-sub" id="ks-cxs">unidades filtradas</div>
   </div>
-  <div style="padding:6px 8px;display:flex;align-items:center">
+  <div style="padding:6px 8px;display:flex;align-items:center;position:relative">
     <button class="btn-sm btn-gray" onclick="toggleKpiConfig()" title="Configurar KPIs" style="font-size:10px;padding:2px 6px">⚙️</button>
-    <div id="kpi-config-menu" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;z-index:10;white-space:nowrap;font-size:11px;box-shadow:var(--sh)">
+    <div id="kpi-config-menu" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;z-index:200;white-space:nowrap;font-size:11px;box-shadow:var(--sh)">
       <div style="font-weight:700;margin-bottom:4px">KPIs visíveis</div>
       <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-pend" checked onchange="toggleKpiVis('kpi-pend',this.checked)"> Pendente</label>
       <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-tr" checked onchange="toggleKpiVis('kpi-tr',this.checked)"> Em Transferência</label>
@@ -2946,11 +2946,21 @@ function executarExclusao() {
 }
 try {
   google.script.run
-    .withSuccessHandler(function(r){ try { aplicarModoRO(JSON.parse(r).ativo); } catch(_){} })
-    .obterModoSomenteLeitura();
-  google.script.run
-    .withSuccessHandler(function(r){ try { var p=JSON.parse(r); if(p.somenteLeitura) aplicarModoRO(true); } catch(_){} })
-    .verificarAcessoModulo('notas');
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('notas') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:#07162A">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:#53708C;text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+          return;
+        }
+        if (p.somenteLeitura) aplicarModoRO(true);
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
 } catch(_){}
 </script>
 
