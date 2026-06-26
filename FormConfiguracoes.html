@@ -6,48 +6,53 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px;overflow-x:hidden}
     ::-webkit-scrollbar{width:7px;height:7px}
     ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:8px}
 
-    /* ── Header ── */
-    .titulo{
-      background:linear-gradient(135deg,var(--ink) 0%,var(--navy) 100%);
+    .titulo{background:linear-gradient(135deg,var(--ink) 0%,var(--navy) 100%);
       color:#fff;padding:13px 16px;border-radius:var(--r);
       font-size:14px;font-weight:800;margin-bottom:16px;
       display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-      box-shadow:0 3px 12px rgba(14,21,33,.25)
-    }
-    .titulo .back{
-      cursor:pointer;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);
+      box-shadow:0 4px 16px rgba(14,21,33,.28);position:relative;overflow:hidden}
+    .titulo::after{content:'';position:absolute;top:-20%;left:-40px;width:55px;height:140%;
+      background:rgba(255,255,255,.16);transform:skewX(-20deg) translateX(-100%);
+      animation:shineBeam .9s ease .05s both;pointer-events:none}
+    @keyframes shineBeam{from{transform:skewX(-20deg) translateX(-100%)}to{transform:skewX(-20deg) translateX(900%)}}
+    .titulo .back{cursor:pointer;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);
       color:rgba(255,255,255,.9);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;
-      transition:background .15s;flex-shrink:0
-    }
-    .titulo .back:hover{background:rgba(255,255,255,.24)}
+      transition:background .15s,transform .15s;flex-shrink:0}
+    .titulo .back:hover{background:rgba(255,255,255,.24);transform:translateX(-2px)}
     .badge{font-size:10px;background:rgba(255,255,255,.2);border-radius:5px;
-           padding:2px 9px;font-weight:500;letter-spacing:.3px}
-
-    .sel-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
-    .sel-card{
-      display:flex;align-items:center;gap:14px;background:var(--surface);
-      border:1.5px solid var(--border-def);border-radius:var(--r);padding:13px 16px;
-      cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease),transform .15s
-    }
-    .sel-card:hover{border-color:var(--navy);background:var(--navy-50);box-shadow:var(--sh-md);transform:translateX(2px)}
-    .sel-card .icone{
-      font-size:22px;line-height:1;
-      width:42px;height:42px;border-radius:9px;
-      background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0
-    }
-    .sel-card .txt strong{display:block;font-size:13px;color:var(--navy);margin-bottom:3px}
-    .sel-card .txt span{font-size:11px;color:var(--text-muted);line-height:1.4}
+           padding:2px 9px;font-weight:500;letter-spacing:.3px;margin-left:auto}
 
     .screen{display:none}
-    .screen.ativo{display:block}
+    .screen.ativo{display:block;animation:enterScreen .22s cubic-bezier(.4,0,.2,1) both}
+    .screen.saindo{display:block;animation:exitScreen .15s cubic-bezier(.4,0,.2,1) both}
+    @keyframes enterScreen{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes exitScreen{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-6px)}}
 
-    /* ── Form fields ── */
+    .sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .sel-card{display:flex;flex-direction:column;gap:8px;background:var(--surface);
+      border:1.5px solid var(--border-def);border-radius:var(--r);padding:12px 11px;
+      cursor:pointer;position:relative;overflow:hidden;
+      transition:border-color .18s var(--ease),box-shadow .18s var(--ease),transform .18s var(--ease)}
+    .sel-card::before{content:'';position:absolute;inset:0;border-radius:inherit;
+      background:radial-gradient(circle at 75% 25%,rgba(28,69,208,.07) 0%,transparent 65%);
+      opacity:0;transition:opacity .2s;pointer-events:none}
+    .sel-card:hover::before{opacity:1}
+    .sel-card:hover{border-color:var(--navy);background:var(--navy-50);
+      box-shadow:0 6px 22px rgba(28,69,208,.13),0 2px 6px rgba(28,69,208,.07);transform:translateY(-2px)}
+    .sel-card:active{transform:translateY(0);box-shadow:none}
+    .icone-box{width:38px;height:38px;border-radius:10px;background:var(--navy-50);
+      display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;
+      transition:background .2s,transform .2s,box-shadow .2s}
+    .sel-card:hover .icone-box{background:var(--navy);transform:scale(1.1) rotate(-5deg);
+      box-shadow:0 4px 14px rgba(28,69,208,.32)}
+    .sel-card .txt strong{display:block;font-size:12px;color:var(--text);font-weight:700;margin-bottom:3px;line-height:1.3}
+    .sel-card .txt span{font-size:11px;color:var(--text-muted);line-height:1.4}
+
     .campo{margin-bottom:10px}
     label{display:block;font-weight:700;color:var(--text-body);margin-bottom:4px;font-size:12px}
     input[type=text],input[type=email],input[type=number],select,textarea{
@@ -59,11 +64,9 @@
       outline:none;border-color:var(--navy);background:var(--surface);
       box-shadow:0 0 0 3px rgba(31,64,128,.12)}
 
-    .info{
-      background:var(--navy-50);border-left:4px solid var(--navy);padding:10px 13px;
+    .info{background:var(--navy-50);border-left:3px solid var(--navy);padding:10px 13px;
       border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:12px;color:var(--text-body);
-      margin-bottom:12px;line-height:1.6
-    }
+      margin-bottom:12px;line-height:1.6}
 
     .tags-box{min-height:40px;background:var(--surface);border:1px solid var(--border-def);
               border-radius:var(--r-sm);padding:5px 8px;margin-bottom:8px;
@@ -121,7 +124,6 @@
     .diag-warn{color:var(--amber)}
     .diag-erro{color:var(--red)}
 
-    /* toggle switch */
     .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
     .toggle-switch input{opacity:0;width:0;height:0}
     .toggle-slider{position:absolute;cursor:pointer;inset:0;background:#D1D5DB;border-radius:12px;
@@ -137,32 +139,42 @@
       flex:1;padding:10px;border:none;border-radius:var(--r-sm);font-size:13px;
       font-weight:700;cursor:pointer;font-family:var(--font);
       background:linear-gradient(135deg,#2D4FBD,var(--navy));color:#fff;
-      transition:opacity .15s,box-shadow .15s;
+      transition:opacity .15s,box-shadow .15s,transform .12s;
       box-shadow:0 2px 6px rgba(37,65,154,.28)
     }
-    button.btn-principal:hover{opacity:.9;box-shadow:0 4px 10px rgba(37,65,154,.38)}
-    button.btn-principal:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
-    button.btn-cancel{
-      padding:10px 14px;border:1px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;
-      font-weight:600;cursor:pointer;font-family:var(--font);
-      background:var(--surface);color:var(--text-body);transition:background .15s
+    button.btn-principal:hover:not(:disabled):not(.loading){opacity:.9;box-shadow:0 4px 14px rgba(37,65,154,.38);transform:translateY(-1px)}
+    button.btn-principal:disabled:not(.loading){opacity:.45;cursor:not-allowed;transform:none}
+    button.btn-principal.loading{
+      opacity:1!important;cursor:not-allowed;transform:none!important;
+      background:linear-gradient(90deg,#142DB8 0%,#1C45D0 35%,#4B72F0 50%,#1C45D0 65%,#142DB8 100%);
+      background-size:250% 100%;animation:shimmerBtn 1.4s ease infinite
     }
-    button.btn-cancel:hover{background:var(--slate-100)}
+    @keyframes shimmerBtn{0%{background-position:110% 0}100%{background-position:-110% 0}}
+    button.btn-cancel{
+      padding:10px 14px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;
+      font-weight:600;cursor:pointer;font-family:var(--font);
+      background:transparent;color:var(--text-muted);transition:background .15s,color .15s
+    }
+    button.btn-cancel:hover{background:var(--border);color:var(--text-body)}
     button.btn-sec{
       padding:8px 12px;border:1px solid var(--border-def);border-radius:var(--r-sm);
       font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
       background:var(--surface);color:var(--text-body);transition:background .15s
     }
-    button.btn-sec:hover{background:var(--slate-100)}
+    button.btn-sec:hover{background:var(--navy-50);border-color:var(--navy);color:var(--navy)}
 
     .msg{margin-top:10px;padding:9px 12px;border-radius:var(--r-sm);font-size:12.5px;
          display:none;white-space:pre-wrap;line-height:1.55}
     .msg-ok   {background:var(--green-bg);color:#166534;border:1px solid #BBF7D0}
     .msg-erro {background:var(--red-bg);color:#991B1B;border:1px solid #FECACA}
     .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
-    .spinner{display:none;text-align:center;color:var(--text-muted);margin-top:8px;font-size:12px;padding:6px}
 
-    /* === Navegação por abas === */
+    .spinner{display:none;color:var(--text-muted);font-size:12px;margin-top:8px;padding:6px 0}
+    .spin-ring{display:inline-block;width:14px;height:14px;border-radius:50%;
+      border:2px solid var(--border-def);border-top-color:var(--navy);
+      animation:spinRing .7s linear infinite;vertical-align:middle;margin-right:7px}
+    @keyframes spinRing{to{transform:rotate(360deg)}}
+
     .tab-bar{display:flex;gap:3px;margin-bottom:12px;border-bottom:2px solid var(--border);padding-bottom:0;flex-wrap:wrap}
     .tab-btn{padding:6px 12px;border:1px solid var(--border);border-bottom:none;
              border-radius:var(--r-sm) var(--r-sm) 0 0;font-size:11px;font-weight:700;
@@ -174,12 +186,16 @@
     .tab-pane.ativo{display:block}
     button.btn-save{padding:7px 14px;border:none;border-radius:var(--r-sm);font-size:12px;
                    font-weight:700;cursor:pointer;font-family:var(--font);
-                   background:var(--navy);color:#fff;transition:opacity .15s var(--ease)}
-    button.btn-save:hover{opacity:.88}
+                   background:var(--navy);color:#fff;transition:opacity .15s,transform .12s}
+    button.btn-save:hover{opacity:.88;transform:translateY(-1px)}
     button.btn-acao{padding:6px 12px;border:1px solid var(--border-def);border-radius:var(--r-sm);
                    font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
                    background:var(--surface);color:var(--text-body);transition:background .15s}
     button.btn-acao:hover{background:var(--navy-50);border-color:var(--navy);color:var(--navy)}
+    .btn-salvar{padding:8px 14px;border:none;border-radius:var(--r-sm);font-size:12px;
+      font-weight:700;cursor:pointer;font-family:var(--font);
+      background:var(--navy);color:#fff;transition:opacity .15s}
+    .btn-salvar:hover{opacity:.88}
   </style>
   <style id="cdv-v10">
 :root{--font:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--ink:#06101E;--brand-amber:#E8A020;--slate-100:#ECF1FA;--sh:0 2px 8px rgba(6,14,30,.08),0 1px 3px rgba(6,14,30,.05);--sh-md:0 6px 22px rgba(6,14,30,.10),0 2px 6px rgba(6,14,30,.06);--ease:cubic-bezier(.4,0,.2,1);--navy:#1C45D0;--navy-800:#1535A5;--navy-d:#142DB8;--teal:#0891B2;--red:#DC2626;--green:#16A34A;--amber:#D97706;--bg:#ECF1FA;--surface:#FFFFFF;--input-bg:#F4F7FE;--border:#DDE6F4;--border-def:#BACADE;--text:#07162A;--text-body:#29394F;--text-muted:#53708C;--text-faint:#8AA3BF;--text-sm:var(--text-muted);--navy-50:#EDF3FF;--r:12px;--r-sm:9px;--green-bg:#EDFCF2;--red-bg:#FFF1F1;--amber-bg:#FFF7E0;--brand-red:#DC2626}
@@ -198,7 +214,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
 .msg-ok,.msg-erro,.msg-aviso,#msg{animation:fadeIn .2s both;border-radius:var(--r-sm)}
 .spinner{color:var(--navy)}
 .tab-btn{transition:color .15s,background .15s,border-color .15s}
-.tab-btn.ativa{color:var(--navy);border-bottom-color:var(--navy)}
+.tab-btn.ativa{border-bottom-color:var(--navy)}
 .tab-pane{animation:fadeUp .2s both}
 .sec,.card-sec,.config-bloco{animation:fadeUp .25s both}
 ::-webkit-scrollbar{width:6px;height:6px}
@@ -253,98 +269,84 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
   <div class="titulo">⚙️ Configurações do Sistema</div>
   <div class="sel-grid">
     <div class="sel-card" onclick="irPara('email-hub')">
-      <span class="icone">📧</span>
+      <div class="icone-box">📧</div>
       <div class="txt">
         <strong>E-mails e Comunicação</strong>
         <span>Destinatários, CC/BCC por fornecedor, assinaturas e templates</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('visual')">
-      <span class="icone">🎨</span>
+      <div class="icone-box">🎨</div>
       <div class="txt">
         <strong>Cores e Personalização Visual</strong>
         <span>Cores de status, nome do sistema e logo customizáveis</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('sistema')">
-      <span class="icone">🔧</span>
+      <div class="icone-box">🔧</div>
       <div class="txt">
         <strong>Diagnóstico e Manutenção</strong>
         <span>Status do sistema, manutenção rápida e configurar/reinstalar</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('fornecedor')">
-      <span class="icone">🏭</span>
+      <div class="icone-box">🏭</div>
       <div class="txt">
         <strong>Adicionar Novo Fornecedor</strong>
         <span>Criar nova aba de fornecedor sem editar o código</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('limpeza')">
-      <span class="icone">🗂️</span>
+      <div class="icone-box">🗂️</div>
       <div class="txt">
         <strong>Limpeza do Log Antigo</strong>
         <span>Arquivar ou apagar registros do _Log com mais de N meses</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('drive')">
-      <span class="icone">🗑️</span>
+      <div class="icone-box">🗑️</div>
       <div class="txt">
         <strong>Limpeza de Arquivos no Drive</strong>
         <span>Apagar PDFs gerados salvos nas pastas do Drive</span>
       </div>
     </div>
-    <div class="sel-card" onclick="irPara('acesso')">
-      <span class="icone">🔐</span>
+    <div class="sel-card" onclick="irPara('acesso-hub')">
+      <div class="icone-box">🔐</div>
       <div class="txt">
-        <strong>Controle de Acesso</strong>
-        <span>Definir quem pode entrar nesta tela de Configurações</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('readonly')">
-      <span class="icone">🔒</span>
-      <div class="txt">
-        <strong>Modo Somente-Leitura</strong>
-        <span>Bloquear todas as ações de escrita do sistema (lançar, baixar, editar)</span>
-      </div>
-    </div>
-    <div class="sel-card" onclick="irPara('permissoes')">
-      <span class="icone">🛡️</span>
-      <div class="txt">
-        <strong>Permissões por Módulo</strong>
-        <span>Restringir quem pode acessar lançamento, e-mail, configurações etc.</span>
+        <strong>Controle de Acesso e Permissões</strong>
+        <span>Administradores, cargos, usuários e modo leitura</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('retencao')">
-      <span class="icone">⏳</span>
+      <div class="icone-box">⏳</div>
       <div class="txt">
         <strong>Retenção de Dados</strong>
         <span>Definir por quantos dias manter registros históricos</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('versioning')">
-      <span class="icone">🕒</span>
+      <div class="icone-box">🕒</div>
       <div class="txt">
         <strong>Versionamento de Configurações</strong>
         <span>Salvar snapshots e restaurar configurações anteriores</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('backup')">
-      <span class="icone">🔍</span>
+      <div class="icone-box">🔍</div>
       <div class="txt">
         <strong>Integridade do Backup</strong>
         <span>Verificar saúde e integridade dos dados da planilha</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('aprovacao')">
-      <span class="icone">✅</span>
+      <div class="icone-box">✅</div>
       <div class="txt">
         <strong>Aprovação de Lançamentos</strong>
         <span>Habilitar fluxo de aprovação para novos lançamentos</span>
       </div>
     </div>
     <div class="sel-card" onclick="irPara('changelog')">
-      <span class="icone">📋</span>
+      <div class="icone-box">📋</div>
       <div class="txt">
         <strong>Changelog</strong>
         <span>Histórico de atualizações e versões do sistema</span>
@@ -434,7 +436,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
       <button class="btn-principal" id="em-btn" onclick="salvarEmailConfig()">💾 Salvar Configurações</button>
       <button class="btn-cancel" onclick="google.script.host.close()">✖ Fechar</button>
     </div>
-    <div class="spinner" id="em-spin">⏳ Salvando...</div>
+    <div class="spinner" id="em-spin"><div class="spin-ring"></div>Salvando...</div>
     <div class="msg" id="em-msg"></div>
   </div>
 
@@ -661,7 +663,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
       <button class="btn-sec" onclick="restaurarCoresPadrao()">↺ Padrão</button>
       <button class="btn-cancel" onclick="google.script.host.close()">✖</button>
     </div>
-    <div class="spinner" id="c-spin">⏳ Reaplicando cores em todas as abas...</div>
+    <div class="spinner" id="c-spin"><div class="spin-ring"></div>Reaplicando cores em todas as abas...</div>
     <div class="msg" id="c-msg"></div>
   </div>
 
@@ -710,7 +712,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
   <div id="sistema-tab-diag" class="tab-pane ativo">
     <div style="display:grid;gap:8px;margin-bottom:10px">
       <button class="btn-save" onclick="executarDiagnostico()" style="width:100%">▶ Verificar sistema</button>
-      <div class="spinner" id="diag-spin" style="display:none">⏳ Verificando...</div>
+      <div class="spinner" id="diag-spin" style="display:none"><div class="spin-ring"></div>Verificando...</div>
       <div id="diag-resultado"></div>
       <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px">
         <div style="font-size:11px;font-weight:700;margin-bottom:6px">Teste de envio de e-mail</div>
@@ -739,7 +741,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
       contadores desatualizados ou triggers parados — sem risco de perder lançamentos.
     </div>
     <button class="btn-principal" id="mn-btn" onclick="executarManutencao()" style="width:100%">🔨 Executar Manutenção Rápida</button>
-    <div class="spinner" id="mn-spin">⏳ Executando manutenção (pode levar alguns segundos)...</div>
+    <div class="spinner" id="mn-spin"><div class="spin-ring"></div>Executando manutenção...</div>
     <div class="msg" id="mn-msg"></div>
   </div>
 
@@ -753,7 +755,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
       <strong>💾 Backup</strong> antes e <strong>Restaurar</strong> depois.
     </p>
     <button class="btn-principal" id="re-btn" onclick="executarReinstalar()" style="width:100%">🔧 Configurar / Reinstalar Agora</button>
-    <div class="spinner" id="re-spin">⏳ Configurando o sistema (pode levar alguns segundos)...</div>
+    <div class="spinner" id="re-spin"><div class="spin-ring"></div>Configurando o sistema...</div>
     <div class="msg" id="re-msg"></div>
   </div>
 </div>
@@ -782,7 +784,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
     <button class="btn-principal" id="f-btn" onclick="criarFornecedor()">🏭 Criar Aba de Fornecedor</button>
     <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
   </div>
-  <div class="spinner" id="f-spin">⏳ Criando aba...</div>
+  <div class="spinner" id="f-spin"><div class="spin-ring"></div>Criando aba...</div>
   <div class="msg" id="f-msg"></div>
 </div>
 
@@ -817,7 +819,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
     </button>
     <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
   </div>
-  <div class="spinner" id="lg-spin">⏳ Processando log...</div>
+  <div class="spinner" id="lg-spin"><div class="spin-ring"></div>Processando log...</div>
   <div class="msg" id="lg-msg"></div>
 </div>
 
@@ -871,89 +873,80 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
                  background:#DC2626;color:#fff">
     🗑️ Confirmar e Mover para Lixeira
   </button>
-  <div class="spinner" id="dr-spin">⏳ Processando...</div>
+  <div class="spinner" id="dr-spin"><div class="spin-ring"></div>Processando...</div>
   <div class="msg" id="dr-msg"></div>
 </div>
 
-<!-- ════════ TELA 7 — CONTROLE DE ACESSO ════════ -->
-<div id="screen-acesso" class="screen">
+<!-- ════ TELA — CONTROLE DE ACESSO E PERMISSÕES (hub) ════ -->
+<div id="screen-acesso-hub" class="screen">
   <div class="titulo">
     <button class="back" onclick="voltar()">← Voltar</button>
-    🔐 Controle de Acesso <span class="badge">SEGURANÇA</span>
+    🔐 Controle de Acesso e Permissões <span class="badge">SEGURANÇA</span>
   </div>
-  <div class="info">
-    Apenas os e-mails listados aqui — e o <strong>dono da planilha</strong> (acesso fixo, não pode ser removido) —
-    conseguem abrir esta tela de Configurações e o menu <strong>🔧 Configurar/Reinstalar Sistema</strong>.
-    Para os demais usuários, esses itens nem aparecem no menu.
-  </div>
-
-  <div class="secao-email">
-    <div class="sec-titulo">👑 Dono da planilha (acesso permanente)</div>
-    <div id="acesso-dono" class="tags-box">⏳ Carregando...</div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="acesso" onclick="mudarTab('acesso-hub','acesso',this)">🔐 Acesso</button>
+    <button class="tab-btn" data-tab="cargos" onclick="mudarTab('acesso-hub','cargos',this);_carregarCargos()">🏷️ Cargos</button>
+    <button class="tab-btn" data-tab="usuarios" onclick="mudarTab('acesso-hub','usuarios',this);_carregarUsuarios()">👤 Usuários</button>
   </div>
 
-  <div class="secao-email">
-    <div class="sec-titulo">🔐 Administradores adicionais</div>
-    <div class="tags-box" id="tags-admin"></div>
-    <div class="linha2">
-      <div class="campo" style="margin-bottom:0">
-        <input type="email" id="inp-admin" placeholder="responsavel@empresa.com.br"
-               onkeydown="if(event.key==='Enter') addAdmin()">
+  <!-- Aba: Acesso -->
+  <div id="acesso-hub-tab-acesso" class="tab-pane ativo">
+    <!-- Seção: Administradores -->
+    <div class="secao-email">
+      <div class="sec-titulo">👑 Dono da planilha (acesso permanente)</div>
+      <div id="acesso-dono" class="tags-box">⏳ Carregando...</div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔐 Administradores adicionais</div>
+      <div class="tags-box" id="tags-admin"></div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0">
+          <input type="email" id="inp-admin" placeholder="responsavel@empresa.com.br"
+                 onkeydown="if(event.key==='Enter') addAdmin()">
+        </div>
+        <div><button class="btn-sec" onclick="addAdmin()">+ Adicionar</button></div>
       </div>
-      <div><button class="btn-sec" onclick="addAdmin()">+ Adicionar</button></div>
+    </div>
+    <div class="botoes">
+      <button class="btn-principal" id="ac-btn" onclick="salvarAdmins()">💾 Salvar Administradores</button>
+    </div>
+    <div class="spinner" id="ac-spin"><div class="spin-ring"></div>Salvando...</div>
+    <div class="msg" id="ac-msg"></div>
+
+    <!-- Seção: Modo Somente-Leitura Global -->
+    <div style="margin-top:18px">
+      <div class="secao-email">
+        <div class="sec-titulo">🔒 Modo Somente-Leitura Global</div>
+        <div class="info" style="margin-bottom:10px">
+          Quando ativado, todos os cargos ficam em modo leitura.
+          <strong>Admins mantêm acesso pleno.</strong>
+        </div>
+        <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+                    padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">
+              🔒 Modo somente-leitura
+            </div>
+            <div style="font-size:11px;color:var(--text-muted)" id="ro-status-txt">Verificando...</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ro-toggle" onchange="alterarModoRO(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="msg" id="ro-msg"></div>
+      </div>
     </div>
   </div>
 
-  <div class="botoes">
-    <button class="btn-principal" id="ac-btn" onclick="salvarAdmins()">💾 Salvar Administradores</button>
-    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  <!-- Aba: Cargos (HTML preenchido em Task 4) -->
+  <div id="acesso-hub-tab-cargos" class="tab-pane">
+    <div id="cargos-content">⏳ Carregando...</div>
   </div>
-  <div class="spinner" id="ac-spin">⏳ Salvando...</div>
-  <div class="msg" id="ac-msg"></div>
-</div>
 
-<!-- ════════ TELA — MODO SOMENTE-LEITURA ════════ -->
-<div id="screen-readonly" class="screen">
-  <div class="titulo">
-    <button class="back" onclick="voltar()">← Voltar</button>
-    🔒 Modo Somente-Leitura
-  </div>
-  <div class="info" style="margin-bottom:14px">
-    Quando ativado, todos os botões de escrita (lançar, baixar, editar, frete) ficam
-    desabilitados em toda a interface. Útil para manutenção ou auditorias.
-  </div>
-  <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
-              padding:16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
-    <div>
-      <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">
-        🔒 Modo somente-leitura
-      </div>
-      <div style="font-size:11px;color:var(--text-muted)" id="ro-status-txt">Verificando...</div>
-    </div>
-    <label class="toggle-switch">
-      <input type="checkbox" id="ro-toggle" onchange="alterarModoRO(this.checked)">
-      <span class="toggle-slider"></span>
-    </label>
-  </div>
-  <div class="msg" id="ro-msg"></div>
-  <div class="botoes">
-    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
-  </div>
-</div>
-
-<!-- ════ TELA — PERMISSÕES POR MÓDULO ════ -->
-<div id="screen-permissoes" class="screen">
-  <div class="titulo">
-    <button class="back" onclick="voltar()">← Voltar</button>
-    🛡️ Permissões por Módulo
-  </div>
-  <div class="info" style="margin-bottom:10px">
-    Deixe a lista vazia para acesso liberado a todos. Adicione e-mails para restringir o módulo.
-  </div>
-  <div id="perm-lista"></div>
-  <div class="msg" id="perm-msg"></div>
-  <div class="botoes">
-    <button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button>
+  <!-- Aba: Usuários (HTML preenchido em Task 5) -->
+  <div id="acesso-hub-tab-usuarios" class="tab-pane">
+    <div id="usuarios-content">⏳ Carregando...</div>
   </div>
 </div>
 
@@ -1033,7 +1026,7 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
 <div id="screen-backup" class="screen">
   <div class="titulo"><button class="back" onclick="voltar()">← Voltar</button>🔍 Integridade do Backup</div>
   <button class="btn-save" onclick="verificarBackup()" style="width:100%;margin-bottom:10px">▶ Verificar agora</button>
-  <div class="spinner" id="bk-spin" style="display:none">⏳ Verificando...</div>
+  <div class="spinner" id="bk-spin" style="display:none"><div class="spin-ring"></div>Verificando...</div>
   <div id="bk-resultado"></div>
   <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
 </div>
@@ -1055,20 +1048,24 @@ var _coresPadrao  = {
 
 // ── Navegação ─────────────────────────────────────────────────
 function irPara(tela) {
-  document.getElementById('screen-sel').classList.remove('ativo');
-  document.getElementById('screen-' + tela).classList.add('ativo');
-  telaAtual = tela;
-  if (tela === 'email-hub')  mudarTab('email-hub','dest');
-  if (tela === 'visual')     mudarTab('visual','cores');
-  if (tela === 'sistema')    mudarTab('sistema','diag');
-  if (tela === 'permissoes') carregarPermissoes();
-  if (tela === 'retencao')   carregarRetencao();
-  if (tela === 'versioning') carregarSnapshots();
-  if (tela === 'aprovacao')  carregarConfigAprovacao();
-  if (tela === 'changelog')  carregarChangelog();
-  if (tela === 'drive')      resetDrive();
-  if (tela === 'acesso')     carregarAdminsConfig();
-  if (tela === 'readonly')   carregarModoRO();
+  var curr = document.getElementById('screen-' + telaAtual);
+  var next = document.getElementById('screen-' + tela);
+  curr.classList.add('saindo');
+  curr.classList.remove('ativo');
+  setTimeout(function() {
+    curr.classList.remove('saindo');
+    next.classList.add('ativo');
+    telaAtual = tela;
+    if (tela === 'email-hub')   mudarTab('email-hub','dest');
+    if (tela === 'visual')      mudarTab('visual','cores');
+    if (tela === 'sistema')     mudarTab('sistema','diag');
+    if (tela === 'acesso-hub')  { mudarTab('acesso-hub','acesso'); carregarAdminsConfig(); carregarModoRO(); }
+    if (tela === 'retencao')    carregarRetencao();
+    if (tela === 'versioning')  carregarSnapshots();
+    if (tela === 'aprovacao')   carregarConfigAprovacao();
+    if (tela === 'changelog')   carregarChangelog();
+    if (tela === 'drive')       resetDrive();
+  }, 150);
 }
 
 function mudarTab(hub, tabId, btn) {
@@ -1082,6 +1079,7 @@ function mudarTab(hub, tabId, btn) {
     var found = document.querySelector('#screen-' + hub + ' .tab-btn[data-tab="' + tabId + '"]');
     if (found) found.classList.add('ativa');
   }
+  if (hub === 'acesso-hub' && tabId === 'acesso') { carregarAdminsConfig(); carregarModoRO(); }
   var loaders = {
     'email-hub': { dest: carregarEmailConfig, ccbcc: function(){ carregarCCForn(); carregarCCAlerta(); }, assn: carregarAssinaturas, tpl: carregarTemplates },
     'sistema':   { diag: executarDiagnostico },
@@ -1092,14 +1090,20 @@ function mudarTab(hub, tabId, btn) {
 }
 
 function voltar() {
-  document.getElementById('screen-' + telaAtual).classList.remove('ativo');
-  document.getElementById('screen-sel').classList.add('ativo');
-  telaAtual = 'sel';
-  ['em','c','f','lg','dr','diag','ac','re','mn','tpl','ccf','assn','vis','ro','perm','aprv','ret','ver','bk','chl'].forEach(function(p) {
-    var el = document.getElementById(p+'-msg');
-    if (el) el.style.display = 'none';
-  });
-  var dm = document.getElementById('diag-email-msg'); if (dm) dm.style.display = 'none';
+  var curr = document.getElementById('screen-' + telaAtual);
+  var next = document.getElementById('screen-sel');
+  curr.classList.add('saindo');
+  curr.classList.remove('ativo');
+  setTimeout(function() {
+    curr.classList.remove('saindo');
+    next.classList.add('ativo');
+    telaAtual = 'sel';
+    ['em','c','f','lg','dr','diag','ac','re','mn','tpl','ccf','assn','vis','ro','perm','aprv','ret','ver','bk','chl'].forEach(function(p) {
+      var el = document.getElementById(p+'-msg');
+      if (el) el.style.display = 'none';
+    });
+    var dm = document.getElementById('diag-email-msg'); if (dm) dm.style.display = 'none';
+  }, 150);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1467,7 +1471,11 @@ function setLoading(p, sim, spinId) {
   var spin = document.getElementById(spinId || (p+'-spin'));
   var btn  = document.getElementById(p+'-btn');
   if (spin) spin.style.display = sim ? 'block' : 'none';
-  if (btn)  btn.disabled = sim;
+  if (btn) {
+    btn.disabled = sim;
+    if (sim) btn.classList.add('loading');
+    else btn.classList.remove('loading');
+  }
 }
 
 function showMsg(p, tipo, txt) {
