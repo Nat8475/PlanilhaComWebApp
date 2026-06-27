@@ -239,6 +239,14 @@ function esc(s) {
 
 document.getElementById('termo').focus();
 (function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.cdvAutoSearch) return;
+  var inp = document.getElementById('termo');
+  if (!inp) return;
+  inp.value = String(e.data.cdvAutoSearch);
+  buscar();
+});
 </script>
 </body>
 </html>
