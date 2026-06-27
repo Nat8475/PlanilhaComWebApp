@@ -1,64 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <base target="_top">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:16px}
-    ::-webkit-scrollbar{width:9px;height:9px}
-    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:6px}
-
-    .titulo{background:linear-gradient(135deg,var(--ink),var(--navy));color:#fff;padding:12px 16px;border-radius:var(--r-sm);
-            font-size:14px;font-weight:800;margin-bottom:14px;
-            box-shadow:0 3px 12px rgba(14,21,33,.25)}
-
-    /* Card de status do backup */
-    #cardBackup{border-radius:var(--r);padding:12px 14px;margin-bottom:14px;
-                border:1px solid var(--border);background:var(--surface);box-shadow:var(--sh)}
-    #cardBackup .label{font-size:10px;font-weight:700;color:var(--text-muted);
-                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-    #cardBackup .data{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px}
-    #cardBackup .linhas{font-size:11px;color:var(--text-muted);line-height:1.7}
-    #cardBackup.sem-backup{background:var(--amber-bg);border-color:#FCD34D}
-    #cardBackup.com-backup{background:var(--green-bg);border-color:#6EE7B7}
-
-    /* Instruções */
-    .passos{background:var(--navy-50);border:1px solid #C7D2FE;border-radius:var(--r);
-            padding:11px 14px;margin-bottom:14px;font-size:12px;color:#1E40AF;line-height:1.9}
-    .passos strong{display:block;margin-bottom:4px;font-size:12px;color:var(--navy)}
-    .passo{display:flex;gap:8px;align-items:baseline}
-    .num{background:#2563EB;color:#fff;border-radius:50%;width:18px;height:18px;
-         display:inline-flex;align-items:center;justify-content:center;
-         font-size:10px;font-weight:700;flex-shrink:0}
-
-    /* Botões */
-    .botoes{display:flex;flex-direction:column;gap:8px}
-    button{width:100%;padding:11px;border:none;border-radius:var(--r-sm);font-size:13px;
-           font-weight:700;cursor:pointer;text-align:left;display:flex;
-           align-items:center;gap:10px;font-family:var(--font);transition:opacity .15s var(--ease)}
-    button:disabled{opacity:.45;cursor:not-allowed}
-    #btnBackup   {background:linear-gradient(135deg,var(--navy-800),var(--navy));color:#fff;box-shadow:0 2px 8px rgba(31,64,128,.30)}
-    #btnBackup:hover:not(:disabled){opacity:.9}
-    #btnRestaurar{background:var(--green);color:#fff}
-    #btnRestaurar:hover:not(:disabled){opacity:.88}
-    #btnFechar   {background:var(--border);color:var(--text-body);justify-content:center;transition:background .15s}
-    #btnFechar:hover{background:var(--border-def)}
-    .btn-icon{font-size:18px;flex-shrink:0}
-    .btn-txt{display:flex;flex-direction:column}
-    .btn-titulo{font-size:13px;font-weight:700}
-    .btn-sub{font-size:10px;font-weight:normal;opacity:.8;margin-top:1px}
-
-    /* Mensagens */
-    #msg{margin-top:10px;padding:10px 12px;border-radius:var(--r-sm);font-size:12px;
-         display:none;white-space:pre-wrap;line-height:1.6}
-    .msg-ok  {background:var(--green-bg);color:#065F46;border:1px solid #A7F3D0}
-    .msg-erro{background:var(--red-bg);color:var(--red);border:1px solid #FECACA}
-    .spinner{display:none;text-align:center;color:var(--text-muted);margin-top:10px;font-size:12px}
-  </style>
   <style id="cdv-v10">
 :root{--font:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--ink:#06101E;--brand-amber:#E8A020;--slate-100:#ECF1FA;--sh:0 2px 8px rgba(6,14,30,.08),0 1px 3px rgba(6,14,30,.05);--sh-md:0 6px 22px rgba(6,14,30,.10),0 2px 6px rgba(6,14,30,.06);--ease:cubic-bezier(.4,0,.2,1);--navy:#1C45D0;--navy-800:#1535A5;--navy-d:#142DB8;--teal:#0891B2;--red:#DC2626;--green:#16A34A;--amber:#D97706;--bg:#ECF1FA;--surface:#FFFFFF;--input-bg:#F4F7FE;--border:#DDE6F4;--border-def:#BACADE;--text:#07162A;--text-body:#29394F;--text-muted:#53708C;--text-faint:#8AA3BF;--text-sm:var(--text-muted);--navy-50:#EDF3FF;--r:12px;--r-sm:9px;--green-bg:#EDFCF2;--red-bg:#FFF1F1;--amber-bg:#FFF7E0;--brand-red:#DC2626}
 body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--border-def:#1D3154;--text:#E6EDF9;--text-body:#95AFCC;--text-muted:#567090;--text-faint:#2E4562;--navy-50:#112036;--green-bg:#022C1A;--red-bg:#2D0A0A;--amber-bg:#1F1100}
@@ -66,140 +12,317 @@ body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--b
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 body{background:var(--bg);color:var(--text);font-family:var(--font);transition:background .22s,color .22s}
 input,select,textarea{background:var(--input-bg);border-radius:var(--r-sm);transition:border-color .15s,box-shadow .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(28,69,208,.12);outline:none}
 button{font-family:inherit;cursor:pointer;transition:transform .1s,opacity .12s}
 .msg-ok,.msg-erro,.msg-aviso,#msg{animation:fadeIn .2s both;border-radius:var(--r-sm)}
-#btnBackup{background:linear-gradient(135deg,var(--navy-800),var(--navy));
-  box-shadow:0 3px 12px rgba(28,69,208,.28)}
-#btnBackup:hover:not(:disabled){transform:translateY(-1px);
-  box-shadow:0 6px 20px rgba(28,69,208,.35);opacity:1}
-#btnRestaurar:hover:not(:disabled){transform:translateY(-1px);opacity:1}
-#btnFechar{background:transparent;border:1.5px solid var(--border-def);color:var(--text-muted);
-  transition:border-color .15s,color .15s,background .15s}
-#btnFechar:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-50)}
-.botoes button:nth-child(1){animation:fadeUp .22s .04s both}
-.botoes button:nth-child(2){animation:fadeUp .22s .1s both}
-.botoes button:nth-child(3){animation:fadeUp .22s .16s both}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background:var(--navy)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   </style>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px 16px}
+
+    /* Keyframes */
+    @keyframes shieldPulse{0%,100%{filter:drop-shadow(0 0 5px rgba(217,119,6,.35))}50%{filter:drop-shadow(0 0 15px rgba(217,119,6,.65))}}
+    @keyframes shieldGlow{0%,100%{filter:drop-shadow(0 0 4px rgba(22,163,74,.25))}50%{filter:drop-shadow(0 0 11px rgba(22,163,74,.5))}}
+    @keyframes checkDraw{to{stroke-dashoffset:0}}
+    @keyframes progressSweep{0%{transform:translateX(-120%)}100%{transform:translateX(230%)}}
+    @keyframes cardFlash{0%{opacity:.7}100%{opacity:1}}
+
+    /* Header */
+    .page-header{
+      background:linear-gradient(135deg,var(--navy-800) 0%,var(--navy) 100%);
+      color:#fff;padding:11px 14px;border-radius:var(--r-sm);
+      margin-bottom:12px;box-shadow:0 3px 14px rgba(14,21,33,.22);
+      display:flex;align-items:center;gap:10px;
+      animation:fadeUp .22s var(--ease) both;
+    }
+    .header-icon{
+      width:30px;height:30px;background:rgba(255,255,255,.18);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-size:15px;flex-shrink:0;
+    }
+    .page-header h1{font-size:14px;font-weight:800;letter-spacing:-.2px;line-height:1.1}
+    .header-sub{font-size:10px;opacity:.65;margin-top:2px;font-weight:500}
+
+    /* Status card */
+    .status-card{
+      background:var(--surface);border:1.5px solid var(--border);
+      border-radius:var(--r);padding:14px;margin-bottom:12px;
+      display:flex;align-items:center;gap:14px;
+      box-shadow:var(--sh-md);
+      transition:border-color .4s var(--ease),background .4s var(--ease);
+      animation:fadeUp .22s .07s var(--ease) both;
+    }
+    .status-card.sem-backup{border-color:#FCD34D;background:var(--amber-bg)}
+    .status-card.com-backup{border-color:#6EE7B7;background:var(--green-bg);animation:cardFlash .35s var(--ease) both}
+
+    /* Shield SVG */
+    .shield-wrap{width:58px;height:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+    .shield-svg{width:52px;height:52px;overflow:visible}
+    .shield-body{fill:none;stroke:var(--border-def);stroke-width:2;stroke-linejoin:round;transition:stroke .4s,fill .4s}
+    .status-card.sem-backup .shield-body{stroke:#F59E0B;fill:rgba(251,191,36,.13);animation:shieldPulse 2.4s ease-in-out infinite}
+    .status-card.com-backup .shield-body{stroke:#16A34A;fill:rgba(22,163,74,.11);animation:shieldGlow 3s ease-in-out infinite}
+    .shield-icon{display:none}
+    .shield-icon-warn line{stroke:#D97706;stroke-width:2.4;stroke-linecap:round}
+    .shield-icon-warn circle{fill:#D97706}
+    .shield-icon-check polyline{stroke:#16A34A;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:32;stroke-dashoffset:32}
+    .status-card.sem-backup .shield-icon-warn{display:block}
+    .status-card.com-backup .shield-icon-check{display:block}
+    .status-card.com-backup .shield-icon-check polyline{animation:checkDraw .45s .3s var(--ease) forwards}
+
+    /* Status info */
+    .status-body{flex:1;min-width:0}
+    .status-eyebrow{font-size:9px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.9px;margin-bottom:3px}
+    .status-date{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--navy);margin-bottom:6px;transition:color .4s}
+    .status-card.sem-backup .status-date{color:var(--amber)}
+    .status-counts{display:flex;flex-direction:column;gap:2px}
+    .count-line{font-family:var(--mono);font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:5px}
+    .count-line::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--border-def);flex-shrink:0;transition:background .4s}
+    .status-card.com-backup .count-line::before{background:#34D399}
+
+    /* Steps timeline */
+    .steps-section{margin-bottom:12px;animation:fadeUp .22s .14s var(--ease) both}
+    .steps-eyebrow{font-size:9px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.9px;margin-bottom:8px}
+    .steps-flow{display:flex;justify-content:space-between;position:relative}
+    .steps-flow::before{
+      content:'';position:absolute;top:11px;left:17%;right:17%;
+      height:1.5px;background:var(--border-def);z-index:0;
+    }
+    .step-item{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;z-index:1}
+    .step-dot{
+      width:24px;height:24px;border-radius:50%;
+      background:var(--bg);color:var(--text-faint);
+      font-size:10px;font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      border:1.5px solid var(--border-def);
+      transition:background .3s var(--ease),color .3s,border-color .3s,box-shadow .3s;
+    }
+    .step-item.active .step-dot{
+      background:linear-gradient(135deg,var(--navy-800),var(--navy));
+      color:#fff;border-color:transparent;
+      box-shadow:0 2px 8px rgba(28,69,208,.3);
+    }
+    .step-item.done .step-dot{background:var(--green);color:#fff;border-color:transparent}
+    .step-label{font-size:9px;font-weight:600;color:var(--text-muted);text-align:center;line-height:1.3;max-width:70px}
+
+    /* Action buttons — override cdv-v10 ID-level styles */
+    #btnBackup,#btnRestaurar{background:none;box-shadow:none;padding:0;border:none;display:block}
+    #btnBackup:hover:not(:disabled),#btnRestaurar:hover:not(:disabled){transform:none;opacity:1;box-shadow:none}
+
+    .actions{display:flex;flex-direction:column;gap:6px;animation:fadeUp .22s .20s var(--ease) both}
+    .btn-action{
+      width:100%;padding:0;border:none;background:none;
+      border-radius:var(--r-sm);cursor:pointer;
+      display:flex;align-items:stretch;overflow:hidden;
+      box-shadow:var(--sh);
+      transition:transform .12s var(--ease),box-shadow .15s var(--ease);
+      font-family:var(--font);text-align:left;
+    }
+    .btn-action:not(:disabled):hover{transform:translateY(-1px);box-shadow:var(--sh-md)}
+    .btn-action:not(:disabled):active{transform:scale(.99);box-shadow:var(--sh)}
+    .btn-action:disabled{opacity:.42;cursor:not-allowed}
+    .btn-stripe{width:4px;flex-shrink:0;transition:width .15s var(--ease)}
+    .btn-action:not(:disabled):hover .btn-stripe{width:5px}
+    .btn-content{flex:1;padding:10px 13px;display:flex;align-items:center;gap:11px;background:var(--surface);transition:background .15s}
+    .btn-action:not(:disabled):hover .btn-content{background:var(--input-bg)}
+    .btn-emoji{font-size:19px;flex-shrink:0;line-height:1;transition:transform .2s var(--ease)}
+    .btn-action:not(:disabled):hover .btn-emoji{transform:scale(1.12)}
+    .btn-text{display:flex;flex-direction:column;gap:1px}
+    .btn-title{font-size:12.5px;font-weight:700;color:var(--text)}
+    .btn-desc{font-size:10px;color:var(--text-muted)}
+    #btnBackup .btn-stripe{background:linear-gradient(180deg,var(--navy-800),var(--navy))}
+    #btnRestaurar .btn-stripe{background:var(--green)}
+
+    /* Close button */
+    #btnFechar{
+      width:100%;padding:9px;background:transparent;
+      border:1.5px solid var(--border-def);border-radius:var(--r-sm);
+      color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;
+      font-family:var(--font);
+      transition:border-color .15s,color .15s,background .15s;
+    }
+    #btnFechar:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-50)}
+
+    /* Progress bar */
+    .progress-wrap{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:8px;display:none}
+    .progress-fill{height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--navy),transparent);animation:progressSweep 1.3s ease-in-out infinite}
+
+    /* Messages */
+    #msg{margin-top:8px;padding:10px 12px;border-radius:var(--r-sm);font-size:11.5px;display:none;white-space:pre-wrap;line-height:1.65}
+    .msg-ok{background:var(--green-bg);color:#065F46;border:1px solid #A7F3D0}
+    .msg-erro{background:var(--red-bg);color:var(--red);border:1px solid #FECACA}
+  </style>
 </head>
 <body>
+
 <div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
 <script>
-  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
-  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
-  // o diálogo idêntico ao original.
   try {
     google.script.run
       .withSuccessHandler(function(_execUrl) {
         if (!_execUrl) return;
         var _nav = document.getElementById('cdv-nav-webapp');
         if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
-        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
         try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
       })
       ._getWebAppExecUrl();
   } catch (_e) {}
 </script>
 
+<header class="page-header">
+  <div class="header-icon">💾</div>
+  <div>
+    <h1>Backup e Restauração</h1>
+    <div class="header-sub">Britania · Unilever · Fornecedores Variados</div>
+  </div>
+</header>
 
-<div class="titulo">💾 Backup e Restauração</div>
-
-<!-- Status do backup existente -->
-<div id="cardBackup" class="sem-backup">
-  <div class="label">Último backup salvo</div>
-  <div class="data" id="dataBackup">⏳ Verificando...</div>
-  <div class="linhas" id="linhasBackup"></div>
+<div id="cardBackup" class="status-card sem-backup">
+  <div class="shield-wrap">
+    <svg class="shield-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path class="shield-body" d="M24 4 L6 11 L6 24 C6 34.5 14 43 24 46 C34 43 42 34.5 42 24 L42 11 Z"/>
+      <g class="shield-icon shield-icon-warn">
+        <line x1="24" y1="17" x2="24" y2="28"/>
+        <circle cx="24" cy="33.5" r="2.2"/>
+      </g>
+      <g class="shield-icon shield-icon-check">
+        <polyline points="15,25 21,32 33,18"/>
+      </g>
+    </svg>
+  </div>
+  <div class="status-body">
+    <div class="status-eyebrow">Último backup salvo</div>
+    <div id="dataBackup" class="status-date">⏳ Verificando...</div>
+    <div id="linhasBackup" class="status-counts"></div>
+  </div>
 </div>
 
-<!-- Instruções -->
-<div class="passos">
-  <strong>Como usar ao reconfigurar o sistema:</strong>
-  <div class="passo"><span class="num">1</span><span>Clique em <b>Fazer Backup</b> agora para salvar todos os dados</span></div>
-  <div class="passo"><span class="num">2</span><span>Execute <b>Configurar/Reinstalar Sistema</b> normalmente</span></div>
-  <div class="passo"><span class="num">3</span><span>Volte aqui e clique em <b>Restaurar do Backup</b></span></div>
+<div class="steps-section">
+  <div class="steps-eyebrow">Como usar ao reconfigurar o sistema</div>
+  <div class="steps-flow">
+    <div class="step-item active" id="step1">
+      <div class="step-dot">1</div>
+      <div class="step-label">Fazer Backup</div>
+    </div>
+    <div class="step-item" id="step2">
+      <div class="step-dot">2</div>
+      <div class="step-label">Reinstalar Sistema</div>
+    </div>
+    <div class="step-item" id="step3">
+      <div class="step-dot">3</div>
+      <div class="step-label">Restaurar Dados</div>
+    </div>
+  </div>
 </div>
 
-<!-- Botões -->
-<div class="botoes">
-  <button id="btnBackup" onclick="fazerBackup()">
-    <span class="btn-icon">💾</span>
-    <span class="btn-txt">
-      <span class="btn-titulo">Fazer Backup Agora</span>
-      <span class="btn-sub">Salva todos os dados das abas Britania, Unilever e Fornecedores Variados</span>
-    </span>
+<div class="actions">
+  <button class="btn-action" id="btnBackup" onclick="fazerBackup()">
+    <div class="btn-stripe"></div>
+    <div class="btn-content">
+      <span class="btn-emoji" id="iconBackup">💾</span>
+      <div class="btn-text">
+        <span class="btn-title">Fazer Backup Agora</span>
+        <span class="btn-desc">Salva todos os dados das abas monitoradas</span>
+      </div>
+    </div>
   </button>
 
-  <button id="btnRestaurar" onclick="restaurar()" disabled>
-    <span class="btn-icon">🔄</span>
-    <span class="btn-txt">
-      <span class="btn-titulo">Restaurar do Backup</span>
-      <span class="btn-sub">Repõe os dados nas abas após a reconfiguração do sistema</span>
-    </span>
+  <button class="btn-action" id="btnRestaurar" onclick="restaurar()" disabled>
+    <div class="btn-stripe"></div>
+    <div class="btn-content">
+      <span class="btn-emoji" id="iconRestaurar">🔄</span>
+      <div class="btn-text">
+        <span class="btn-title">Restaurar do Backup</span>
+        <span class="btn-desc">Repõe os dados nas abas após a reconfiguração</span>
+      </div>
+    </div>
   </button>
 
   <button id="btnFechar" onclick="google.script.host.close()">✖ Fechar</button>
 </div>
 
-<div class="spinner" id="spinner">⏳ Processando, aguarde...</div>
+<div class="progress-wrap" id="progressWrap">
+  <div class="progress-fill"></div>
+</div>
 <div id="msg"></div>
 
 <script>
-// Carrega info do backup ao abrir
+function setLinhas(linhasEl, contagem) {
+  linhasEl.innerHTML = '';
+  Object.keys(contagem).forEach(function(aba) {
+    var d = document.createElement('div');
+    d.className = 'count-line';
+    d.textContent = aba + ': ' + contagem[aba] + ' linha(s)';
+    linhasEl.appendChild(d);
+  });
+}
+
+function setStepState(hasBackup) {
+  var s1 = document.getElementById('step1');
+  var s2 = document.getElementById('step2');
+  if (!hasBackup) return;
+  s1.classList.remove('active');
+  s1.classList.add('done');
+  s1.querySelector('.step-dot').textContent = '✓';
+  s2.classList.add('active');
+}
+
 google.script.run
   .withSuccessHandler(function(resp) {
     var r = JSON.parse(resp);
-    var card  = document.getElementById('cardBackup');
-    var data  = document.getElementById('dataBackup');
+    var card   = document.getElementById('cardBackup');
+    var data   = document.getElementById('dataBackup');
     var linhas = document.getElementById('linhasBackup');
-
     if (r.existe) {
-      card.className = 'com-backup';
+      card.className = 'status-card com-backup';
       data.textContent = r.data;
-      var txt = '';
-      Object.keys(r.contagem).forEach(function(aba) {
-        txt += '• ' + aba + ': ' + r.contagem[aba] + ' linha(s)\n';
-      });
-      linhas.textContent = txt.trim();
+      setLinhas(linhas, r.contagem);
+      setStepState(true);
       document.getElementById('btnRestaurar').disabled = false;
     } else {
-      card.className = 'sem-backup';
+      card.className = 'status-card sem-backup';
       data.textContent = 'Nenhum backup encontrado';
-      linhas.textContent = 'Faça um backup antes de reconfigurar o sistema.';
+      var d = document.createElement('div');
+      d.className = 'count-line';
+      d.textContent = 'Faça um backup antes de reconfigurar o sistema';
+      linhas.appendChild(d);
     }
   })
   .withFailureHandler(function(e) {
-    document.getElementById('dataBackup').textContent = 'Erro ao verificar: ' + e.message;
+    document.getElementById('dataBackup').textContent = 'Erro: ' + e.message;
   })
   .infoBackupExistente();
 
 function fazerBackup() {
   if (!confirm('Salvar backup agora?\n\nUm backup anterior será substituído.')) return;
+  document.getElementById('iconBackup').textContent = '⏳';
   setBusy(true);
   google.script.run
     .withSuccessHandler(function(resp) {
       setBusy(false);
+      document.getElementById('iconBackup').textContent = '💾';
       var r = JSON.parse(resp);
       if (r.sucesso) {
         mostrar('ok', r.sucesso);
-        // Atualiza o card
-        document.getElementById('cardBackup').className = 'com-backup';
+        var card   = document.getElementById('cardBackup');
+        var linhas = document.getElementById('linhasBackup');
+        card.className = 'status-card com-backup';
         document.getElementById('dataBackup').textContent = r.data;
-        var txt = '';
-        Object.keys(r.contagem || {}).forEach(function(aba) {
-          txt += '• ' + aba + ': ' + r.contagem[aba] + ' linha(s)\n';
-        });
-        document.getElementById('linhasBackup').textContent = txt.trim();
+        setLinhas(linhas, r.contagem || {});
+        setStepState(true);
         document.getElementById('btnRestaurar').disabled = false;
       } else {
         mostrar('erro', r.erro);
       }
     })
-    .withFailureHandler(function(e) { setBusy(false); mostrar('erro', e.message); })
+    .withFailureHandler(function(e) {
+      setBusy(false);
+      document.getElementById('iconBackup').textContent = '💾';
+      mostrar('erro', e.message);
+    })
     .executarBackup();
 }
 
@@ -207,22 +330,27 @@ function restaurar() {
   if (!confirm(
     'Restaurar dados do backup nas abas?\n\n' +
     '⚠️ Execute "Configurar/Reinstalar Sistema" ANTES de restaurar.\n\n' +
-    'As linhas do backup serão gravadas nas abas a partir da linha ' +
-    'de dados. Confirma?'
+    'As linhas do backup serão gravadas nas abas a partir da linha de dados. Confirma?'
   )) return;
+  document.getElementById('iconRestaurar').textContent = '⏳';
   setBusy(true);
   google.script.run
     .withSuccessHandler(function(resp) {
       setBusy(false);
+      document.getElementById('iconRestaurar').textContent = '🔄';
       var r = JSON.parse(resp);
       mostrar(r.sucesso ? 'ok' : 'erro', r.sucesso || r.erro);
     })
-    .withFailureHandler(function(e) { setBusy(false); mostrar('erro', e.message); })
+    .withFailureHandler(function(e) {
+      setBusy(false);
+      document.getElementById('iconRestaurar').textContent = '🔄';
+      mostrar('erro', e.message);
+    })
     .executarRestauracao();
 }
 
 function setBusy(on) {
-  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('progressWrap').style.display = on ? 'block' : 'none';
   document.getElementById('btnBackup').disabled    = on;
   document.getElementById('btnRestaurar').disabled = on;
   document.getElementById('msg').style.display     = 'none';
@@ -234,6 +362,12 @@ function mostrar(tipo, txt) {
   el.textContent = txt;
   el.style.display = 'block';
 }
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
 </script>
 </body>
 </html>

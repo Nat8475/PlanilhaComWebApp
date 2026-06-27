@@ -2815,6 +2815,12 @@ function aplicarModoRO(ativo) {
 
 // ── Init ───────────────────────────────────────────────────
 initDark();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
 initDensity();
 initFiltrosSalvos();
 initFiltroVis();

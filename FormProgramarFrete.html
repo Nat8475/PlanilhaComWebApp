@@ -470,6 +470,12 @@ body.dark{--bg:#060C19;--surface:#0B1522;--input-bg:#060C19;--border:#172740;--b
 
   document.getElementById('termo').focus();
   (function(){ try{ if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
 // ── Enforcement de permissões ───────────────────────────────
 try {
   google.script.run
