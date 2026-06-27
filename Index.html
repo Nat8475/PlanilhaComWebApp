@@ -454,12 +454,6 @@ body.dark .b-a { background:#240A0A; color:#FCA5A5 }
 .tbl-wrap { overflow-x:auto; overflow-y:auto; max-height:340px }
 table.rt thead th { position:sticky; top:0; z-index:2 }
 
-/* density toggle */
-body.compact table.rt thead th,
-body.compact table.rt tbody td { padding:5px 10px; font-size:11.5px }
-body.compact .kpi { padding:12px 14px }
-body.compact .kpi-v { font-size:26px }
-
 /* ── Toasts ── */
 #toast-root {
   position:fixed; bottom:24px; right:24px; z-index:9998;
@@ -602,9 +596,6 @@ body.compact .kpi-v { font-size:26px }
       style="background:var(--slate-100);border:1px solid var(--border-sub);color:var(--text-muted);border-radius:var(--r-sm);
              padding:5px 10px;cursor:pointer;font-size:12px;transition:background .15s,color .15s;font-family:var(--font);display:flex;align-items:center;gap:5px">
       <span>◯</span><span style="font-size:10px;opacity:.7">Ctrl+K</span></button>
-    <button id="btn-density" onclick="window._toggleDensity()" title="Modo compacto"
-      style="background:var(--slate-100);border:1px solid var(--border-sub);color:var(--text-muted);border-radius:var(--r-sm);
-             padding:5px 10px;cursor:pointer;font-size:13px;transition:background .15s,color .15s,border-color .15s;font-family:var(--font)">⊟</button>
     <button id="btn-dark-idx" onclick="window._toggleDarkIdx()" title="Alternar modo escuro"
       style="background:var(--slate-100);border:1px solid var(--border-sub);color:var(--text-muted);border-radius:var(--r-sm);
              padding:5px 10px;cursor:pointer;font-size:13px;transition:background .15s,color .15s,border-color .15s;font-family:var(--font)">🌙</button>
@@ -1366,16 +1357,25 @@ window._tbSearchKey = function(e) {
 };
 
 // ── Hotkeys de navegação global ────────────────────────────
+function _cdvHandleKey(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    if (e.preventDefault) e.preventDefault();
+    cmdOpen(); return;
+  }
+  if (e.altKey && !e.ctrlKey && !e.metaKey) {
+    var acao = {
+      '1': 'Notas',    '2': 'Lancamento', '3': 'Dashboard',
+      '4': 'Relatorios','5': 'Auditoria',  '6': 'Configuracoes'
+    }[e.key];
+    if (acao) { if (e.preventDefault) e.preventDefault(); cdvNav(acao); }
+  }
+}
 document.addEventListener('keydown', function(e) {
-  // Ctrl/⌘+K → command palette
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); cmdOpen(); return; }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
-  if (!e.altKey) return;
-  var acao = {
-    '1': 'Notas',    '2': 'Lancamento', '3': 'Dashboard',
-    '4': 'Relatorios','5': 'Auditoria',  '6': 'Configuracoes'
-  }[e.key];
-  if (acao) { e.preventDefault(); cdvNav(acao); }
+  _cdvHandleKey(e);
+});
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.cdvKey) _cdvHandleKey(e.data.cdvKey);
 });
 
 // ── Feedback inline (item 71) ──────────────────────────────
@@ -1539,19 +1539,6 @@ window.showToast = function(msg, type) {
     items.forEach(function(b,i) { b.classList.toggle('sel', i===_sel); });
     if (items[_sel]) items[_sel].scrollIntoView({ block:'nearest' });
   }
-})();
-
-// ── Toggle density ──────────────────────────────────────────
-(function() {
-  var _DEN = 'cdv_density';
-  function applyDensity(compact) {
-    document.body.classList.toggle('compact', !!compact);
-    var btn = document.getElementById('btn-density');
-    if (btn) btn.title = compact ? 'Modo confortável' : 'Modo compacto';
-    try { localStorage.setItem(_DEN, compact ? '1' : '0'); } catch(_) {}
-  }
-  try { if (localStorage.getItem(_DEN) === '1') applyDensity(true); } catch(_) {}
-  window._toggleDensity = function() { applyDensity(!document.body.classList.contains('compact')); };
 })();
 
 // ── Bottom nav: marcar item ativo ──────────────────────────
