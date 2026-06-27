@@ -285,6 +285,31 @@ function filtrar() {
     }
     return true;
   });
+
+  // Agrupar itens do mesmo lote em um único item de exibição
+  var filtAgrup = [];
+  var loteMap   = {};
+  for (var gi = 0; gi < _filt.length; gi++) {
+    var gItem = _filt[gi];
+    if (!gItem.loteId) { filtAgrup.push(gItem); continue; }
+    if (loteMap[gItem.loteId]) {
+      var grp = loteMap[gItem.loteId];
+      grp.nfd   += ', ' + gItem.nfd;
+      grp.nf    += ', ' + gItem.nf;
+      grp.vlTot += gItem.vlTot;
+      grp.qtd   += gItem.qtd;
+      grp._loteLinhas.push(gItem.linha);
+    } else {
+      var novoGrp = {};
+      for (var gk in gItem) { if (Object.prototype.hasOwnProperty.call(gItem, gk)) novoGrp[gk] = gItem[gk]; }
+      novoGrp._loteLinhas = [gItem.linha];
+      novoGrp.isLote = true;
+      filtAgrup.push(novoGrp);
+      loteMap[gItem.loteId] = novoGrp;
+    }
+  }
+  _filt = filtAgrup;
+
   _sel = new Array(_filt.length).fill(false);
   renderTabela();
   atualizarBulk();
@@ -333,7 +358,11 @@ function renderTabela() {
 
     return '<tr class="' + cls + '">'
       + '<td><input type="checkbox"' + (!ativo ? ' disabled' : '') + (ativo ? ' onchange="toggleItem(' + i + ',this)"' : '') + '></td>'
-      + '<td><b style="color:var(--navy);font-size:11px">' + esc(it.nf) + '</b><div style="font-size:10px;color:var(--text-sm)">' + esc(it.nfd) + '</div></td>'
+      + '<td>'
+        + (it.isLote ? '<span style="background:#7C3AED;color:#fff;border-radius:3px;font-size:9px;padding:1px 4px;margin-right:3px">LOTE</span>' : '')
+        + '<b style="color:var(--navy);font-size:11px">' + esc(it.nf) + '</b>'
+        + '<div style="font-size:10px;color:var(--text-sm)">' + esc(it.nfd) + '</div>'
+        + '</td>'
       + '<td>' + esc(it.forn) + '</td>'
       + '<td style="color:var(--cyan);font-weight:600">' + esc(it.numeroPedido || '—') + '</td>'
       + '<td style="font-size:11px;color:var(--text-sm)">' + esc(it.abaOrigem) + '</td>'
@@ -463,9 +492,12 @@ function gerarDocCargaTransf() {
 function abrirBaixa(i) {
   _idxAcao = i;
   _linhaBaixa = _filt[i].linha;
-  document.getElementById('mBaixaTitulo').textContent = '✅ Confirmar Baixa — NF ' + _filt[i].nf;
-  document.getElementById('mBaixaDesc').textContent = 'Fornecedor: ' + _filt[i].forn
-    + ((_filt[i].numeroPedido) ? ' · Pedido: ' + _filt[i].numeroPedido : '');
+  document.getElementById('mBaixaTitulo').textContent = _filt[i].isLote
+    ? '✅ Confirmar Baixa em Lote — ' + _filt[i].forn
+    : '✅ Confirmar Baixa — NF ' + _filt[i].nf;
+  document.getElementById('mBaixaDesc').textContent = _filt[i].isLote
+    ? 'Lote: ' + _filt[i].nfd + ' (' + _filt[i]._loteLinhas.length + ' NF(s))'
+    : 'Fornecedor: ' + _filt[i].forn + ((_filt[i].numeroPedido) ? ' · Pedido: ' + _filt[i].numeroPedido : '');
   document.getElementById('bObs').value = '';
   document.getElementById('bArq').value = '';
   document.getElementById('mBaixaMsg').className = 'mmsg';
