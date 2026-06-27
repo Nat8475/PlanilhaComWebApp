@@ -497,6 +497,8 @@ try {
   <button class="btn-sm btn-succ" onclick="confirmarAcao('devolucao')">✅ Baixa Dev.</button>
   <button class="btn-sm btn-orange" onclick="confirmarAcao('venda')">🛒 Baixa Venda</button>
   <button class="btn-sm btn-teal" onclick="abrirFreteModal()">🚚 Prog. Frete</button>
+  <button class="btn-sm" id="btn-exp-pdf" onclick="exportarPDFSelecionados()"
+    style="display:none;background:#2563EB;color:#fff">📄 Exportar PDF</button>
   <button class="btn-sm" onclick="gerarDocCarga()" title="Gerar documentação de carga com as NFDs selecionadas"
     style="background:#7C3AED;color:#fff">📄 Doc. Carga</button>
   <button class="btn-sm" onclick="abrirEmailBulk()" title="Enviar e-mail de devolução com as NFDs selecionadas"
@@ -1183,10 +1185,23 @@ function atualizarBulkBar() {
   } else {
     warn.style.display = 'none';
   }
+  var filtSt = document.getElementById('f-status').value;
+  var showPdf = cnt > 0 && (filtSt === 'Devolvido' || filtSt === 'Venda');
+  document.getElementById('btn-exp-pdf').style.display = showPdf ? '' : 'none';
 }
 
 function getItensSelecionados() {
   return _filtrados.filter(function(_,i){ return _sel[i]; });
+}
+
+function exportarPDFSelecionados() {
+  var sels = getItensSelecionados();
+  var nfs = [];
+  for (var i = 0; i < sels.length; i++) {
+    nfs.push(sels[i].nfd || sels[i].nf);
+  }
+  try { localStorage.setItem('cdv_pdf_prefill', nfs.join('\n')); } catch(_) {}
+  google.script.run.abrirFormularioExportarPDF();
 }
 
 // ── Bulk actions ───────────────────────────────────────────
