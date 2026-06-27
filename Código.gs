@@ -2007,8 +2007,9 @@ function salvarProgramacaoFrete(params) {
 // ════════════════════════════════════════════════════════════
 
 const ABA_TRANSFERENCIAS         = 'Transferencias';
-// Schema: cols 1-20 = dados originais da nota | cols 21-29 = controle de transferência
-const TRANSF_TOTAL_COL           = 29;
+// Schema: cols 1-20 = dados originais da nota | cols 21-30 = controle de transferência
+const TRANSF_TOTAL_COL           = 30;
+const TRANSF_COL_LOTE_ID         = 30;
 const TRANSF_COL_ABA_ORIGEM      = 21;
 const TRANSF_COL_TRANSPORTADORA  = 22;
 const TRANSF_COL_DATA_AGEND      = 23;
@@ -2024,8 +2025,15 @@ function _garantirAbaTransferencias(ss) {
   if (ws) {
     // Verifica se o schema já é o v7 (29 colunas com 'Aba Origem' na col 21)
     try {
-      var cabVal = String(ws.getRange(1, TRANSF_COL_ABA_ORIGEM).getValue()).trim();
-      if (cabVal === 'Aba Origem') return ws;
+      var cabVal  = String(ws.getRange(1, TRANSF_COL_ABA_ORIGEM).getValue()).trim();
+      var cabLote = String(ws.getRange(1, TRANSF_COL_LOTE_ID).getValue()).trim();
+      if (cabVal === 'Aba Origem' && cabLote === 'Lote ID') return ws;
+      if (cabVal === 'Aba Origem' && cabLote !== 'Lote ID') {
+        ws.getRange(1, TRANSF_COL_LOTE_ID).setValue('Lote ID')
+          .setBackground('#0891B2').setFontColor('#fff').setFontWeight('bold');
+        ws.setColumnWidth(TRANSF_COL_LOTE_ID, 280);
+        return ws;
+      }
     } catch(_) {}
   } else {
     ws = ss.insertSheet(ABA_TRANSFERENCIAS);
@@ -2040,7 +2048,8 @@ function _garantirAbaTransferencias(ss) {
   // Colunas 21-29: controle da transferência
   var cabCtrl = [
     'Aba Origem','Nº Pedido','Agendamento','Status Transf.',
-    'Resp. Transf.','Cadastrado em','Data Baixa','Comprovante','Obs Cancelamento'
+    'Resp. Transf.','Cadastrado em','Data Baixa','Comprovante','Obs Cancelamento',
+    'Lote ID'
   ];
   var header = cabOrig.concat(cabCtrl);
   ws.getRange(1, 1, 1, TRANSF_TOTAL_COL).setValues([header])
@@ -2049,7 +2058,7 @@ function _garantirAbaTransferencias(ss) {
   // Larguras para as 29 colunas
   [80,100,110,160,80,120,220,60,90,100,
    110,60,60,60,160,160,60,80,100,100,
-   160,160,120,120,160,140,120,200,200].forEach(function(w,i){
+   160,160,120,120,160,140,120,200,200,280].forEach(function(w,i){
     ws.setColumnWidth(i+1, w);
   });
   return ws;
@@ -2109,15 +2118,16 @@ function salvarProgramacaoDevolucao(params) {
 
     // Monta linha completa em Transferências (29 colunas)
     var rowTransf = rowData.concat([
-      params.aba,                  // col 21: Aba Origem
-      transportadora,              // col 22: Transportadora
-      dataAgend || '',             // col 23: Data Agendamento
-      'Em Transferência',          // col 24: Status Transf
-      usuario,                     // col 25: Resp. Transf
-      agora,                       // col 26: Cadastrado em
-      '',                          // col 27: Data Baixa
-      '',                          // col 28: Comprovante
-      String(params.obs || '')     // col 29: Obs
+      params.aba,                       // col 21: Aba Origem
+      transportadora,                   // col 22: Transportadora
+      dataAgend || '',                  // col 23: Data Agendamento
+      'Em Transferência',               // col 24: Status Transf
+      usuario,                          // col 25: Resp. Transf
+      agora,                            // col 26: Cadastrado em
+      '',                               // col 27: Data Baixa
+      '',                               // col 28: Comprovante
+      String(params.obs || ''),         // col 29: Obs
+      String(params.loteId || '')       // col 30: Lote ID
     ]);
 
     // Adiciona na aba Transferências
@@ -2416,7 +2426,8 @@ function obterTransferencias(filtros) {
         comprovante:    comprovante,
         obsCancel:      obsCancel,
         diasEmTransf:   diasEmTransf,
-        atrasado:       dataAgend instanceof Date && dataAgend < hoje && stTransf === 'Em Transferência'
+        atrasado:       dataAgend instanceof Date && dataAgend < hoje && stTransf === 'Em Transferência',
+        loteId:         String(l[TRANSF_COL_LOTE_ID - 1] || '').trim()
       };
     }).filter(function(it) {
       return it && it.nf && (!filtStatus || it.stTransf === filtStatus);
@@ -3159,18 +3170,24 @@ function executarAcaoEmLoteNotas(params) {
     if (!itens.length) return JSON.stringify({ erro: 'Nenhum item selecionado.' });
     if (acao === 'frete') {
       var fp=params.freteParams||{}, ok=0, erros=[];
-      itens.forEach(function(it){
+      var loteId = itens.length > 1 ? Utilities.getUuid() : '';
+      for (var fi = 0; fi < itens.length; fi++) {
+        var it = itens[fi];
         try {
           var r=JSON.parse(salvarProgramacaoDevolucao({
             aba:it.aba, linha:it.linha, freteTipo:fp.tipo, freteValor:fp.valor,
             dataAgendamento:fp.dataAgend, obs:fp.obs||'',
             numeroPedido:fp.numeroPedido||'',
-            nf:it.nf, nfd:it.nfd, forn:it.forn, dataNF:it.data
+            nf:it.nf, nfd:it.nfd, forn:it.forn, dataNF:it.data,
+            loteId:loteId
           }));
           if (r.ok) ok++; else erros.push(it.nf+': '+(r.erro||'Erro'));
         } catch(e){ erros.push(it.nf+': '+e.message); }
-      });
-      return JSON.stringify({ ok:'🚚 '+ok+' NF(s) programadas para devolução.', erros:erros });
+      }
+      var msg = loteId
+        ? '🚚 Lote programado — '+ok+' NF(s) — '+(itens[0]&&itens[0].forn||'')+'.'
+        : '🚚 '+ok+' NF(s) programadas para devolução.';
+      return JSON.stringify({ ok: msg, erros: erros });
     }
     var novoStatus = acao==='venda' ? 'Venda' : 'Devolvido';
     var ok=0, erros=[];
