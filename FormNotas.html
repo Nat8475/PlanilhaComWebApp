@@ -1435,6 +1435,11 @@ function confirmarFrete() {
   var fornNomes = Object.keys(fornMap);
   var mesmoForn = fornNomes.length === 1;
 
+  if (!mesmoForn) {
+    toast('⚠️ Selecione NFs de apenas um fornecedor para programar em lote.', 'warn');
+    return;
+  }
+
   _acaoPend  = 'frete';
   _itensPend = todos;
   var btn = document.getElementById('conf-btn');
