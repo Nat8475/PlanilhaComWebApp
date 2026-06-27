@@ -2238,6 +2238,50 @@ function darBaixaTransferencia(params) {
     if (urlComprovante) wsTr.getRange(linhaTransf, TRANSF_COL_COMPROVANTE).setValue(urlComprovante);
     if (params.obs) wsTr.getRange(linhaTransf, TRANSF_COL_OBS).setValue(params.obs);
 
+    // Baixa em todas as linhas irmãs do mesmo lote
+    var loteId = String(rowData[TRANSF_COL_LOTE_ID - 1] || '').trim();
+    if (loteId) {
+      var ulTr = wsTr.getLastRow();
+      if (ulTr >= 2) {
+        var todosDados = wsTr.getRange(2, 1, ulTr - 1, TRANSF_TOTAL_COL).getValues();
+        for (var ti = 0; ti < todosDados.length; ti++) {
+          var lRow  = todosDados[ti];
+          var linha2 = ti + 2;
+          if (linha2 === linhaTransf) continue;
+          var loteId2 = String(lRow[TRANSF_COL_LOTE_ID - 1] || '').trim();
+          var st2     = String(lRow[TRANSF_COL_STATUS   - 1] || '').trim();
+          if (loteId2 !== loteId || st2 !== 'Em Transferência') continue;
+
+          var abaOrig2 = String(lRow[TRANSF_COL_ABA_ORIGEM - 1] || '').trim();
+          var wsOrig2  = ss.getSheetByName(abaOrig2);
+          if (!wsOrig2) continue;
+
+          var dadosOrig2 = lRow.slice(0, TOTAL_COLUNAS);
+          dadosOrig2[IDX_STATUS]    = 'Devolvido';
+          dadosOrig2[IDX_PEND_CHK]  = false;
+          dadosOrig2[IDX_DEV_CHK]   = true;
+          dadosOrig2[IDX_VENDA_CHK] = false;
+          dadosOrig2[IDX_OBS]       = obsDevol + (params.obs ? ' | ' + params.obs : '');
+
+          var ulOrig2 = obterUltimaLinhaDados(wsOrig2);
+          var dest2   = (ulOrig2 >= LINHA_DADOS ? ulOrig2 : LINHA_DADOS - 1) + 1;
+          if (dest2 > ULTIMA_LINHA_DADOS) continue;
+
+          wsOrig2.getRange(dest2, 1, 1, TOTAL_COLUNAS).setValues([dadosOrig2]);
+          wsOrig2.getRange(dest2, COL_VL_TOT).setFormula(_formulaTotal(dest2));
+          wsOrig2.getRange(dest2, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(dest2));
+          wsOrig2.getRange(dest2, 1, 1, TOTAL_COLUNAS).setBackground(COR_VERDE);
+          protegerLinhaConcluida(ss, wsOrig2, dest2, 'Devolvido');
+          _incrementarContadorConcluidos();
+
+          wsTr.getRange(linha2, TRANSF_COL_STATUS).setValue('Concluída');
+          wsTr.getRange(linha2, TRANSF_COL_DATA_BAIXA).setValue(agora);
+          if (urlComprovante) wsTr.getRange(linha2, TRANSF_COL_COMPROVANTE).setValue(urlComprovante);
+          if (params.obs) wsTr.getRange(linha2, TRANSF_COL_OBS).setValue(params.obs);
+        }
+      }
+    }
+
     var nf  = String(rowData[IDX_NF]  || '').trim();
     var nfd = String(rowData[IDX_NFD] || '').trim();
     var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
