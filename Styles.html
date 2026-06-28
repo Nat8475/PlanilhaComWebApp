@@ -334,7 +334,7 @@ function initKpiCounters() {
 
 /* ── initRipple: adiciona efeito ripple nos botões primários ── */
 function initRipple(scope) {
-  var sel = '.btn-pri,.bprim,.btn-prim,.btn-primary,.btn-succ,.bgreen,.btn-danger,.bred,.btn-orange,.bcyan';
+  var sel = '.btn-pri,.bprim,.btn-prim,.btn-primary,.btn-succ,.bgreen,.btn-green,.btn-success,.btn-danger,.bred,.btn-red,.btn-orange,.bamber,.btn-amber,.btn-cyan,.bcyan,.btn-teal';
   (scope || document).querySelectorAll(sel).forEach(function(btn) {
     if (btn._ripple) return;
     btn._ripple = true;
@@ -375,11 +375,12 @@ function showToast(msg, type, duration) {
 function closeModalAnimated(el) {
   var box = el.querySelector ? el.querySelector('.modal-box,.mb') : null;
   if (box) {
-    box.style.animation = 'popOut var(--dur-base) var(--ease-smooth) forwards';
+    var dur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--dur-base')) || 200;
+    box.style.animation = 'popOut ' + dur + 'ms var(--ease-smooth) forwards';
     setTimeout(function() {
       el.style.display = 'none';
       box.style.animation = '';
-    }, 220);
+    }, dur + 20);
   } else {
     el.style.display = 'none';
   }
