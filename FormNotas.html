@@ -2974,7 +2974,21 @@ try {
   google.script.run
     .withSuccessHandler(function(r){
       try {
-        var p = JSON.parse(r);
+        var d = JSON.parse(r);
+        // DEBUG: remover após confirmar funcionamento
+        var dbg = document.createElement('div');
+        dbg.id = 'perm-debug';
+        dbg.style.cssText = 'position:fixed;bottom:8px;right:8px;background:#1C45D0;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;z-index:9999;max-width:300px;word-break:break-all;cursor:pointer';
+        dbg.title = 'Clique para fechar';
+        dbg.onclick = function(){ this.remove(); };
+        dbg.innerHTML = '🔍 <b>DEBUG PERMISSÕES</b><br>'
+          + 'activeUser: <b>' + (d.activeUser||'?') + '</b><br>'
+          + 'effectiveUser: <b>' + (d.effectiveUser||'?') + '</b><br>'
+          + 'emailUsado: <b>' + (d.emailUsado||'?') + '</b><br>'
+          + 'ehAdmin: <b>' + d.ehAdmin + '</b><br>'
+          + 'modulos: <b>' + (d.permissoes && d.permissoes.modulos ? JSON.stringify(d.permissoes.modulos) : '?') + '</b>';
+        document.body.appendChild(dbg);
+        var p = d.permissoes || d;
         if (!p.admin && p.modulos.indexOf('notas') === -1) {
           document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
             + '<div style="font-size:36px">🔒</div>'
@@ -2986,7 +3000,7 @@ try {
         if (p.somenteLeitura) aplicarModoRO(true);
       } catch(_){}
     })
-    .obterPermissoesUsuario('');
+    .diagnosticarPermissoes();
 } catch(_){}
 </script>
 

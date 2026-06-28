@@ -6850,6 +6850,23 @@ function obterPermissoesUsuario(email) {
   }
 }
 
+function diagnosticarPermissoes() {
+  var ativo    = String(Session.getActiveUser().getEmail()    || '').trim().toLowerCase();
+  var efetivo  = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+  var dono     = _emailDonoPlanilha();
+  var admins   = _obterEmailsAdmin();
+  var emailUsado = ativo || efetivo;
+  var ehAdmin  = emailUsado === dono || admins.indexOf(emailUsado) !== -1;
+  return JSON.stringify({
+    activeUser:    ativo    || '(vazio)',
+    effectiveUser: efetivo  || '(vazio)',
+    donoPlanilha:  dono     || '(vazio)',
+    emailUsado:    emailUsado || '(vazio)',
+    ehAdmin:       ehAdmin,
+    permissoes:    JSON.parse(obterPermissoesUsuario(''))
+  });
+}
+
 // ─── E-MAILS ─────────────────────────────────────────────────
 
 function obterEmailConfig() {
