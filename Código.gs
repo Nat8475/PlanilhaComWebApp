@@ -6804,7 +6804,7 @@ function removerUsuarioCargo(email) {
 
 // ─── RESOLUÇÃO DE PERMISSÕES ──────────────────────────────────
 
-var _TODOS_MODULOS = ['notas','lancamento','email','frete','configuracoes','auditoria'];
+var _TODOS_MODULOS = ['notas','lancamento','email','frete','configuracoes','auditoria','relatorios','backup'];
 
 function obterPermissoesUsuario(email) {
   try {
@@ -6843,8 +6843,8 @@ function obterPermissoesUsuario(email) {
       }
     }
 
-    // 4. Sem cargo — visualizador padrão (todos os módulos, somente leitura)
-    return JSON.stringify({ admin: false, modulos: _TODOS_MODULOS, somenteLeitura: true });
+    // 4. Sem cargo — acesso bloqueado (sem módulos)
+    return JSON.stringify({ admin: false, modulos: [], somenteLeitura: true });
   } catch(e) {
     return JSON.stringify({ admin: false, modulos: [], somenteLeitura: true });
   }

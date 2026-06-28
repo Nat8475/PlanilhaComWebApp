@@ -970,6 +970,12 @@ button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .1
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
             <input type="checkbox" class="cargo-mod" value="auditoria"> Auditoria
           </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="relatorios"> Relatórios
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="backup"> Backup
+          </label>
         </div>
       </div>
       <div class="campo">
@@ -2202,7 +2208,7 @@ document.addEventListener('keydown', function(e) {
 
 // ════ CARGOS ══════════════════════════════════════════════════
 var _cargosLocal = [];
-var _MOD_LABELS  = { notas:'Notas', lancamento:'Lançamento', email:'E-mail', frete:'Frete', configuracoes:'Config', auditoria:'Auditoria' };
+var _MOD_LABELS  = { notas:'Notas', lancamento:'Lançamento', email:'E-mail', frete:'Frete', configuracoes:'Config', auditoria:'Auditoria', relatorios:'Relatórios', backup:'Backup' };
 
 function _carregarCargos() {
   document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--text-muted);font-size:11px">Carregando...</div>';
