@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(*.html)",
+      "Write(Styles.html)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git status)",
+      "PowerShell(git log *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git add -A)",
+      "PowerShell(Select-String *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell((Get-Content *)",
+      "PowerShell(Test-Path *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)"
+    ]
+  }
+}
