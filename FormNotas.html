@@ -1257,6 +1257,7 @@ function confirmarAcao(acao) {
 }
 
 function abrirEmailBulk() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
   var todos = getItensSelecionados();
   if (!todos.length) { toast('⚠️ Nenhuma NF selecionada.', 'info'); return; }
 
@@ -1367,6 +1368,7 @@ function desfazerAcao() {
 
 // ── Frete modal ────────────────────────────────────────────
 function abrirFreteModal() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
   var todos = getItensSelecionados().filter(function(it){ return it.status==='Pendente'; });
   if (!todos.length) { toast('⚠️ Selecione ao menos uma NF Pendente.','info'); return; }
 
@@ -1474,6 +1476,7 @@ function confirmarFrete() {
 }
 
 function executarFreteAcao(tipo, valor, data, obs, pedido) {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); fecharModal('modal-confirm'); return; }
   var btn = document.getElementById('conf-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Processando...';
@@ -2825,9 +2828,11 @@ function aplicarModoRO(ativo) {
   banner.innerHTML = '<span>🔒</span><span><strong>Modo somente-leitura ativo.</strong> Todas as ações de escrita estão bloqueadas.</span>';
   var barBulk = document.getElementById('bulk-bar');
   if (barBulk) barBulk.parentNode.insertBefore(banner, barBulk);
-  document.querySelectorAll('.bulk-act, #btn-baixa, #btn-venda, #btn-frete, #btn-email').forEach(function(b){
-    b.disabled = true; b.title = 'Bloqueado: modo somente-leitura';
+  document.querySelectorAll('#bulk-bar button:not([onclick="limparSelecao()"])').forEach(function(b){
+    b.disabled = true; b.title = 'Bloqueado: modo somente-leitura'; b.style.opacity = '.45';
   });
+  var _ctxExcl = document.getElementById('ctx-excluir-btn');
+  if (_ctxExcl) { _ctxExcl.disabled = true; _ctxExcl.style.opacity = '.45'; }
   document.querySelectorAll('[onclick="salvarEdicao()"], #btn-forn-receb').forEach(function(b){
     b.disabled = true; b.title = 'Bloqueado: modo somente-leitura';
   });
@@ -2899,6 +2904,7 @@ function ctxVerDetalhes() {
 function ctxAbrirExcluir() {
   var idx = _ctxIdx; fecharCtxMenu();
   if (idx == null) return;
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
   var item = _filtrados[idx];
   if (item.status !== 'Pendente') { toast('⚠️ Só é possível excluir NFs com status Pendente.', 'info'); return; }
   _exclItem = item;
@@ -2918,6 +2924,7 @@ function ctxAbrirExcluir() {
 function ctxEmail() {
   var idx = _ctxIdx; fecharCtxMenu();
   if (idx == null) return;
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
   var item = _filtrados[idx];
   try { localStorage.setItem('cdv_email_nfds', item.nfd || item.nf); } catch(_) {}
   google.script.run
@@ -2937,6 +2944,11 @@ function executarExclusao() {
   if (!_exclItem) return;
   var motivo = document.getElementById('excl-motivo').value.trim();
   var msgEl  = document.getElementById('excl-msg');
+  if (_modoRO) {
+    msgEl.textContent = '🔒 Modo somente-leitura ativo. Ação bloqueada.';
+    msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';
+    return;
+  }
   if (!motivo) {
     msgEl.textContent = '❌ Informe o motivo da exclusão.';
     msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';

@@ -4601,13 +4601,21 @@ function enviarEmailDevolucao(params) {
     try {
       var pasta = _garantirPastaNF(it.nomeAba, it.nf);
       if (pasta) {
+        var _dbgTotal = 0, _dbgFotos = 0;
         var iter = pasta.getFiles();
         while (iter.hasNext()) {
           var f = iter.next();
+          _dbgTotal++;
           if (f.getName().indexOf('FOTO_') === 0) {
             blobs.push(f.getBlob().setName('FOTO_NFD_' + it.nfd + '_' + f.getName()));
             temAnexo = true;
+            _dbgFotos++;
           }
+        }
+        if (_dbgFotos === 0) {
+          registrarErroSistema('DEBUG_fotos',
+            'NFD=' + it.nfd + '|aba=' + it.nomeAba + '|nf=' + it.nf +
+            '|pastaId=' + pasta.getId() + '|arqsTotal=' + _dbgTotal + '|fotos=0');
         }
       }
     } catch (eFoto) { console.warn('Erro ao buscar fotos NFD ' + it.nfd + ': ' + eFoto); registrarErroSistema('enviarEmailDevolucao.fotos', eFoto.message || eFoto.toString()); }

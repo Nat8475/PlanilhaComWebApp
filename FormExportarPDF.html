@@ -472,6 +472,23 @@ document.addEventListener('keydown', function(e) {
     }
   } catch(_) {}
 })();
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('relatorios') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:#07162A">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:#53708C;text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
 </script>
 </body>
 </html>
